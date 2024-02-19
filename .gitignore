@@ -1,0 +1,4 @@
+.devenv
+.direnv
+__pycache__
+target/*
