@@ -35,6 +35,7 @@
             openssl_3
             pango
             webkitgtk_4_1
+            xdotool
           ];
         in
         {
@@ -70,6 +71,7 @@
                 };
 
                 scripts = {
+                  tailwind.exec = "tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
                   dev.exec = "dx serve --platform desktop";
                 };
               }
