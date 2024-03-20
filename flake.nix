@@ -10,12 +10,15 @@
       nixpkgs,
       devenv,
       systems,
+      self,
       ...
     }@inputs:
     let
       forEachSystem = nixpkgs.lib.genAttrs (import systems);
     in
     {
+      devenv-up = self.devShells.x86_64-linux.default.config.procfileScript;
+
       devShells = forEachSystem (
         system:
         let
@@ -40,23 +43,35 @@
 
             modules = [
               {
-                # env = {
-                #   LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath libraries}:$LD_LIBRARY_PATH";
-                #   XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:$XDG_DATA_DIRS";
-                # };
-
                 packages =
                   with pkgs;
                   [
                     dioxus-cli
                     pkg-config
+                    tailwindcss
                   ]
                   ++ libraries;
 
                 # https://devenv.sh/reference/options/
                 # dotenv.disableHint = true;
 
-                languages.rust.enable = true;
+                languages = {
+                  javascript = {
+                    enable = true;
+                    npm.enable = true;
+                  };
+                  rust.enable = true;
+                };
+
+                processes = {
+                  # workaround so the tailwind task doesn't exit immediately
+                  tailwind.exec = "(while true; do sleep 10; done) | tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
+                  dev.exec = "dx serve --platform desktop";
+                };
+
+                scripts = {
+                  dev.exec = "dx serve --platform desktop";
+                };
               }
             ];
           };
