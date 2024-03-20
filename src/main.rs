@@ -2,7 +2,7 @@
 // import the prelude to get access to the `rsx!` macro and the `Scope` and `Element` types
 use dioxus::prelude::*;
 use wallpaper_ui::{
-    cropper::Geometry,
+    cropper::{Direction, Geometry},
     wallpapers::{WallInfo, Wallpapers},
 };
 
@@ -17,21 +17,40 @@ fn main() {
 fn CropPreview(wall_info: WallInfo, geometry: Geometry) -> Element {
     let path = wall_info.path();
     let path = path.to_str().expect("could not convert path to str");
-    let (start_pct, end_pct) = wall_info.overlay_percents(&geometry);
+    let (dir, start_pct, end_pct) = wall_info.overlay_percents(&geometry);
+
+    let start_cls = match dir {
+        Direction::X => "top-0 left-0 h-full",
+        Direction::Y => "top-0 left-0 w-full",
+    };
+    let start_style = match dir {
+        Direction::X => format!("width: {start_pct}%"),
+        Direction::Y => format!("height: {start_pct}%"),
+    };
+
+    let end_cls = match dir {
+        Direction::X => "top-0 right-0 h-full",
+        Direction::Y => "bottom-0 left-0 w-full",
+    };
+    let end_style = match dir {
+        Direction::X => format!("width: {end_pct}%"),
+        Direction::Y => format!("height: {end_pct}%"),
+    };
 
     rsx! {
         div {
+            class: "m-16",
             position: "relative",
             img {
                 src: "{path}",
             }
             div {
-                class: "absolute top-0 left-0 h-full bg-black bg-opacity-50",
-                width: "{start_pct}%",
+                class: "absolute bg-black bg-opacity-50 {start_cls}",
+                style: start_style,
             }
             div {
-                class: "absolute top-0 right-0 h-full bg-black bg-opacity-50",
-                width: "{end_pct}%",
+                class: "absolute bg-black bg-opacity-50 {end_cls}",
+                style: end_style,
             }
         }
     }
@@ -40,19 +59,24 @@ fn CropPreview(wall_info: WallInfo, geometry: Geometry) -> Element {
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
     let wall = "71124299_p0.png";
+    // let wall = "107610529_p1.png";
 
     let wallpapers = Wallpapers::new();
     let wall_info = &wallpapers[wall];
     let geom = wall_info
-        .get_geometry(1440, 2560)
+        // .get_geometry(1440, 2560)
+        .get_geometry(3440, 1440)
+        // .get_geometry(1, 1)
         .expect("could not get geometry");
 
     rsx! {
         link { rel: "stylesheet", href: "../public/tailwind.css" },
         body {
             class: "bg-base",
-            height: "100vh",
-            width: "100vw",
+            height: "100%",
+            width: "100%",
+            position: "absolute",
+            flex: 1,
 
             CropPreview {
                 wall_info: wall_info.clone(),

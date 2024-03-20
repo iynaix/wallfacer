@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::path::PathBuf;
 
 use crate::{
-    cropper::{Cropper, Geometry},
+    cropper::{Cropper, Direction, Geometry},
     full_path, wallpaper_dir,
 };
 
@@ -103,13 +103,22 @@ impl WallInfo {
         }
     }
 
-    pub fn overlay_percents(&self, g: &Geometry) -> (f32, f32) {
-        let (img_width, _) = self.image_dimensions();
+    pub fn overlay_percents(&self, g: &Geometry) -> (Direction, f32, f32) {
+        let (img_w, img_h) = self.image_dimensions();
 
-        (
-            g.x as f32 / img_width as f32 * 100.0,
-            (1.0 - (g.x + g.w) as f32 / img_width as f32) * 100.0,
-        )
+        if img_h == g.h {
+            (
+                Direction::X,
+                g.x as f32 / img_w as f32 * 100.0,
+                (1.0 - (g.x + g.w) as f32 / img_w as f32) * 100.0,
+            )
+        } else {
+            (
+                Direction::Y,
+                g.y as f32 / img_h as f32 * 100.0,
+                (1.0 - (g.y + g.h) as f32 / img_h as f32) * 100.0,
+            )
+        }
     }
 }
 
