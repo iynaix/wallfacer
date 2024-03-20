@@ -56,7 +56,7 @@ fn App() -> Element {
 
             CropPreview {
                 wall_info: wall_info.clone(),
-                geometry: geom.into(),
+                geometry: geom.try_into().expect("could not convert geometry"),
             }
         }
     }

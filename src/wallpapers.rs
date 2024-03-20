@@ -7,7 +7,7 @@ use crate::{
     full_path, wallpaper_dir,
 };
 
-#[derive(Debug, Default, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Default, Clone, Deserialize, PartialEq, Eq)]
 pub struct Face {
     pub xmin: u32,
     pub xmax: u32,
@@ -58,7 +58,7 @@ where
     serde_json::from_str(&s).map_err(serde::de::Error::custom)
 }
 
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct WallInfo {
     pub filename: String,
     #[serde(deserialize_with = "from_faces")]

@@ -1,6 +1,5 @@
-use core::panic;
 use itertools::Itertools;
-use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, path::PathBuf};
 use thiserror::Error;
 
 use image::image_dimensions;
@@ -26,7 +25,7 @@ pub enum GeometryError {
     InvalidCoordinate,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Geometry {
     pub w: u32,
     pub h: u32,
@@ -40,32 +39,16 @@ impl std::fmt::Display for Geometry {
     }
 }
 
-impl std::convert::From<&String> for Geometry {
-    fn from(s: &String) -> Self {
-        let parts: Vec<&str> = s.split(['x', '+'].as_ref()).collect();
-        if parts.len() != 4 {
-            panic!("Invalid geometry string");
-        }
+impl std::convert::TryFrom<&String> for Geometry {
+    type Error = GeometryError;
 
-        Geometry {
-            w: parts[0].parse().expect("Invalid geometry coordinate"),
-            h: parts[1].parse().expect("Invalid geometry coordinate"),
-            x: parts[2].parse().expect("Invalid geometry coordinate"),
-            y: parts[3].parse().expect("Invalid geometry coordinate"),
-        }
-    }
-}
-
-impl FromStr for Geometry {
-    type Err = GeometryError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn try_from(s: &String) -> Result<Self, Self::Error> {
         let parts: Vec<&str> = s.split(['x', '+'].as_ref()).collect();
         if parts.len() != 4 {
             return Err(GeometryError::InvalidGeometry);
         }
 
-        Ok(Geometry {
+        Ok(Self {
             w: parts[0]
                 .parse()
                 .map_err(|_| GeometryError::InvalidCoordinate)?,
@@ -81,6 +64,32 @@ impl FromStr for Geometry {
         })
     }
 }
+
+// impl FromStr for Geometry {
+//     type Err = GeometryError;
+
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         let parts: Vec<&str> = s.split(['x', '+'].as_ref()).collect();
+//         if parts.len() != 4 {
+//             return Err(GeometryError::InvalidGeometry);
+//         }
+
+//         Ok(Geometry {
+//             w: parts[0]
+//                 .parse()
+//                 .map_err(|_| GeometryError::InvalidCoordinate)?,
+//             h: parts[1]
+//                 .parse()
+//                 .map_err(|_| GeometryError::InvalidCoordinate)?,
+//             x: parts[2]
+//                 .parse()
+//                 .map_err(|_| GeometryError::InvalidCoordinate)?,
+//             y: parts[3]
+//                 .parse()
+//                 .map_err(|_| GeometryError::InvalidCoordinate)?,
+//         })
+//     }
+// }
 
 pub struct Cropper {
     pub faces: Vec<Face>,
