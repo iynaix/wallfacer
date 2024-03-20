@@ -31,6 +31,7 @@ missing_panics_doc = { level = "allow", priority = 1 }
 must_use_candidate = { level = "allow", priority = 1 }
 nursery = "deny"
 option_if_let_else = { level = "allow", priority = 1 }
+uninlined_format_args = { level = "allow", priority = 1 }
 unwrap_used = "deny"
 
 [profile.release]

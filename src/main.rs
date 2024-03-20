@@ -39,18 +39,76 @@ fn CropPreview(wall_info: WallInfo, geometry: Geometry) -> Element {
 
     rsx! {
         div {
-            class: "m-16",
+            class: "m-16 mt-4",
             position: "relative",
             img {
                 src: "{path}",
             }
             div {
-                class: "absolute bg-black bg-opacity-50 {start_cls}",
+                class: "absolute bg-black bg-opacity-60 {start_cls}",
                 style: start_style,
             }
             div {
-                class: "absolute bg-black bg-opacity-50 {end_cls}",
+                class: "absolute bg-black bg-opacity-60 {end_cls}",
                 style: end_style,
+            }
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Props)]
+struct ButtonProps {
+    class: Option<String>,
+    text: String,
+    onclick: EventHandler<MouseEvent>,
+}
+
+fn Button(props: ButtonProps) -> Element {
+    rsx! {
+        button {
+            "type": "button",
+            class: "relative inline-flex items-center bg-mantle px-3 py-2 font-semibold text-text ring-1 ring-inset ring-gray-300 hover:bg-crust focus:z-10 {props.class.unwrap_or_default()}",
+            onclick: move |evt| props.onclick.call(evt),
+            {props.text},
+        }
+    }
+}
+
+#[component]
+fn ResolutionSelector(current_resolution: Signal<(i32, i32)>) -> Element {
+    let resolutions = [
+        (1440, 2560),
+        (2256, 1504),
+        (3440, 1440),
+        (1920, 1080),
+        (1, 1),
+    ];
+
+    let buttons = resolutions.into_iter().enumerate().map(|(i, res)| {
+        let cls = if i == 0 {
+            "rounded-l-md"
+        } else if i == resolutions.len() - 1 {
+            "rounded-r-md"
+        } else {
+            "-ml-px"
+        };
+
+        rsx! {
+            Button {
+                class: "text-sm {cls}",
+                text: format!("{}x{}", res.0, res.1),
+                onclick: move |_| {
+                    current_resolution.set(res);
+                },
+            }
+        }
+    });
+
+    rsx! {
+        span {
+            class: "isolate inline-flex rounded-md shadow-sm",
+            for button in buttons {
+                {button}
             }
         }
     }
@@ -63,20 +121,27 @@ fn App() -> Element {
 
     let wallpapers = Wallpapers::new();
     let wall_info = &wallpapers[wall];
+
+    let current_resolution = use_signal(|| (1440, 2560));
     let geom = wall_info
-        // .get_geometry(1440, 2560)
-        .get_geometry(3440, 1440)
-        // .get_geometry(1, 1)
+        .get_geometry(current_resolution().0, current_resolution().1)
         .expect("could not get geometry");
 
     rsx! {
         link { rel: "stylesheet", href: "../public/tailwind.css" },
         body {
-            class: "bg-base",
+            class: "dark bg-base",
             height: "100%",
             width: "100%",
             position: "absolute",
             flex: 1,
+
+            div {
+                class:"p-4",
+                ResolutionSelector {
+                    current_resolution: current_resolution,
+                },
+            }
 
             CropPreview {
                 wall_info: wall_info.clone(),
