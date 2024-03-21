@@ -58,6 +58,15 @@ impl Serialize for Face {
     }
 }
 
+// serialize Vec<Face> as a json string
+fn to_faces<S>(faces: &Vec<Face>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let s = serde_json::to_string(faces).map_err(serde::ser::Error::custom)?;
+    serializer.serialize_str(&s)
+}
+
 // deserialize as a json string into a Vec<Face>
 fn from_faces<'de, D>(deserializer: D) -> Result<Vec<Face>, D::Error>
 where
@@ -70,7 +79,7 @@ where
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct WallInfo {
     pub filename: String,
-    #[serde(deserialize_with = "from_faces")]
+    #[serde(serialize_with = "to_faces", deserialize_with = "from_faces")]
     pub faces: Vec<Face>,
     pub r1440x2560: String,
     pub r2256x1504: String,

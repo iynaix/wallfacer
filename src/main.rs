@@ -180,18 +180,10 @@ fn App() -> Element {
     let wall = "71124299_p0.png";
     // let wall = "107610529_p1.png";
 
-    let wallpapers = Wallpapers::new();
+    let mut wallpapers = Wallpapers::new();
     let wall_info = use_signal(|| wallpapers[wall].clone());
 
     let current_ratio = use_signal(|| AspectRatio(1440, 2560));
-    // let current_geometry = use_signal(|| {
-    //     wall_info()
-    //         .get_geometry(current_resolution().0, current_resolution().1)
-    //         .expect("could not get geometry")
-    //         .try_into()
-    //         .expect("could not convert geometry")
-    // });
-    // let current_direction = use_signal(|| wall_info.direction(&current_geometry()));
 
     rsx! {
         link { rel: "stylesheet", href: "../public/tailwind.css" },
@@ -209,11 +201,24 @@ fn App() -> Element {
                     current_ratio: current_ratio,
                 },
 
-                CropAlignSelector {
-                    class: "content-end",
-                    wall_info: wall_info,
-                    current_ratio: current_ratio(),
-                },
+                div{
+                    class: "flex justify-end",
+
+                    CropAlignSelector {
+                        class: "content-end",
+                        wall_info: wall_info,
+                        current_ratio: current_ratio(),
+                    },
+
+                    Button {
+                        class: "ml-8 content-end rounded-md text-sm",
+                        text: "Save",
+                        onclick: move |_| {
+                            wallpapers.insert(wall_info().filename, wall_info());
+                            wallpapers.save();
+                        },
+                    },
+                }
             }
 
             CropPreview {
