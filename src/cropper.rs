@@ -6,7 +6,7 @@ use image::image_dimensions;
 
 use crate::{wallpaper_dir, wallpapers::Face};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Direction {
     X,
     Y,
@@ -39,10 +39,10 @@ impl std::fmt::Display for Geometry {
     }
 }
 
-impl std::convert::TryFrom<&String> for Geometry {
+impl std::convert::TryFrom<String> for Geometry {
     type Error = GeometryError;
 
-    fn try_from(s: &String) -> Result<Self, Self::Error> {
+    fn try_from(s: String) -> Result<Self, Self::Error> {
         let parts: Vec<&str> = s.split(['x', '+'].as_ref()).collect();
         if parts.len() != 4 {
             return Err(GeometryError::InvalidGeometry);
@@ -62,6 +62,51 @@ impl std::convert::TryFrom<&String> for Geometry {
                 .parse()
                 .map_err(|_| GeometryError::InvalidCoordinate)?,
         })
+    }
+}
+
+impl Geometry {
+    #[must_use]
+    pub fn align_start(&self, _img_width: u32, _img_height: u32) -> Self {
+        Self {
+            x: 0,
+            y: 0,
+            ..self.clone()
+        }
+    }
+
+    #[must_use]
+    pub fn align_center(&self, img_width: u32, img_height: u32) -> Self {
+        if img_height == self.h {
+            Self {
+                x: (img_width - self.w) / 2,
+                y: 0,
+                ..self.clone()
+            }
+        } else {
+            Self {
+                x: 0,
+                y: (img_height - self.h) / 2,
+                ..self.clone()
+            }
+        }
+    }
+
+    #[must_use]
+    pub fn align_end(&self, img_width: u32, img_height: u32) -> Self {
+        if img_height == self.h {
+            Self {
+                x: img_width - self.w,
+                y: 0,
+                ..self.clone()
+            }
+        } else {
+            Self {
+                x: 0,
+                y: img_height - self.h,
+                ..self.clone()
+            }
+        }
     }
 }
 
@@ -98,7 +143,8 @@ pub struct Cropper {
     pub height: u32,
 }
 
-pub struct AspectRatio(u32, u32);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AspectRatio(pub u32, pub u32);
 
 impl std::fmt::Display for AspectRatio {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

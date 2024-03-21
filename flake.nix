@@ -2,7 +2,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";
-    devenv.url = "github:cachix/devenv/rust-rewrite";
+    devenv.url = "github:cachix/devenv";
   };
 
   outputs =
@@ -47,9 +47,24 @@
                 packages =
                   with pkgs;
                   [
-                    dioxus-cli
                     pkg-config
                     tailwindcss
+                    (dioxus-cli.overrideAttrs (o: rec {
+                      version = "0.5.0-alpha.2";
+
+                      src = pkgs.fetchCrate {
+                        inherit (o) pname;
+                        inherit version;
+                        hash = "sha256-ACvWXDx844f0kSKVhrZ0VLImjRfcGu45BIFtXP5Tf5I=";
+                      };
+
+                      checkFlags = [ "--skip=cli::autoformat::test_auto_fmt" ];
+
+                      cargoDeps = pkgs.rustPlatform.importCargoLock {
+                        lockFile = src + "/Cargo.lock";
+                        # allowBuiltinFetchGit = true;
+                      };
+                    }))
                   ]
                   ++ libraries;
 
@@ -77,7 +92,7 @@
 
                 scripts = {
                   tailwind.exec = "tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
-                  dev.exec = "dx serve --platform desktop";
+                  dev.exec = "dx serve --platform desktop --hot-reload";
                 };
               }
             ];

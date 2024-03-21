@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::path::PathBuf;
 
 use crate::{
-    cropper::{Cropper, Direction, Geometry},
+    cropper::{AspectRatio, Cropper, Direction, Geometry},
     full_path, wallpaper_dir,
 };
 
@@ -28,7 +28,16 @@ impl Face {
         (self.xmax - self.xmin) * (self.ymax - self.ymin)
     }
 
-    pub fn geometry(&self) -> String {
+    pub const fn geometry(&self) -> Geometry {
+        Geometry {
+            w: self.width(),
+            h: self.height(),
+            x: self.xmin,
+            y: self.ymin,
+        }
+    }
+
+    pub fn geometry_str(&self) -> String {
         format!(
             "{}x{}+{}+{}",
             self.width(),
@@ -81,6 +90,15 @@ impl WallInfo {
         (img.width(), img.height())
     }
 
+    pub fn direction(&self, g: &Geometry) -> Direction {
+        let (_, img_h) = self.image_dimensions();
+        if img_h == g.h {
+            Direction::X
+        } else {
+            Direction::Y
+        }
+    }
+
     pub fn cropper(&self) -> Cropper {
         Cropper::new(
             &self
@@ -92,14 +110,29 @@ impl WallInfo {
         )
     }
 
-    pub const fn get_geometry(&self, width: i32, height: i32) -> Option<&String> {
-        match (width, height) {
-            (1440, 2560) => Some(&self.r1440x2560),
-            (2256, 1504) => Some(&self.r2256x1504),
-            (3440, 1440) => Some(&self.r3440x1440),
-            (1920, 1080) => Some(&self.r1920x1080),
-            (1, 1) => Some(&self.r1x1),
-            _ => None,
+    pub fn get_geometry(&self, ratio: &AspectRatio) -> Geometry {
+        let geom_str: String = match ratio {
+            AspectRatio(1440, 2560) => self.r1440x2560.clone(),
+            AspectRatio(2256, 1504) => self.r2256x1504.clone(),
+            AspectRatio(3440, 1440) => self.r3440x1440.clone(),
+            AspectRatio(1920, 1080) => self.r1920x1080.clone(),
+            AspectRatio(1, 1) => self.r1x1.clone(),
+            _ => self.cropper().crop(ratio).geometry_str(),
+        };
+
+        geom_str.try_into().expect("invalid geometry")
+    }
+
+    pub fn set_geometry(&mut self, ratio: &AspectRatio, new_geom: &Geometry) {
+        let new_geom = new_geom.to_string();
+
+        match ratio {
+            AspectRatio(1440, 2560) => self.r1440x2560 = new_geom,
+            AspectRatio(2256, 1504) => self.r2256x1504 = new_geom,
+            AspectRatio(3440, 1440) => self.r3440x1440 = new_geom,
+            AspectRatio(1920, 1080) => self.r1920x1080 = new_geom,
+            AspectRatio(1, 1) => self.r1x1 = new_geom,
+            _ => {}
         }
     }
 
