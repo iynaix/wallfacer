@@ -133,8 +133,8 @@ fn CropAlignSelector(mut props: CropAlignSelectorProps) -> Element {
 
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
-    let wall = "71124299_p0.png";
-    // let wall = "107610529_p1.png";
+    // let wall = "71124299_p0.png";
+    let wall = "wallhaven-o567e7.jpg";
 
     let mut wallpapers = Wallpapers::new();
 
@@ -181,10 +181,26 @@ fn App() -> Element {
                         },
                     },
                 }
+
+                {
+                    if wall_info().faces.len() > 1 {
+                        rsx! {
+                            div {
+                                class: "bg-black bg-opacity-50 p-2 rounded-md",
+                                span {
+                                    class: "text-white text-sm",
+                                    "Faces detected {wall_info().faces.len()}"
+                                }
+                            }
+                        }
+                    } else {
+                        None
+                    }
+                }
             }
 
             Previewer {
-                wall_info: wall_info(),
+                wall_info: wall_info,
                 ratio: current_ratio(),
                 show_faces: show_faces(),
             }

@@ -5,9 +5,9 @@ use wallpaper_ui::{
     wallpapers::WallInfo,
 };
 
-#[derive(Clone, PartialEq, Eq, Props)]
+#[derive(Clone, PartialEq, Props)]
 pub struct PreviewerProps {
-    wall_info: WallInfo,
+    wall_info: Signal<WallInfo>,
     ratio: AspectRatio,
     #[props(default = false)]
     show_faces: bool,
@@ -15,12 +15,13 @@ pub struct PreviewerProps {
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn Previewer(props: PreviewerProps) -> Element {
-    let path = props.wall_info.path();
+    let info = (props.wall_info)();
+    let path = info.path();
     let path = path.to_str().expect("could not convert path to str");
 
-    let geometry = props.wall_info.get_geometry(&props.ratio);
+    let geometry = info.get_geometry(&props.ratio);
 
-    let (dir, start_pct, end_pct) = props.wall_info.overlay_percents(&geometry);
+    let (dir, start_pct, end_pct) = info.overlay_percents(&geometry);
 
     let start_cls = match dir {
         Direction::X => "top-0 left-0 h-full",
@@ -40,9 +41,9 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         Direction::Y => format!("height: {end_pct}%"),
     };
 
-    let (img_w, img_h) = props.wall_info.image_dimensions();
+    let (img_w, img_h) = info.image_dimensions();
     let faces: Vec<_> = if props.show_faces {
-        props.wall_info.faces.iter().map(|face| {
+        info.faces.iter().map(|face| {
             let start_x = face.xmin as f32 / img_w as f32 * 100.0;
             let start_y = face.ymin as f32 / img_h as f32 * 100.0;
 

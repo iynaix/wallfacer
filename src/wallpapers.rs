@@ -98,8 +98,7 @@ impl WallInfo {
     }
 
     pub fn image_dimensions(&self) -> (u32, u32) {
-        let img = image::open(self.path()).expect("could not open image");
-        (img.width(), img.height())
+        image::image_dimensions(self.path()).expect("could not open image")
     }
 
     pub fn direction(&self, g: &Geometry) -> Direction {
