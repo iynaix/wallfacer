@@ -16,14 +16,17 @@ pub struct Face {
 }
 
 impl Face {
+    #[inline]
     pub const fn width(&self) -> u32 {
         self.xmax - self.xmin
     }
 
+    #[inline]
     pub const fn height(&self) -> u32 {
         self.ymax - self.ymin
     }
 
+    #[inline]
     pub const fn area(&self) -> u32 {
         (self.xmax - self.xmin) * (self.ymax - self.ymin)
     }

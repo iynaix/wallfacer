@@ -9,8 +9,10 @@ use wallpaper_ui::{
 const _TAILWIND_URL: &str = manganis::mg!(file("./public/tailwind.css"));
 
 pub mod buttons;
+pub mod preview;
+pub mod switch;
 
-use buttons::Button;
+use crate::{buttons::Button, preview::Previewer, switch::Switch};
 
 const RESOLUTIONS: [AspectRatio; 5] = [
     AspectRatio(1440, 2560),
@@ -22,52 +24,6 @@ const RESOLUTIONS: [AspectRatio; 5] = [
 
 fn main() {
     launch(App);
-}
-
-#[component]
-fn CropPreview(wall_info: WallInfo, ratio: AspectRatio) -> Element {
-    let path = wall_info.path();
-    let path = path.to_str().expect("could not convert path to str");
-
-    let geometry = wall_info.get_geometry(&ratio);
-
-    let (dir, start_pct, end_pct) = wall_info.overlay_percents(&geometry);
-
-    let start_cls = match dir {
-        Direction::X => "top-0 left-0 h-full",
-        Direction::Y => "top-0 left-0 w-full",
-    };
-    let start_style = match dir {
-        Direction::X => format!("width: {start_pct}%"),
-        Direction::Y => format!("height: {start_pct}%"),
-    };
-
-    let end_cls = match dir {
-        Direction::X => "top-0 right-0 h-full",
-        Direction::Y => "bottom-0 left-0 w-full",
-    };
-    let end_style = match dir {
-        Direction::X => format!("width: {end_pct}%"),
-        Direction::Y => format!("height: {end_pct}%"),
-    };
-
-    rsx! {
-        div {
-            class: "mx-4 mt-4 mb-16",
-            position: "relative",
-            img {
-                src: "{path}",
-            }
-            div {
-                class: "absolute bg-black bg-opacity-60 {start_cls}",
-                style: start_style,
-            }
-            div {
-                class: "absolute bg-black bg-opacity-60 {end_cls}",
-                style: end_style,
-            }
-        }
-    }
 }
 
 #[derive(Clone, PartialEq, Props)]
@@ -181,8 +137,9 @@ fn App() -> Element {
     // let wall = "107610529_p1.png";
 
     let mut wallpapers = Wallpapers::new();
-    let wall_info = use_signal(|| wallpapers[wall].clone());
 
+    let show_faces = use_signal(|| false);
+    let wall_info = use_signal(|| wallpapers[wall].clone());
     let current_ratio = use_signal(|| AspectRatio(1440, 2560));
 
     rsx! {
@@ -204,8 +161,13 @@ fn App() -> Element {
                 div{
                     class: "flex justify-end",
 
+                    Switch {
+                        label: "Faces",
+                        checked: show_faces,
+                     },
+
                     CropAlignSelector {
-                        class: "content-end",
+                        class: "ml-16 content-end",
                         wall_info: wall_info,
                         current_ratio: current_ratio(),
                     },
@@ -221,9 +183,10 @@ fn App() -> Element {
                 }
             }
 
-            CropPreview {
+            Previewer {
                 wall_info: wall_info(),
                 ratio: current_ratio(),
+                show_faces: show_faces(),
             }
         }
     }
