@@ -9,10 +9,11 @@ use wallpaper_ui::{
 const _TAILWIND_URL: &str = manganis::mg!(file("./public/tailwind.css"));
 
 pub mod buttons;
+pub mod candidates;
 pub mod preview;
 pub mod switch;
 
-use crate::{buttons::Button, preview::Previewer, switch::Switch};
+use crate::{buttons::Button, candidates::Candidates, preview::Previewer, switch::Switch};
 
 const RESOLUTIONS: [AspectRatio; 5] = [
     AspectRatio(1440, 2560),
@@ -56,9 +57,7 @@ fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
     rsx! {
         span {
             class: "isolate inline-flex rounded-md shadow-sm",
-            for button in buttons {
-                {button}
-            }
+            {buttons}
         }
     }
 }
@@ -141,18 +140,19 @@ fn App() -> Element {
     let show_faces = use_signal(|| false);
     let wall_info = use_signal(|| wallpapers[wall].clone());
     let current_ratio = use_signal(|| AspectRatio(1440, 2560));
+    let preview_geometry = use_signal::<Option<Geometry>>(|| None);
 
     rsx! {
         link { rel: "stylesheet", href: "../public/tailwind.css" },
         body {
-            class: "dark bg-base",
+            class: "dark bg-base p-4 flex flex-col gap-4",
             height: "100%",
             width: "100%",
             position: "absolute",
             flex: 1,
 
             div {
-                class:"p-4 flex flex-row justify-between",
+                class:"flex flex-row justify-between",
 
                 ResolutionSelector {
                     current_ratio: current_ratio,
@@ -162,7 +162,7 @@ fn App() -> Element {
                     class: "flex justify-end",
 
                     Switch {
-                        label: "Faces",
+                        label: "Faces ({wall_info().faces.len()})",
                         checked: show_faces,
                      },
 
@@ -181,28 +181,19 @@ fn App() -> Element {
                         },
                     },
                 }
-
-                {
-                    if wall_info().faces.len() > 1 {
-                        rsx! {
-                            div {
-                                class: "bg-black bg-opacity-50 p-2 rounded-md",
-                                span {
-                                    class: "text-white text-sm",
-                                    "Faces detected {wall_info().faces.len()}"
-                                }
-                            }
-                        }
-                    } else {
-                        None
-                    }
-                }
             }
 
             Previewer {
-                wall_info: wall_info,
+                info: wall_info(),
                 ratio: current_ratio(),
                 show_faces: show_faces(),
+                preview_geometry: preview_geometry(),
+            }
+
+            Candidates {
+                info: wall_info,
+                current_ratio: current_ratio(),
+                preview_geometry: preview_geometry,
             }
         }
     }
