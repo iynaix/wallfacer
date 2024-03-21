@@ -21,25 +21,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
 
     let geometry = info.get_geometry(&props.ratio);
 
-    let (dir, start_pct, end_pct) = info.overlay_percents(&geometry);
-
-    let start_cls = match dir {
-        Direction::X => "top-0 left-0 h-full",
-        Direction::Y => "top-0 left-0 w-full",
-    };
-    let start_style = match dir {
-        Direction::X => format!("width: {start_pct}%"),
-        Direction::Y => format!("height: {start_pct}%"),
-    };
-
-    let end_cls = match dir {
-        Direction::X => "top-0 right-0 h-full",
-        Direction::Y => "bottom-0 left-0 w-full",
-    };
-    let end_style = match dir {
-        Direction::X => format!("width: {end_pct}%"),
-        Direction::Y => format!("height: {end_pct}%"),
-    };
+    let (dir, start_ratio, end_ratio) = info.overlay_transforms(&geometry);
 
     let (img_w, img_h) = info.image_dimensions();
     let faces: Vec<_> = if props.show_faces {
@@ -61,6 +43,27 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         Vec::new()
     };
 
+    let start_cls = match dir {
+        Direction::X => "origin-left top-0 left-0",
+        Direction::Y => "origin-top top-0 left-0",
+    };
+    let start_style = match dir {
+        Direction::X => format!("transform: scaleX({})", start_ratio),
+        Direction::Y => format!("transform: scaleY({})", start_ratio),
+    };
+
+    let end_cls = match dir {
+        Direction::X => "origin-right top-0 right-0",
+        Direction::Y => "origin-bottom bottom-0 left-0",
+    };
+    let end_style = match dir {
+        Direction::X => format!("transform: scaleX({})", end_ratio),
+        Direction::Y => format!("transform: scaleY({})", end_ratio),
+    };
+
+    let overlay_cls =
+        "absolute bg-black bg-opacity-60 w-full h-full transition transition-transform ease-in-out";
+
     rsx! {
         div {
             class: "mx-4 mt-4 mb-16",
@@ -69,11 +72,11 @@ pub fn Previewer(props: PreviewerProps) -> Element {
                 src: "{path}",
             }
             div {
-                class: "absolute bg-black bg-opacity-60 {start_cls}",
+                class: "{overlay_cls} {start_cls}",
                 style: start_style,
             }
             div {
-                class: "absolute bg-black bg-opacity-60 {end_cls}",
+                class: "{overlay_cls} {end_cls}",
                 style: end_style,
             }
             for face in faces {

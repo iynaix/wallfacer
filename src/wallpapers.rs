@@ -147,20 +147,20 @@ impl WallInfo {
         }
     }
 
-    pub fn overlay_percents(&self, g: &Geometry) -> (Direction, f32, f32) {
+    pub fn overlay_transforms(&self, g: &Geometry) -> (Direction, f32, f32) {
         let (img_w, img_h) = self.image_dimensions();
 
         if img_h == g.h {
             (
                 Direction::X,
-                g.x as f32 / img_w as f32 * 100.0,
-                (1.0 - (g.x + g.w) as f32 / img_w as f32) * 100.0,
+                g.x as f32 / img_w as f32,
+                (1.0 - (g.x + g.w) as f32 / img_w as f32),
             )
         } else {
             (
                 Direction::Y,
-                g.y as f32 / img_h as f32 * 100.0,
-                (1.0 - (g.y + g.h) as f32 / img_h as f32) * 100.0,
+                g.y as f32 / img_h as f32,
+                (1.0 - (g.y + g.h) as f32 / img_h as f32),
             )
         }
     }
