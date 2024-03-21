@@ -25,7 +25,8 @@ pub enum GeometryError {
     InvalidCoordinate,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+// hash used for deduping
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct Geometry {
     pub w: u32,
     pub h: u32,
