@@ -3,6 +3,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";
     devenv.url = "github:cachix/devenv";
+    anime-face-detector.url = "github:iynaix/anime-face-detector";
   };
 
   outputs =
@@ -46,7 +47,14 @@
               {
                 packages =
                   with pkgs;
+                  # pipeline dependencies
                   [
+                    oxipng
+                    jpegoptim
+                    inputs.anime-face-detector.packages.${system}.anime-face-detector
+                    (callPackage ./nix/realcugan-ncnn-vulkan { })
+                  ]
+                  ++ [
                     pkg-config
                     tailwindcss
                     (dioxus-cli.overrideAttrs (o: rec {

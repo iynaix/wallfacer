@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use itertools::Itertools;
 use wallpaper_ui::{
     cropper::Geometry,
-    wallpaper_dir,
+    filename, wallpaper_dir,
     wallpapers::{WallInfo, Wallpapers},
 };
 
@@ -100,11 +100,7 @@ pub fn FileList(mut props: FileListProps) -> Element {
             }
 
             // get file size
-            let fname = entry
-                .file_name()
-                .to_str()
-                .expect("could not get filename")
-                .to_string();
+            let fname = filename(&path);
             let size = entry.metadata().expect("could not get file metadata").len();
 
             // TODO: add number of faces?
@@ -121,7 +117,7 @@ pub fn FileList(mut props: FileListProps) -> Element {
 
     rsx! {
         div {
-            class: "flex flex-col flex-1 max-h-full overflow-y-auto {props.class.unwrap_or_default()}",
+            class: "flex flex-col flex-1 max-h-full gap-4 {props.class.unwrap_or_default()}",
             // onkeydown: handle_key_down_event,
 
             // filter input
@@ -129,7 +125,7 @@ pub fn FileList(mut props: FileListProps) -> Element {
                 div { class: "flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500",
                     input {
                         r#type: "text",
-                        placeholder: "Search",
+                        placeholder: " Search",
                         name: "search_wallpapers",
                         class: "flex-1 border-0 bg-transparent py-1.5 pl-1 text-white focus:ring-0 sm:text-sm sm:leading-6",
                         id: "search_wallpapers",
@@ -140,7 +136,9 @@ pub fn FileList(mut props: FileListProps) -> Element {
                 }
             }
 
-            ul { role: "list", class: "divide-y divide-gray-800",
+            ul {
+                role: "list",
+                class: "divide-y divide-gray-800 overflow-y-auto mx-2",
                 // HACK: render only the first 50 matches since there is no virtualized list
                 for (fname, bytes) in images.take(50) {
                     WallpaperFile {
