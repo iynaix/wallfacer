@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Props)]
 pub struct SwitchProps {
     label: String,

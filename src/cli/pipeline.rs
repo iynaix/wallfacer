@@ -6,11 +6,11 @@ use std::{
 };
 
 use wallpaper_ui::{
-    cropper::{
-        Cropper, Geometry, FRAMEWORK_RATIO, HD_RATIO, SQUARE_RATIO, ULTRAWIDE_RATIO, VERTICAL_RATIO,
-    },
-    detect_faces_iter, filename, full_path, wallpaper_dir,
-    wallpapers::{WallInfo, Wallpapers},
+    cropper::{Cropper, FRAMEWORK_RATIO, HD_RATIO, SQUARE_RATIO, ULTRAWIDE_RATIO, VERTICAL_RATIO},
+    detect_faces_iter, filename, full_path,
+    geometry::Geometry,
+    wallpaper_dir,
+    wallpapers::{WallInfo, WallpapersCsv},
 };
 
 const TARGET_WIDTH: u32 = 3440; // ultrawide width
@@ -86,7 +86,7 @@ fn detect_faces(paths: &[PathBuf]) -> Vec<(String, Geometry)> {
         println!("Detecting faces in {}...", filename(path));
     }
 
-    let mut wallpapers = Wallpapers::new();
+    let mut wallpapers = WallpapersCsv::new();
     let mut to_preview = Vec::new();
 
     for (fname, faces) in detect_faces_iter(paths) {
@@ -97,11 +97,11 @@ fn detect_faces(paths: &[PathBuf]) -> Vec<(String, Geometry)> {
         let wall_info = WallInfo {
             filename: fname.clone(),
             faces,
-            r1440x2560: vertical_crop.to_string(),
-            r2256x1504: cropper.crop(&FRAMEWORK_RATIO).geometry_str(),
-            r3440x1440: cropper.crop(&ULTRAWIDE_RATIO).geometry_str(),
-            r1920x1080: cropper.crop(&HD_RATIO).geometry_str(),
-            r1x1: cropper.crop(&SQUARE_RATIO).geometry_str(),
+            r1440x2560: vertical_crop.clone(),
+            r2256x1504: cropper.crop(&FRAMEWORK_RATIO).geometry(),
+            r3440x1440: cropper.crop(&ULTRAWIDE_RATIO).geometry(),
+            r1920x1080: cropper.crop(&HD_RATIO).geometry(),
+            r1x1: cropper.crop(&SQUARE_RATIO).geometry(),
             wallust: String::new(),
         };
 

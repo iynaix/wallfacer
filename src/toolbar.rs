@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 use wallpaper_ui::{
     cropper::AspectRatio,
-    wallpapers::{WallInfo, Wallpapers},
+    wallpapers::{WallInfo, WallpapersCsv},
 };
 
 use crate::{align_group::AlignGroup, buttons::Button, switch::Switch};
@@ -50,7 +50,6 @@ fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Props)]
 pub struct ToolbarProps {
     wall_info: Signal<WallInfo>,
@@ -91,7 +90,7 @@ pub fn Toolbar(mut props: ToolbarProps) -> Element {
                     class: "ml-8 content-end rounded-md text-sm",
                     text: "Save",
                     onclick: move |_| {
-                        let mut wallpapers = Wallpapers::new();
+                        let mut wallpapers = WallpapersCsv::new();
                         wallpapers.insert(info.filename.clone(), info.clone());
                         wallpapers.save();
                     },

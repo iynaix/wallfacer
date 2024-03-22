@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use dioxus::prelude::*;
 
 #[derive(Clone, PartialEq, Props)]

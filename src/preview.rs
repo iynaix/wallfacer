@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use wallpaper_ui::{
-    cropper::{AspectRatio, Direction, Geometry},
+    cropper::{AspectRatio, Direction},
+    geometry::Geometry,
     wallpapers::WallInfo,
 };
 

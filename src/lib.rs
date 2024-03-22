@@ -7,6 +7,7 @@ use std::{
 use wallpapers::Face;
 
 pub mod cropper;
+pub mod geometry;
 pub mod wallpapers;
 
 pub fn full_path(p: &str) -> PathBuf {

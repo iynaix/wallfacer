@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use wallpaper_ui::{
-    cropper::{AspectRatio, Direction, Geometry},
+    cropper::{AspectRatio, Direction},
+    geometry::Geometry,
     wallpapers::WallInfo,
 };
 
 use crate::buttons::Button;
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, PartialEq, Props)]
 pub struct AlignGroupProps {
     class: Option<String>,

@@ -1,9 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallpaper_ui::{
-    cropper::{AspectRatio, Geometry},
-    wallpapers::Wallpapers,
-};
+use wallpaper_ui::{cropper::AspectRatio, geometry::Geometry, wallpapers::WallpapersCsv};
 
 // urls are relative to your Cargo.toml file
 const _APP_URL: &str = manganis::mg!(file("./public/app.css"));
@@ -30,7 +27,7 @@ fn App() -> Element {
 
     let show_faces = use_signal(|| false);
     let show_filelist = use_signal(|| false);
-    let wall_info = use_signal(|| Wallpapers::new()[wall].clone());
+    let wall_info = use_signal(|| WallpapersCsv::new()[wall].clone());
     let current_ratio = use_signal(|| AspectRatio(1440, 2560));
     let preview_geometry = use_signal::<Option<Geometry>>(|| None);
 

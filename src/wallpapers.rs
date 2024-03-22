@@ -3,8 +3,10 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::path::PathBuf;
 
 use crate::{
-    cropper::{AspectRatio, Cropper, Direction, Geometry},
-    full_path, wallpaper_dir,
+    cropper::{AspectRatio, Cropper, Direction},
+    full_path,
+    geometry::Geometry,
+    wallpaper_dir,
 };
 
 #[derive(Debug, Default, Clone, Deserialize, PartialEq, Eq)]
@@ -84,11 +86,11 @@ pub struct WallInfo {
     pub filename: String,
     #[serde(serialize_with = "to_faces", deserialize_with = "from_faces")]
     pub faces: Vec<Face>,
-    pub r1440x2560: String,
-    pub r2256x1504: String,
-    pub r3440x1440: String,
-    pub r1920x1080: String,
-    pub r1x1: String,
+    pub r1440x2560: Geometry,
+    pub r2256x1504: Geometry,
+    pub r3440x1440: Geometry,
+    pub r1920x1080: Geometry,
+    pub r1x1: Geometry,
     pub wallust: String,
 }
 
@@ -122,27 +124,23 @@ impl WallInfo {
     }
 
     pub fn get_geometry(&self, ratio: &AspectRatio) -> Geometry {
-        let geom_str: String = match ratio {
+        match ratio {
             AspectRatio(1440, 2560) => self.r1440x2560.clone(),
             AspectRatio(2256, 1504) => self.r2256x1504.clone(),
             AspectRatio(3440, 1440) => self.r3440x1440.clone(),
             AspectRatio(1920, 1080) => self.r1920x1080.clone(),
             AspectRatio(1, 1) => self.r1x1.clone(),
-            _ => self.cropper().crop(ratio).geometry_str(),
-        };
-
-        geom_str.try_into().expect("invalid geometry")
+            _ => self.cropper().crop(ratio).geometry(),
+        }
     }
 
     pub fn set_geometry(&mut self, ratio: &AspectRatio, new_geom: &Geometry) {
-        let new_geom = new_geom.to_string();
-
         match ratio {
-            AspectRatio(1440, 2560) => self.r1440x2560 = new_geom,
-            AspectRatio(2256, 1504) => self.r2256x1504 = new_geom,
-            AspectRatio(3440, 1440) => self.r3440x1440 = new_geom,
-            AspectRatio(1920, 1080) => self.r1920x1080 = new_geom,
-            AspectRatio(1, 1) => self.r1x1 = new_geom,
+            AspectRatio(1440, 2560) => self.r1440x2560 = new_geom.clone(),
+            AspectRatio(2256, 1504) => self.r2256x1504 = new_geom.clone(),
+            AspectRatio(3440, 1440) => self.r3440x1440 = new_geom.clone(),
+            AspectRatio(1920, 1080) => self.r1920x1080 = new_geom.clone(),
+            AspectRatio(1, 1) => self.r1x1 = new_geom.clone(),
             _ => {}
         }
     }
@@ -166,12 +164,12 @@ impl WallInfo {
     }
 }
 
-pub struct Wallpapers {
+pub struct WallpapersCsv {
     wallpapers: IndexMap<String, WallInfo>,
     csv: PathBuf,
 }
 
-impl Wallpapers {
+impl WallpapersCsv {
     pub fn new() -> Self {
         let wallpapers_csv = full_path("~/Pictures/Wallpapers/wallpapers.csv");
 
@@ -219,13 +217,13 @@ impl Wallpapers {
     }
 }
 
-impl Default for Wallpapers {
+impl Default for WallpapersCsv {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl std::ops::Index<&str> for Wallpapers {
+impl std::ops::Index<&str> for WallpapersCsv {
     type Output = WallInfo;
 
     fn index(&self, index: &str) -> &Self::Output {
@@ -233,7 +231,7 @@ impl std::ops::Index<&str> for Wallpapers {
     }
 }
 
-impl std::ops::Index<String> for Wallpapers {
+impl std::ops::Index<String> for WallpapersCsv {
     type Output = WallInfo;
 
     fn index(&self, index: String) -> &Self::Output {
@@ -241,7 +239,6 @@ impl std::ops::Index<String> for Wallpapers {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
 pub struct WallpapersIter<'a> {
     iter: indexmap::map::Iter<'a, String, WallInfo>,
 }
@@ -254,7 +251,7 @@ impl<'a> Iterator for WallpapersIter<'a> {
     }
 }
 
-impl<'a> IntoIterator for &'a Wallpapers {
+impl<'a> IntoIterator for &'a WallpapersCsv {
     type Item = (&'a String, &'a WallInfo);
     type IntoIter = WallpapersIter<'a>;
 

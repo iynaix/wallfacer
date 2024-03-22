@@ -1,15 +1,11 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use itertools::Itertools;
-use wallpaper_ui::{
-    cropper::{AspectRatio, Geometry},
-    wallpapers::WallInfo,
-};
+use wallpaper_ui::{cropper::AspectRatio, geometry::Geometry, wallpapers::WallInfo};
 
 use crate::buttons::Button;
 
 #[derive(Clone, PartialEq, Props)]
-#[allow(clippy::module_name_repetitions)]
 pub struct CandidatesProps {
     class: Option<String>,
     info: Signal<WallInfo>,

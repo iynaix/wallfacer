@@ -2,9 +2,10 @@
 use dioxus::prelude::*;
 use itertools::Itertools;
 use wallpaper_ui::{
-    cropper::Geometry,
-    filename, wallpaper_dir,
-    wallpapers::{WallInfo, Wallpapers},
+    filename,
+    geometry::Geometry,
+    wallpaper_dir,
+    wallpapers::{WallInfo, WallpapersCsv},
 };
 
 #[derive(Clone, PartialEq, Props)]
@@ -145,7 +146,7 @@ pub fn FileList(mut props: FileListProps) -> Element {
                         filename: fname.clone(),
                         bytes: bytes,
                         onclick: move |_| {
-                            let wallpapers = Wallpapers::new();
+                            let wallpapers = WallpapersCsv::new();
                             let new_info = &wallpapers[fname.clone()];
 
                             props.wall_info.set(new_info.clone());
