@@ -12,6 +12,7 @@ use crate::buttons::Button;
 pub struct AlignGroupProps {
     class: Option<String>,
     wall_info: Signal<WallInfo>,
+    manual_mode: Signal<bool>,
     current_ratio: AspectRatio,
 }
 
@@ -62,7 +63,7 @@ pub fn AlignGroup(mut props: AlignGroupProps) -> Element {
                 },
             }
             Button {
-                class: "text-sm rounded-r-md",
+                class: "text-sm -ml-px",
                 text: if dir == Direction::X { "Right" } else { "Bottom" },
                 onclick: {
                     let ratio = props.current_ratio.clone();
@@ -70,6 +71,16 @@ pub fn AlignGroup(mut props: AlignGroupProps) -> Element {
                         props.wall_info.with_mut(|info| {
                             info.set_geometry(&ratio, &geom.align_end(img_w, img_h));
                         });
+                    }
+                }
+            }
+            Button {
+                class: "text-sm rounded-r-md",
+                active: (props.manual_mode)(),
+                text: "Manual",
+                onclick: {
+                    move |_| {
+                        props.manual_mode.set(!(props.manual_mode)());
                     }
                 }
             }

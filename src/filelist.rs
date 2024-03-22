@@ -57,7 +57,6 @@ pub struct FileListProps {
     preview_geometry: Signal<Option<Geometry>>,
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn FileList(mut props: FileListProps) -> Element {
     let mut search = use_signal(String::new);
     let normalized = search().to_lowercase();

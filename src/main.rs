@@ -39,11 +39,12 @@ fn main() {
 
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
-    // let wall = "71124299_p0.png";
-    let wall = "wallhaven-o567e7.jpg";
+    let wall = "71124299_p0.png";
+    // let wall = "wallhaven-o567e7.jpg";
 
     let show_faces = use_signal(|| false);
     let show_filelist = use_signal(|| false);
+    let manual_mode = use_signal(|| false);
     let wall_info = use_signal(|| WallpapersCsv::new()[wall].clone());
     let current_ratio = use_signal(|| AspectRatio(1440, 2560));
     let preview_geometry = use_signal::<Option<Geometry>>(|| None);
@@ -67,21 +68,26 @@ fn App() -> Element {
                     Toolbar {
                         wall_info: wall_info,
                         current_ratio: current_ratio,
+                        manual_mode: manual_mode,
                         show_faces: show_faces,
                         show_filelist: show_filelist,
+                        preview_geometry: preview_geometry,
                     }
 
                     Previewer {
                         info: wall_info(),
                         ratio: current_ratio(),
                         show_faces: show_faces(),
-                        preview_geometry: preview_geometry(),
+                        manual_mode: manual_mode(),
+                        preview_geometry: preview_geometry,
                     }
 
-                    Candidates {
-                        info: wall_info,
-                        current_ratio: current_ratio(),
-                        preview_geometry: preview_geometry,
+                    if !manual_mode() {
+                        Candidates {
+                            info: wall_info,
+                            current_ratio: current_ratio(),
+                            preview_geometry: preview_geometry,
+                        }
                     }
                 }
             }

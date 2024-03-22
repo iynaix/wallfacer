@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 #[derive(Clone, PartialEq, Props)]
 pub struct ButtonProps {
     class: Option<String>,
+    active: Option<bool>,
     text: String,
     onclick: Option<EventHandler<MouseEvent>>,
     onmouseenter: Option<EventHandler<MouseEvent>>,
@@ -11,10 +12,16 @@ pub struct ButtonProps {
 }
 
 pub fn Button(props: ButtonProps) -> Element {
+    let active_cls = if props.active.unwrap_or_default() {
+        "bg-active"
+    } else {
+        "bg-surface0"
+    };
+
     rsx! {
         button {
             r#type: "button",
-            class: "relative inline-flex items-center bg-mantle px-3 py-2 font-semibold text-text ring-1 ring-inset ring-gray-300 hover:bg-crust focus:z-10 {props.class.unwrap_or_default()}",
+            class: "relative inline-flex items-center px-3 py-2 font-semibold text-text ring-1 ring-inset ring-gray-300 hover:bg-crust focus:z-10 {active_cls} {props.class.unwrap_or_default()}",
             onclick: move |evt| {
                 if let Some(handler) = &props.onclick {
                     handler.call(evt);

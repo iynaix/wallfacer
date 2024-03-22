@@ -8,7 +8,12 @@ module.exports = {
   ],
   darkMode: "class",
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        // indigo-600
+        active: "#4f46e5",
+      },
+    },
   },
   plugins: [
     require("@catppuccin/tailwindcss")({

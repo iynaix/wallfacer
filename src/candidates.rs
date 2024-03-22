@@ -13,7 +13,6 @@ pub struct CandidatesProps {
     preview_geometry: Signal<Option<Geometry>>,
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn Candidates(mut props: CandidatesProps) -> Element {
     let info = (props.info)();
     if info.faces.len() <= 1 {

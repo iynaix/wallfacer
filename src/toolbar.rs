@@ -2,6 +2,7 @@
 use dioxus::prelude::*;
 use wallpaper_ui::{
     cropper::AspectRatio,
+    geometry::Geometry,
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
@@ -19,6 +20,7 @@ const RESOLUTIONS: [AspectRatio; 5] = [
 pub struct ResolutionSelectorProps {
     class: Option<String>,
     current_ratio: Signal<AspectRatio>,
+    preview_geometry: Signal<Option<Geometry>>,
 }
 
 fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
@@ -31,12 +33,16 @@ fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
             "-ml-px"
         };
 
+        let active = (props.current_ratio)() == *res;
+
         rsx! {
             Button {
                 class: "text-sm {cls}",
+                active: active,
                 text: format!("{}x{}", res.0, res.1),
                 onclick: move |_| {
-                    props.current_ratio.with_mut(|ratio| *ratio = res.clone());
+                    props.current_ratio.set(res.clone());
+                    props.preview_geometry.set(None);
                 },
             }
         }
@@ -56,9 +62,10 @@ pub struct ToolbarProps {
     current_ratio: Signal<AspectRatio>,
     show_faces: Signal<bool>,
     show_filelist: Signal<bool>,
+    manual_mode: Signal<bool>,
+    preview_geometry: Signal<Option<Geometry>>,
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn Toolbar(mut props: ToolbarProps) -> Element {
     let info = (props.wall_info)();
 
@@ -69,6 +76,7 @@ pub fn Toolbar(mut props: ToolbarProps) -> Element {
             // resolution selector on left
             ResolutionSelector {
                 current_ratio: props.current_ratio,
+                preview_geometry: props.preview_geometry,
             },
 
             // rest of toolbar
@@ -84,6 +92,7 @@ pub fn Toolbar(mut props: ToolbarProps) -> Element {
                     class: "ml-16 content-end",
                     wall_info: props.wall_info,
                     current_ratio: (props.current_ratio)(),
+                    manual_mode: props.manual_mode,
                 },
 
                 Button {

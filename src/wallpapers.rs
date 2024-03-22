@@ -99,8 +99,15 @@ impl WallInfo {
         wallpaper_dir().join(&self.filename)
     }
 
+    #[inline]
     pub fn image_dimensions(&self) -> (u32, u32) {
         image::image_dimensions(self.path()).expect("could not open image")
+    }
+
+    #[inline]
+    pub fn image_dimensions_f64(&self) -> (f64, f64) {
+        let (w, h) = image::image_dimensions(self.path()).expect("could not open image");
+        (f64::from(w), f64::from(h))
     }
 
     pub fn direction(&self, g: &Geometry) -> Direction {

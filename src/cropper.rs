@@ -11,6 +11,12 @@ pub enum Direction {
     Y,
 }
 
+impl std::fmt::Display for Direction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", if self == &Self::X { "X" } else { "Y" })
+    }
+}
+
 struct FaceInfo {
     area: u32,
     start: u32,
