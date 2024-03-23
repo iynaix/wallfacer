@@ -196,6 +196,10 @@ impl WallpapersCsv {
         }
     }
 
+    pub fn get(&self, filename: &str) -> Option<&WallInfo> {
+        self.wallpapers.get(filename)
+    }
+
     pub fn iter(&self) -> WallpapersIter {
         WallpapersIter {
             iter: self.wallpapers.iter(),
@@ -227,22 +231,6 @@ impl WallpapersCsv {
 impl Default for WallpapersCsv {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl std::ops::Index<&str> for WallpapersCsv {
-    type Output = WallInfo;
-
-    fn index(&self, index: &str) -> &Self::Output {
-        &self.wallpapers[&index.to_string()]
-    }
-}
-
-impl std::ops::Index<String> for WallpapersCsv {
-    type Output = WallInfo;
-
-    fn index(&self, index: String) -> &Self::Output {
-        &self.wallpapers[&index]
     }
 }
 

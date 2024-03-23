@@ -1,3 +1,6 @@
+use args::WallpaperUIArgs;
+use clap::Parser;
+use itertools::Itertools;
 use serde::Deserialize;
 use std::{
     io::BufRead,
@@ -6,6 +9,7 @@ use std::{
 };
 use wallpapers::Face;
 
+pub mod args;
 pub mod cropper;
 pub mod geometry;
 pub mod wallpapers;
@@ -29,6 +33,62 @@ pub fn filename(path: &Path) -> String {
         .to_str()
         .expect("could not convert filename to str")
         .to_string()
+}
+
+fn filter_images(dir: &Path) -> impl Iterator<Item = PathBuf> {
+    dir.read_dir()
+        .unwrap_or_else(|_| panic!("could not read {:?}", &dir))
+        .flatten()
+        .filter_map(|entry| {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(ext) = path.extension() {
+                    match ext.to_str() {
+                        Some("jpg" | "jpeg" | "png") => return Some(path),
+                        _ => return None,
+                    }
+                }
+            }
+
+            None
+        })
+}
+
+pub fn get_paths_from_args() -> Vec<PathBuf> {
+    let args = WallpaperUIArgs::parse();
+    let mut all_files = Vec::new();
+    if let Some(paths) = args.paths {
+        paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
+            if p.is_file() {
+                all_files.push(p);
+            } else {
+                all_files.extend(filter_images(&p));
+            }
+        });
+    }
+
+    if all_files.is_empty() {
+        // defaults to wallpaper directory
+        let wall_dir = wallpaper_dir();
+
+        if !wall_dir.exists() {
+            eprintln!("Wallpaper directory does not exist: {:?}", wall_dir);
+            std::process::exit(1);
+        }
+
+        all_files.extend(filter_images(&wallpaper_dir()));
+    }
+
+    // order by reverse chronological order
+    all_files.iter().sorted_by_key(|f| {
+        f.metadata()
+            .expect("could not get file metadata")
+            .modified()
+            .expect("could not get file mtime")
+    });
+    all_files.reverse();
+
+    all_files
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,12 +1,16 @@
 #![allow(non_snake_case)]
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
-use wallpaper_ui::{cropper::AspectRatio, geometry::Geometry, wallpapers::WallpapersCsv};
+use wallpaper_ui::{
+    cropper::AspectRatio, filename, geometry::Geometry, get_paths_from_args,
+    wallpapers::WallpapersCsv,
+};
 
 // urls are relative to your Cargo.toml file
 const _TAILWIND_URL: &str = manganis::mg!(file("./public/tailwind.css"));
 
 pub mod align_group;
+pub mod args;
 pub mod buttons;
 pub mod candidates;
 pub mod filelist;
@@ -39,14 +43,25 @@ fn main() {
 
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
-    let wall = "71124299_p0.png";
-    // let wall = "wallhaven-o567e7.jpg";
+    let wallpaper_files = use_signal(get_paths_from_args);
+    let wall_info = use_signal(|| {
+        let fname = filename(
+            &wallpaper_files
+                .first()
+                .expect("could not get first wallpaper"),
+        );
+
+        let wallpapers = WallpapersCsv::new();
+        wallpapers
+            .get(&fname)
+            .expect("could not get wallpaper info")
+            .clone()
+    });
+    let current_ratio = use_signal(|| AspectRatio(1440, 2560));
 
     let show_faces = use_signal(|| false);
     let show_filelist = use_signal(|| false);
     let manual_mode = use_signal(|| false);
-    let wall_info = use_signal(|| WallpapersCsv::new()[wall].clone());
-    let current_ratio = use_signal(|| AspectRatio(1440, 2560));
     let preview_geometry = use_signal::<Option<Geometry>>(|| None);
 
     rsx! {
@@ -56,6 +71,7 @@ fn App() -> Element {
 
             if show_filelist() {
                 FileList {
+                    paths: wallpaper_files(),
                     wall_info: wall_info,
                     show: show_filelist,
                     preview_geometry: preview_geometry,

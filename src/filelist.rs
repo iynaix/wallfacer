@@ -1,10 +1,9 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use itertools::Itertools;
+use std::path::PathBuf;
 use wallpaper_ui::{
     filename,
     geometry::Geometry,
-    wallpaper_dir,
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
@@ -52,6 +51,7 @@ fn WallpaperFile(props: WallpaperFileProps) -> Element {
 #[derive(Clone, PartialEq, Props)]
 pub struct FileListProps {
     class: Option<String>,
+    paths: Vec<PathBuf>,
     wall_info: Signal<WallInfo>,
     show: Signal<bool>,
     preview_geometry: Signal<Option<Geometry>>,
@@ -68,52 +68,21 @@ pub fn FileList(mut props: FileListProps) -> Element {
     //     }
     // };
 
-    // get all filenames in the wallpaper directory
-    let images = wallpaper_dir()
-        .read_dir()
-        .expect("could not read wallpaper directory")
-        .flatten()
-        // reverse chronological order
-        .sorted_by(|a, b| {
-            b.metadata()
-                .expect("could not get file metadata")
-                .modified()
-                .expect("could not get file mtime")
-                .cmp(
-                    &a.metadata()
-                        .expect("could not get file metadata")
-                        .modified()
-                        .expect("could not get file mtime"),
-                )
-        })
-        .filter_map(|entry| {
-            let path = entry.path();
-            let Some(ext) = path.extension() else {
-                return None;
-            };
+    let images = props.paths.iter().filter_map(|path| {
+        let fname = filename(path);
+        let size = path.metadata().expect("could not get file metadata").len();
 
-            if !(ext.eq_ignore_ascii_case("png")
-                || ext.eq_ignore_ascii_case("jpg")
-                || ext.eq_ignore_ascii_case("jpeg"))
-            {
-                return None;
-            }
+        // TODO: add number of faces?
+        if search().is_empty() {
+            return Some((fname, size));
+        }
 
-            // get file size
-            let fname = filename(&path);
-            let size = entry.metadata().expect("could not get file metadata").len();
-
-            // TODO: add number of faces?
-            if search().is_empty() {
-                return Some((fname, size));
-            }
-
-            if fname.to_lowercase().contains(&normalized) {
-                Some((fname, size))
-            } else {
-                None
-            }
-        });
+        if fname.to_lowercase().contains(&normalized) {
+            Some((fname, size))
+        } else {
+            None
+        }
+    });
 
     rsx! {
         div {
@@ -146,7 +115,7 @@ pub fn FileList(mut props: FileListProps) -> Element {
                         bytes: bytes,
                         onclick: move |_| {
                             let wallpapers = WallpapersCsv::new();
-                            let new_info = &wallpapers[fname.clone()];
+                            let new_info = wallpapers.get(&fname).expect("could not get wallpaper info");
 
                             props.wall_info.set(new_info.clone());
                             props.show.set(false);
