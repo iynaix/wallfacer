@@ -10,6 +10,7 @@ use wallpaper_ui::{
 const _TAILWIND_URL: &str = manganis::mg!(file("./public/tailwind.css"));
 
 pub mod align_group;
+pub mod app_header;
 pub mod args;
 pub mod buttons;
 pub mod candidates;
@@ -18,7 +19,10 @@ pub mod preview;
 pub mod switch;
 pub mod toolbar;
 
-use crate::{candidates::Candidates, filelist::FileList, preview::Previewer, toolbar::Toolbar};
+use crate::{
+    app_header::AppHeader, candidates::Candidates, filelist::FileList, preview::Previewer,
+    toolbar::Toolbar,
+};
 
 fn main() {
     // use a custom index.html to set the height of body to the full height of the window
@@ -67,42 +71,49 @@ fn App() -> Element {
     rsx! {
         link { rel: "stylesheet", href: "../public/tailwind.css" },
         div {
-            class: "dark bg-base p-4 gap-4 h-full flex overflow-hidden",
+            class: "dark flex flex-col h-full bg-base overflow-hidden",
+            AppHeader {
+                show_faces: show_faces,
+                show_filelist: show_filelist,
+                wall_info: wall_info(),
+            }
 
-            if show_filelist() {
-                FileList {
-                    paths: wallpaper_files(),
-                    wall_info: wall_info,
-                    show: show_filelist,
-                    preview_geometry: preview_geometry,
-                }
-            } else {
-                // main content
-                div {
-                    class: "flex flex-col gap-4 h-full",
+            div {
+                class: "flex p-4 gap-4",
 
-                    Toolbar {
+                if show_filelist() {
+                    FileList {
+                        paths: wallpaper_files(),
                         wall_info: wall_info,
-                        current_ratio: current_ratio,
-                        manual_mode: manual_mode,
-                        show_faces: show_faces,
-                        show_filelist: show_filelist,
+                        show: show_filelist,
                         preview_geometry: preview_geometry,
                     }
+                } else {
+                    // main content
+                    div {
+                        class: "flex flex-col gap-4 h-full",
 
-                    Previewer {
-                        info: wall_info(),
-                        ratio: current_ratio(),
-                        show_faces: show_faces(),
-                        manual_mode: manual_mode(),
-                        preview_geometry: preview_geometry,
-                    }
-
-                    if !manual_mode() {
-                        Candidates {
-                            info: wall_info,
-                            current_ratio: current_ratio(),
+                        Toolbar {
+                            wall_info: wall_info,
+                            current_ratio: current_ratio,
+                            manual_mode: manual_mode,
                             preview_geometry: preview_geometry,
+                        }
+
+                        Previewer {
+                            info: wall_info(),
+                            ratio: current_ratio(),
+                            show_faces: show_faces(),
+                            manual_mode: manual_mode(),
+                            preview_geometry: preview_geometry,
+                        }
+
+                        if !manual_mode() {
+                            Candidates {
+                                info: wall_info,
+                                current_ratio: current_ratio(),
+                                preview_geometry: preview_geometry,
+                            }
                         }
                     }
                 }

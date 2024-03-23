@@ -137,13 +137,9 @@ pub fn Previewer(props: PreviewerProps) -> Element {
     };
 
     let overlay_cls = format!(
-        "absolute bg-black bg-opacity-60 w-full h-full {}",
+        "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-in-out {}",
         // don't apply transitions in slider mode
-        if props.manual_mode {
-            ""
-        } else {
-            "transition transition-transform ease-in-out"
-        }
+        if props.manual_mode { "" } else { "transition" }
     );
 
     rsx! {
