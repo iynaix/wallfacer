@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
+use dioxus::desktop::Config;
 use dioxus::prelude::*;
 use wallpaper_ui::{cropper::AspectRatio, geometry::Geometry, wallpapers::WallpapersCsv};
 
 // urls are relative to your Cargo.toml file
-const _APP_URL: &str = manganis::mg!(file("./public/app.css"));
 const _TAILWIND_URL: &str = manganis::mg!(file("./public/tailwind.css"));
 
 pub mod align_group;
@@ -17,7 +17,24 @@ pub mod toolbar;
 use crate::{candidates::Candidates, filelist::FileList, preview::Previewer, toolbar::Toolbar};
 
 fn main() {
-    launch(App);
+    // use a custom index.html to set the height of body to the full height of the window
+    LaunchBuilder::desktop()
+        .with_cfg(
+            Config::new().with_custom_index(
+                r#"<!DOCTYPE html>
+<html>
+    <head>
+        <title>Dioxus app</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div id="main" style="height: 100vh;"></div>
+    </body>
+</html>"#
+                    .to_string(),
+            ),
+        )
+        .launch(App);
 }
 
 // define a component that renders a div with the text "Hello, world!"
@@ -33,7 +50,6 @@ fn App() -> Element {
 
     rsx! {
         link { rel: "stylesheet", href: "../public/tailwind.css" },
-        link { rel: "stylesheet", href: "../public/app.css" },
         div {
             class: "dark bg-base p-4 gap-4 h-full flex overflow-hidden",
 
