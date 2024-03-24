@@ -1,50 +1,11 @@
 #![allow(non_snake_case)]
-use std::path::PathBuf;
-
 use dioxus::prelude::*;
-use wallpaper_ui::{
-    filename,
-    wallpapers::{WallInfo, WallpapersCsv},
+use wallpaper_ui::wallpapers::{WallInfo, WallpapersCsv};
+
+use crate::{
+    app_state::{UiState, Wallpapers},
+    switch::Switch,
 };
-
-use crate::{app_state::UiState, switch::Switch};
-
-fn prev_wall(wall_files: &[PathBuf], info_path: &PathBuf) -> Option<WallInfo> {
-    let pos = wall_files
-        .iter()
-        .position(|f| *f == *info_path)
-        .expect("could not index current wallpaper");
-    let prev_wall = if pos == 0 {
-        wall_files.last()
-    } else {
-        wall_files.get(pos - 1)
-    };
-
-    let wallpapers_csv = WallpapersCsv::new();
-
-    prev_wall
-        .and_then(|prev_wall| wallpapers_csv.get(&filename(prev_wall)))
-        .cloned()
-}
-
-fn next_wall(wall_files: &[PathBuf], info_path: &PathBuf) -> Option<WallInfo> {
-    let pos = wall_files
-        .iter()
-        .position(|f| *f == *info_path)
-        .expect("could not index current wallpaper");
-
-    let next_wall = if pos == wall_files.len() - 1 {
-        wall_files.first()
-    } else {
-        wall_files.get(pos + 1)
-    };
-
-    let wallpapers_csv = WallpapersCsv::new();
-
-    next_wall
-        .and_then(|next_wall| wallpapers_csv.get(&filename(next_wall)))
-        .cloned()
-}
 
 #[derive(Clone, PartialEq, Eq, Props)]
 pub struct SaveButtonProps {
@@ -90,14 +51,13 @@ pub fn SaveButton(props: SaveButtonProps) -> Element {
 
 #[derive(Clone, PartialEq, Props)]
 pub struct AppHeaderProps {
-    wall_info: Signal<WallInfo>,
-    wallpaper_files: Signal<Vec<PathBuf>>,
+    wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
 }
 
 #[allow(clippy::too_many_lines)]
 pub fn AppHeader(mut props: AppHeaderProps) -> Element {
-    let info = (props.wall_info)();
+    let info = (props.wallpapers)().current;
 
     let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-oveylay0 focus-visible:outline-offset-0 cursor-pointer";
 
@@ -108,12 +68,10 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
                 class: "mx-auto flex max-w-full items-center justify-between py-6 px-4",
                 div { class: "flex gap-x-4 items-center",
                     a { class: pagination_cls,
-                        onclick: {
-                            let prev_wall_info = prev_wall(&(props.wallpaper_files)(), &info.path()).expect(
-                                "could not get previous wallpaper info");
-                            move |_| {
-                                props.wall_info.set(prev_wall_info.clone());
-                            }
+                        onclick: move |_| {
+                            props.wallpapers.with_mut(|wallpapers| {
+                                wallpapers.prev_wall();
+                            });
                         },
                         "<"
                     }
@@ -126,32 +84,20 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
                         {info.filename.clone()}
                     }
                     a { class: pagination_cls,
-                        onclick: {
-                            let next_wall_info = next_wall(&(props.wallpaper_files)(), &info.path()).expect(
-                                "could not get next wallpaper info");
-                            move |_| {
-                                props.wall_info.set(next_wall_info.clone());
-                            }
+                        onclick: move |_| {
+                            props.wallpapers.with_mut(|wallpapers| {
+                                wallpapers.next_wall();
+                            });
                         },
                         ">"
                     }
                     // done checkbox
                     a {
                         class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
-                        onclick: {
-                            let info_path = info.path();
-                            let next_wall_info = next_wall(&(props.wallpaper_files)(), &info_path).expect(
-                                "could not get next wallpaper info");
-                            move |_| {
-                                props.wall_info.set(next_wall_info.clone());
-                                props.wallpaper_files.with_mut(|wall_files| {
-                                    let pos = wall_files
-                                        .iter()
-                                        .position(|f| *f == info_path)
-                                        .expect("could not index current wallpaper");
-                                    wall_files.remove(pos);
-                                });
-                            }
+                        onclick: move |_| {
+                            props.wallpapers.with_mut(|wallpapers| {
+                                wallpapers.remove();
+                            });
                         },
                         "Done"
                     }
@@ -176,7 +122,7 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
                     },
 
                     SaveButton {
-                        info: info.clone(),
+                        info: info,
                     }
                 }
             }

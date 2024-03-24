@@ -1,5 +1,3 @@
-use args::WallpaperUIArgs;
-use clap::Parser;
 use serde::Deserialize;
 use std::{
     io::BufRead,
@@ -62,42 +60,6 @@ pub fn filter_images(dir: &Path) -> impl Iterator<Item = PathBuf> {
 
             None
         })
-}
-
-pub fn get_paths_from_args() -> Vec<PathBuf> {
-    let args = WallpaperUIArgs::parse();
-    let mut all_files = Vec::new();
-    if let Some(paths) = args.paths {
-        paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
-            if p.is_file() {
-                all_files.push(p);
-            } else {
-                all_files.extend(filter_images(&p));
-            }
-        });
-    }
-
-    if all_files.is_empty() {
-        // defaults to wallpaper directory
-        let wall_dir = wallpaper_dir();
-
-        if !wall_dir.exists() {
-            eprintln!("Wallpaper directory does not exist: {:?}", wall_dir);
-            std::process::exit(1);
-        }
-
-        all_files.extend(filter_images(&wallpaper_dir()));
-    }
-
-    // order by reverse chronological order
-    all_files.sort_by_key(|f| {
-        f.metadata()
-            .expect("could not get file metadata")
-            .modified()
-            .expect("could not get file mtime")
-    });
-    all_files.reverse();
-    all_files
 }
 
 #[derive(Debug, Deserialize)]

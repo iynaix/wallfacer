@@ -105,16 +105,17 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
 
 #[derive(Clone, PartialEq, Props)]
 pub struct PreviewerProps {
-    info: WallInfo,
+    wall_info: WallInfo,
     ui: Signal<UiState>,
 }
 
 pub fn Previewer(props: PreviewerProps) -> Element {
     // store the final rendered width and height of the image
     let mut final_dimensions = use_signal(|| (0.0, 0.0));
+    let info = props.wall_info;
     let ui = (props.ui)();
 
-    let path = props.info.path();
+    let path = info.path();
     let path = path
         .to_str()
         .expect("could not convert path to str")
@@ -123,12 +124,12 @@ pub fn Previewer(props: PreviewerProps) -> Element {
     // preview geometry takes precedence
     let geom = match ui.preview_geometry {
         Some(g) => g,
-        None => props.info.get_geometry(&ui.ratio),
+        None => info.get_geometry(&ui.ratio),
     };
 
-    let (dir, start_ratio, end_ratio) = props.info.overlay_transforms(&geom);
+    let (dir, start_ratio, end_ratio) = info.overlay_transforms(&geom);
 
-    let (img_w, img_h) = props.info.image_dimensions_f64();
+    let (img_w, img_h) = info.image_dimensions_f64();
     let start_cls = match dir {
         Direction::X => "origin-left top-0 left-0",
         Direction::Y => "origin-top top-0 left-0",
@@ -179,7 +180,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
 
             if ui.show_faces {
                 FacesOverlay {
-                    faces: props.info.faces,
+                    faces: info.faces,
                     image_dimensions: (img_w, img_h),
                 }
             }

@@ -1,14 +1,16 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use itertools::Itertools;
-use wallpaper_ui::wallpapers::WallInfo;
 
-use crate::{app_state::UiState, buttons::Button};
+use crate::{
+    app_state::{UiState, Wallpapers},
+    buttons::Button,
+};
 
 #[derive(Clone, PartialEq, Props)]
 pub struct CandidatesProps {
     class: Option<String>,
-    info: Signal<WallInfo>,
+    wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
 }
 
@@ -16,7 +18,7 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
     let mut selected_candidate = use_signal(|| None);
     let current_ratio = (props.ui)().ratio;
 
-    let info = (props.info)();
+    let info = (props.wallpapers)().current;
     if info.faces.len() <= 1 {
         return None;
     }
@@ -64,8 +66,8 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
                         onclick: {
                             let current_ratio = current_ratio.clone();
                             move |_| {
-                                props.info.with_mut(|info| {
-                                    info.set_geometry(&current_ratio, &geom);
+                                props.wallpapers.with_mut(|wallpapers| {
+                                    wallpapers.current.set_geometry(&current_ratio, &geom);
                                 });
                                 selected_candidate.set(Some(i));
                             }

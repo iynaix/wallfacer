@@ -1,12 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use std::path::PathBuf;
-use wallpaper_ui::{
-    filename,
-    wallpapers::{WallInfo, WallpapersCsv},
-};
+use wallpaper_ui::filename;
 
-use crate::app_state::UiState;
+use crate::app_state::{UiState, Wallpapers};
 
 #[derive(Clone, PartialEq, Props)]
 pub struct WallpaperFileProps {
@@ -52,8 +48,7 @@ fn WallpaperFile(props: WallpaperFileProps) -> Element {
 #[derive(Clone, PartialEq, Props)]
 pub struct FileListProps {
     class: Option<String>,
-    paths: Vec<PathBuf>,
-    wall_info: Signal<WallInfo>,
+    wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
 }
 
@@ -61,14 +56,8 @@ pub fn FileList(mut props: FileListProps) -> Element {
     let mut search = use_signal(String::new);
     let normalized = search().to_lowercase();
 
-    // handle esc to close file list
-    // let handle_key_down_event = move |evt: KeyboardEvent| {
-    //     if evt.key() == Key::Escape {
-    //         props.show.set(false);
-    //     }
-    // };
-
-    let images = props.paths.iter().filter_map(|path| {
+    let wallpaper_files = (props.wallpapers)().files;
+    let images = wallpaper_files.iter().filter_map(|path| {
         let fname = filename(path);
         let size = path.metadata().expect("could not get file metadata").len();
 
@@ -114,10 +103,9 @@ pub fn FileList(mut props: FileListProps) -> Element {
                         filename: fname.clone(),
                         bytes: bytes,
                         onclick: move |_| {
-                            let wallpapers_csv = WallpapersCsv::new();
-                            let new_info = wallpapers_csv.get(&fname).expect("could not get wallpaper info");
-
-                            props.wall_info.set(new_info.clone());
+                            props.wallpapers.with_mut(|wallpapers| {
+                                wallpapers.set_from_filename(&fname);
+                            });
                             props.ui.with_mut(|ui| {
                                 ui.reset();
                             });
