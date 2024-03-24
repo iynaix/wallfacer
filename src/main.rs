@@ -75,7 +75,8 @@ fn App() -> Element {
             AppHeader {
                 show_faces: show_faces,
                 show_filelist: show_filelist,
-                wall_info: wall_info(),
+                wall_info: wall_info,
+                wallpaper_files: wallpaper_files,
             }
 
             div {

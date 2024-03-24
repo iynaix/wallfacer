@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 #[derive(Clone, PartialEq, Props)]
 pub struct SwitchProps {
-    label: String,
+    label: Element,
     checked: Signal<bool>,
 }
 
@@ -25,7 +25,7 @@ pub fn Switch(mut props: SwitchProps) -> Element {
             class: "flex items-center",
             button {
                 r#type: "button",
-                class: "{check_bg} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
+                class: "{check_bg} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-surface2 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
                 role: "switch",
                 aria_checked: "{props.checked}",
                 aria_labelledby: "show-faces",
@@ -37,13 +37,7 @@ pub fn Switch(mut props: SwitchProps) -> Element {
                     aria_hidden: "true",
                 }
             }
-            span {
-                class: "ml-3 text-sm",
-                span {
-                    class: "font-medium text-text",
-                    {props.label}
-                }
-            }
+            {props.label}
         }
     }
 }

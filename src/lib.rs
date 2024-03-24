@@ -1,6 +1,5 @@
 use args::WallpaperUIArgs;
 use clap::Parser;
-use itertools::Itertools;
 use serde::Deserialize;
 use std::{
     io::BufRead,
@@ -91,14 +90,13 @@ pub fn get_paths_from_args() -> Vec<PathBuf> {
     }
 
     // order by reverse chronological order
-    all_files.iter().sorted_by_key(|f| {
+    all_files.sort_by_key(|f| {
         f.metadata()
             .expect("could not get file metadata")
             .modified()
             .expect("could not get file mtime")
     });
     all_files.reverse();
-
     all_files
 }
 

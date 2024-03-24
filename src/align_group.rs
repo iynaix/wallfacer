@@ -78,10 +78,8 @@ pub fn AlignGroup(mut props: AlignGroupProps) -> Element {
                 class: "text-sm rounded-r-md",
                 active: (props.manual_mode)(),
                 text: "Manual",
-                onclick: {
-                    move |_| {
-                        props.manual_mode.set(!(props.manual_mode)());
-                    }
+                onclick: move |_| {
+                    props.manual_mode.set(!(props.manual_mode)());
                 }
             }
         }

@@ -95,12 +95,13 @@
                 processes = {
                   # workaround so the tailwind task doesn't exit immediately
                   tailwind.exec = "(while true; do sleep 10; done) | tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
-                  dev.exec = "dx serve --platform desktop";
+                  # dev.exec = "dx serve --platform desktop";
                 };
 
                 scripts = {
                   tailwind.exec = "tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
                   dev.exec = "dx serve --platform desktop --hot-reload";
+                  rsx.exec = ''dx translate --raw "$@"'';
                 };
               }
             ];

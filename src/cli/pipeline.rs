@@ -82,6 +82,10 @@ fn optimize_images(paths: &[PathBuf]) -> Vec<PathBuf> {
 
 // returns the faces that need to be previewed for selection
 fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<PathBuf> {
+    if paths.is_empty() {
+        return Vec::new();
+    }
+
     for path in paths {
         println!("Detecting faces in {}...", filename(path));
     }

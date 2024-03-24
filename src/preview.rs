@@ -48,6 +48,10 @@ pub struct DraggableImageProps {
 pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
     let mut is_dragging = use_signal(|| false);
     let mut drag_coords = use_signal(|| (0.0, 0.0));
+    let cls = match props.direction {
+        Direction::X => "cursor-ew-resize",
+        Direction::Y => "cursor-ns-resize",
+    };
 
     let dir = props.direction;
     let geom = props.geometry;
@@ -57,6 +61,7 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
     rsx! {
         img {
             src: "{props.image}",
+            class: cls,
             onmousedown: move |evt| {
                 is_dragging.set(true);
                 drag_coords.set(evt.client_coordinates().into());
