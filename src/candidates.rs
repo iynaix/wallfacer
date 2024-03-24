@@ -1,22 +1,20 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use itertools::Itertools;
-use wallpaper_ui::{cropper::AspectRatio, geometry::Geometry, wallpapers::WallInfo};
+use wallpaper_ui::wallpapers::WallInfo;
 
-use crate::buttons::Button;
+use crate::{app_state::UiState, buttons::Button};
 
 #[derive(Clone, PartialEq, Props)]
 pub struct CandidatesProps {
     class: Option<String>,
     info: Signal<WallInfo>,
-    current_ratio: AspectRatio,
-    preview_geometry: Signal<Option<Geometry>>,
+    ui: Signal<UiState>,
 }
 
 pub fn Candidates(mut props: CandidatesProps) -> Element {
     let mut selected_candidate = use_signal(|| None);
-
-    println!("selected_candidate: {:?}", selected_candidate());
+    let current_ratio = (props.ui)().ratio;
 
     let info = (props.info)();
     if info.faces.len() <= 1 {
@@ -25,7 +23,7 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
 
     let candidates_geom: Vec<_> = info
         .cropper()
-        .crop_candidates(&props.current_ratio)
+        .crop_candidates(&current_ratio)
         .into_iter()
         .unique()
         .enumerate()
@@ -53,17 +51,21 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
                         onmouseenter: {
                             let geom = geom.clone();
                             move |_| {
-                                props.preview_geometry.set(Some(geom.clone()));
+                                props.ui.with_mut(|ui| {
+                                    ui.preview_geometry = Some(geom.clone());
+                                });
                             }
                         },
                         onmouseleave: move |_| {
-                            props.preview_geometry.set(None);
+                            props.ui.with_mut(|ui| {
+                                ui.preview_geometry = None;
+                            });
                         },
                         onclick: {
-                            let ratio = props.current_ratio.clone();
+                            let current_ratio = current_ratio.clone();
                             move |_| {
                                 props.info.with_mut(|info| {
-                                    info.set_geometry(&ratio, &geom);
+                                    info.set_geometry(&current_ratio, &geom);
                                 });
                                 selected_candidate.set(Some(i));
                             }

@@ -3,9 +3,10 @@ use dioxus::prelude::*;
 use std::path::PathBuf;
 use wallpaper_ui::{
     filename,
-    geometry::Geometry,
     wallpapers::{WallInfo, WallpapersCsv},
 };
+
+use crate::app_state::UiState;
 
 #[derive(Clone, PartialEq, Props)]
 pub struct WallpaperFileProps {
@@ -53,8 +54,7 @@ pub struct FileListProps {
     class: Option<String>,
     paths: Vec<PathBuf>,
     wall_info: Signal<WallInfo>,
-    show: Signal<bool>,
-    preview_geometry: Signal<Option<Geometry>>,
+    ui: Signal<UiState>,
 }
 
 pub fn FileList(mut props: FileListProps) -> Element {
@@ -118,8 +118,9 @@ pub fn FileList(mut props: FileListProps) -> Element {
                             let new_info = wallpapers_csv.get(&fname).expect("could not get wallpaper info");
 
                             props.wall_info.set(new_info.clone());
-                            props.show.set(false);
-                            props.preview_geometry.set(None);
+                            props.ui.with_mut(|ui| {
+                                ui.reset();
+                            });
                         },
                     }
                 }

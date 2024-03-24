@@ -7,7 +7,7 @@ use wallpaper_ui::{
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
-use crate::switch::Switch;
+use crate::{app_state::UiState, switch::Switch};
 
 fn prev_wall(wall_files: &[PathBuf], info_path: &PathBuf) -> Option<WallInfo> {
     let pos = wall_files
@@ -90,10 +90,9 @@ pub fn SaveButton(props: SaveButtonProps) -> Element {
 
 #[derive(Clone, PartialEq, Props)]
 pub struct AppHeaderProps {
-    show_faces: Signal<bool>,
-    show_filelist: Signal<bool>,
     wall_info: Signal<WallInfo>,
     wallpaper_files: Signal<Vec<PathBuf>>,
+    ui: Signal<UiState>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -120,7 +119,9 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
                     }
                     a { class: "text-sm font-semibold leading-6 text-white",
                         onclick: move |_| {
-                            props.show_filelist.set(!(props.show_filelist)());
+                            props.ui.with_mut(|ui| {
+                                ui.show_filelist = !ui.show_filelist;
+                            });
                         },
                         {info.filename.clone()}
                     }
@@ -166,7 +167,12 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
                                 }
                             }
                         },
-                        checked: props.show_faces,
+                        value: (props.ui)().show_faces,
+                        onchange: move |_| {
+                            props.ui.with_mut(|ui| {
+                                ui.show_faces = !ui.show_faces;
+                            });
+                        }
                     },
 
                     SaveButton {

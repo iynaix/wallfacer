@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallpaper_ui::{cropper::AspectRatio, geometry::Geometry};
+use wallpaper_ui::cropper::AspectRatio;
 
-use crate::buttons::Button;
+use crate::{app_state::UiState, buttons::Button};
 
 const RESOLUTIONS: [AspectRatio; 5] = [
     AspectRatio(1440, 2560),
@@ -15,8 +15,7 @@ const RESOLUTIONS: [AspectRatio; 5] = [
 #[derive(Clone, PartialEq, Props)]
 pub struct ResolutionSelectorProps {
     class: Option<String>,
-    current_ratio: Signal<AspectRatio>,
-    preview_geometry: Signal<Option<Geometry>>,
+    ui: Signal<UiState>,
 }
 
 pub fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
@@ -29,7 +28,7 @@ pub fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
             "-ml-px"
         };
 
-        let active = (props.current_ratio)() == *res;
+        let active = (props.ui)().ratio == *res;
 
         rsx! {
             Button {
@@ -37,8 +36,10 @@ pub fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
                 active: active,
                 text: format!("{}x{}", res.0, res.1),
                 onclick: move |_| {
-                    props.current_ratio.set(res.clone());
-                    props.preview_geometry.set(None);
+                    props.ui.with_mut(|ui| {
+                        ui.preview_geometry = None;
+                        ui.ratio = res.clone();
+                    });
                 },
             }
         }

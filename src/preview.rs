@@ -1,10 +1,12 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use wallpaper_ui::{
-    cropper::{AspectRatio, Direction},
+    cropper::Direction,
     geometry::Geometry,
     wallpapers::{Face, WallInfo},
 };
+
+use crate::app_state::UiState;
 
 #[component]
 fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
@@ -39,10 +41,7 @@ pub struct DraggableImageProps {
     direction: Direction,
     geometry: Geometry,
     final_dimensions: (f64, f64),
-    // info: WallInfo,
-    // ratio: AspectRatio,
-    // manual_mode: bool,
-    preview_geometry: Signal<Option<Geometry>>,
+    ui: Signal<UiState>,
 }
 
 pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
@@ -93,7 +92,9 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
                             },
                         };
 
-                        props.preview_geometry.set(Some(new_geom));
+                        props.ui.with_mut(|ui| {
+                            ui.preview_geometry = Some(new_geom);
+                        });
                         drag_coords.set((new_x, new_y));
                     }
                 }
@@ -105,16 +106,13 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
 #[derive(Clone, PartialEq, Props)]
 pub struct PreviewerProps {
     info: WallInfo,
-    ratio: AspectRatio,
-    #[props(default = false)]
-    show_faces: bool,
-    manual_mode: bool,
-    preview_geometry: Signal<Option<Geometry>>,
+    ui: Signal<UiState>,
 }
 
 pub fn Previewer(props: PreviewerProps) -> Element {
     // store the final rendered width and height of the image
     let mut final_dimensions = use_signal(|| (0.0, 0.0));
+    let ui = (props.ui)();
 
     let path = props.info.path();
     let path = path
@@ -123,9 +121,9 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         .to_string();
 
     // preview geometry takes precedence
-    let geom = match (props.preview_geometry)() {
+    let geom = match ui.preview_geometry {
         Some(g) => g,
-        None => props.info.get_geometry(&props.ratio),
+        None => props.info.get_geometry(&ui.ratio),
     };
 
     let (dir, start_ratio, end_ratio) = props.info.overlay_transforms(&geom);
@@ -144,7 +142,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
     let overlay_cls = format!(
         "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-in-out {}",
         // don't apply transitions in slider mode
-        if props.manual_mode { "" } else { "transition" }
+        if ui.manual_mode { "" } else { "transition" }
     );
 
     rsx! {
@@ -158,14 +156,14 @@ pub fn Previewer(props: PreviewerProps) -> Element {
                     final_dimensions.set((elem_width, (elem_width / img_w * img_h).floor()));
                 }
             },
-            if props.manual_mode {
+            if ui.manual_mode {
                 DraggableImage {
                     image: path,
                     image_dimensions: (img_w, img_h),
                     direction: dir.clone(),
                     geometry: geom,
                     final_dimensions: final_dimensions(),
-                    preview_geometry: props.preview_geometry,
+                    ui: props.ui,
                 }
             } else {
                 img { src: "{path}" }
@@ -179,7 +177,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
                 style: format!("transform: scale{}({})", dir, end_ratio),
             }
 
-            if props.show_faces {
+            if ui.show_faces {
                 FacesOverlay {
                     faces: props.info.faces,
                     image_dimensions: (img_w, img_h),
