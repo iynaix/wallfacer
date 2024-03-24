@@ -195,6 +195,11 @@ fn main() {
     to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv));
 
     if !to_preview.is_empty() {
+        let to_preview: Vec<_> = to_preview
+            .iter()
+            .map(|img| get_output_path(img).expect("could not get output path to preview"))
+            .collect();
+
         if cfg!(debug_assertions) {
             Command::new("cargo")
                 .args(["run", "--bin", "wallpaper-ui", "--"])

@@ -14,6 +14,10 @@ pub struct CandidatesProps {
 }
 
 pub fn Candidates(mut props: CandidatesProps) -> Element {
+    let mut selected_candidate = use_signal(|| None);
+
+    println!("selected_candidate: {:?}", selected_candidate());
+
     let info = (props.info)();
     if info.faces.len() <= 1 {
         return None;
@@ -35,29 +39,38 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
         div {
             class: "flex {props.class.unwrap_or_default()}",
 
-            for (i, geom) in candidates_geom {
-                Button {
-                    class: "flex-1 justify-center text-sm",
-                    text: (i + 1).to_string(),
-                    onmouseenter: {
-                        let geom = geom.clone();
-                        move |_| {
-                            props.preview_geometry.set(Some(geom.clone()));
-                        }
-                    },
-                    onmouseleave: move |_| {
-                        props.preview_geometry.set(None);
-                    },
-                    onclick: {
-                        let ratio = props.current_ratio.clone();
-                        move |_| {
-                            props.info.with_mut(|info| {
-                                info.set_geometry(&ratio, &geom);
-                            });
-                        }
-                    },
+            {candidates_geom.into_iter().map(|(i, geom)| {
+                let btn_cls = if (selected_candidate)() == Some(i) {
+                    "!bg-indigo-600"
+                } else {
+                    ""
+                };
+
+                rsx! {
+                    Button {
+                        class: "flex-1 justify-center text-sm {btn_cls}",
+                        text: (i + 1).to_string(),
+                        onmouseenter: {
+                            let geom = geom.clone();
+                            move |_| {
+                                props.preview_geometry.set(Some(geom.clone()));
+                            }
+                        },
+                        onmouseleave: move |_| {
+                            props.preview_geometry.set(None);
+                        },
+                        onclick: {
+                            let ratio = props.current_ratio.clone();
+                            move |_| {
+                                props.info.with_mut(|info| {
+                                    info.set_geometry(&ratio, &geom);
+                                });
+                                selected_candidate.set(Some(i));
+                            }
+                        },
+                    }
                 }
-            }
+            })}
         }
     }
 }

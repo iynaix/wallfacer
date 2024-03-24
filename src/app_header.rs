@@ -46,6 +46,48 @@ fn next_wall(wall_files: &[PathBuf], info_path: &PathBuf) -> Option<WallInfo> {
         .cloned()
 }
 
+#[derive(Clone, PartialEq, Eq, Props)]
+pub struct SaveButtonProps {
+    info: WallInfo,
+}
+
+pub fn SaveButton(props: SaveButtonProps) -> Element {
+    let mut clicked = use_signal(|| false);
+
+    use_future(move || async move {
+        loop {
+            if clicked() {
+                clicked.set(false);
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    });
+
+    let btn_color = if clicked() {
+        "bg-green-600"
+    } else {
+        "bg-indigo-600"
+    };
+    let btn_text = if clicked() { "Saved" } else { "Save" };
+
+    rsx! {
+        a {
+            class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer {btn_color}",
+            onclick: {
+                let info = props.info;
+                move |_| {
+                    let mut wallpapers_csv = WallpapersCsv::new();
+                    wallpapers_csv.insert(info.filename.clone(), info.clone());
+                    wallpapers_csv.save();
+
+                    clicked.set(true);
+                }
+            },
+            {btn_text}
+        }
+    }
+}
+
 #[derive(Clone, PartialEq, Props)]
 pub struct AppHeaderProps {
     show_faces: Signal<bool>,
@@ -93,23 +135,24 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
                         ">"
                     }
                     // done checkbox
-                    div { class: "relative flex items-start",
-                        div { class: "flex h-6 items-center",
-                            input {
-                                r#type: "checkbox",
-                                name: "comments",
-                                "aria-describedby": "comments-description",
-                                class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600",
-                                id: "comments"
+                    a {
+                        class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
+                        onclick: {
+                            let info_path = info.path();
+                            let next_wall_info = next_wall(&(props.wallpaper_files)(), &info_path).expect(
+                                "could not get next wallpaper info");
+                            move |_| {
+                                props.wall_info.set(next_wall_info.clone());
+                                props.wallpaper_files.with_mut(|wall_files| {
+                                    let pos = wall_files
+                                        .iter()
+                                        .position(|f| *f == info_path)
+                                        .expect("could not index current wallpaper");
+                                    wall_files.remove(pos);
+                                });
                             }
-                        }
-                        div { class: "ml-3 text-sm leading-6",
-                            label { r#for: "comments", class: "font-medium text-gray-900", "New comments" }
-                            span { class: "text-white", id: "comments-description",
-                                span { class: "sr-only", "New comments " }
-                                "so you always know what's happening."
-                            }
-                        }
+                        },
+                        "Done"
                     }
                 }
                 div { class: "gap-8 flex flex-1 justify-end",
@@ -126,16 +169,8 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
                         checked: props.show_faces,
                     },
 
-                    a {
-                        class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
-                        onclick: {
-                            move |_| {
-                                let mut wallpapers_csv = WallpapersCsv::new();
-                                wallpapers_csv.insert(info.filename.clone(), info.clone());
-                                wallpapers_csv.save();
-                            }
-                        },
-                        "Save"
+                    SaveButton {
+                        info: info.clone(),
                     }
                 }
             }

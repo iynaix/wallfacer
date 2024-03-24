@@ -9,19 +9,19 @@ use wallpaper_ui::{
 // urls are relative to your Cargo.toml file
 const _TAILWIND_URL: &str = manganis::mg!(file("./public/tailwind.css"));
 
-pub mod align_group;
+pub mod align_selector;
 pub mod app_header;
 pub mod args;
 pub mod buttons;
 pub mod candidates;
 pub mod filelist;
 pub mod preview;
+pub mod resolution_selector;
 pub mod switch;
-pub mod toolbar;
 
 use crate::{
-    app_header::AppHeader, candidates::Candidates, filelist::FileList, preview::Previewer,
-    toolbar::Toolbar,
+    align_selector::AlignSelector, app_header::AppHeader, candidates::Candidates,
+    filelist::FileList, preview::Previewer, resolution_selector::ResolutionSelector,
 };
 
 fn main() {
@@ -94,11 +94,25 @@ fn App() -> Element {
                     div {
                         class: "flex flex-col gap-4 h-full",
 
-                        Toolbar {
-                            wall_info: wall_info,
-                            current_ratio: current_ratio,
-                            manual_mode: manual_mode,
-                            preview_geometry: preview_geometry,
+                        // Toolbar
+                        div {
+                            class:"flex flex-row justify-between",
+
+                            ResolutionSelector {
+                                current_ratio: current_ratio,
+                                preview_geometry: preview_geometry,
+                            },
+
+                            div{
+                                class: "flex justify-end",
+
+                                AlignSelector {
+                                    class: "ml-16 content-end",
+                                    wall_info: wall_info,
+                                    current_ratio: current_ratio(),
+                                    manual_mode: manual_mode,
+                                },
+                            }
                         }
 
                         Previewer {

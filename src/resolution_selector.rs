@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallpaper_ui::{cropper::AspectRatio, geometry::Geometry, wallpapers::WallInfo};
+use wallpaper_ui::{cropper::AspectRatio, geometry::Geometry};
 
-use crate::{align_group::AlignGroup, buttons::Button};
+use crate::buttons::Button;
 
 const RESOLUTIONS: [AspectRatio; 5] = [
     AspectRatio(1440, 2560),
@@ -19,7 +19,7 @@ pub struct ResolutionSelectorProps {
     preview_geometry: Signal<Option<Geometry>>,
 }
 
-fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
+pub fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
     let buttons = RESOLUTIONS.iter().enumerate().map(|(i, res)| {
         let cls = if i == 0 {
             "rounded-l-md"
@@ -48,41 +48,6 @@ fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
         span {
             class: "isolate inline-flex rounded-md shadow-sm",
             {buttons}
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Props)]
-pub struct ToolbarProps {
-    wall_info: Signal<WallInfo>,
-    current_ratio: Signal<AspectRatio>,
-    manual_mode: Signal<bool>,
-    preview_geometry: Signal<Option<Geometry>>,
-}
-
-#[allow(clippy::needless_pass_by_value)]
-pub fn Toolbar(props: ToolbarProps) -> Element {
-    rsx! {
-        div {
-            class:"flex flex-row justify-between",
-
-            // resolution selector on left
-            ResolutionSelector {
-                current_ratio: props.current_ratio,
-                preview_geometry: props.preview_geometry,
-            },
-
-            // rest of toolbar
-            div{
-                class: "flex justify-end",
-
-                AlignGroup {
-                    class: "ml-16 content-end",
-                    wall_info: props.wall_info,
-                    current_ratio: (props.current_ratio)(),
-                    manual_mode: props.manual_mode,
-                },
-            }
         }
     }
 }

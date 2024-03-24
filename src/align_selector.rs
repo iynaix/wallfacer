@@ -9,14 +9,14 @@ use wallpaper_ui::{
 use crate::buttons::Button;
 
 #[derive(Clone, PartialEq, Props)]
-pub struct AlignGroupProps {
+pub struct AlignSelectorProps {
     class: Option<String>,
     wall_info: Signal<WallInfo>,
     manual_mode: Signal<bool>,
     current_ratio: AspectRatio,
 }
 
-pub fn AlignGroup(mut props: AlignGroupProps) -> Element {
+pub fn AlignSelector(mut props: AlignSelectorProps) -> Element {
     let geom: Geometry = (props.wall_info)().get_geometry(&props.current_ratio);
     let (img_w, img_h) = (props.wall_info)().image_dimensions();
     let dir = (props.wall_info)().direction(&geom);
