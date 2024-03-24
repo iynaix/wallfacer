@@ -57,9 +57,9 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
                         onclick: {
                             let info = props.wall_info;
                             move |_| {
-                                let mut wallpapers = WallpapersCsv::new();
-                                wallpapers.insert(info.filename.clone(), info.clone());
-                                wallpapers.save();
+                                let mut wallpapers_csv = WallpapersCsv::new();
+                                wallpapers_csv.insert(info.filename.clone(), info.clone());
+                                wallpapers_csv.save();
                             }
                         },
                         "Save"
@@ -69,3 +69,6 @@ pub fn AppHeader(mut props: AppHeaderProps) -> Element {
         }
     }
 }
+
+// <a href="#" class="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:outline-offset-0">Previous</a>
+// <a href="#" class="relative ml-3 inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:outline-offset-0">Next</a>

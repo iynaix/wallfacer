@@ -55,8 +55,8 @@ fn App() -> Element {
                 .expect("could not get first wallpaper"),
         );
 
-        let wallpapers = WallpapersCsv::new();
-        wallpapers
+        let wallpapers_csv = WallpapersCsv::new();
+        wallpapers_csv
             .get(&fname)
             .expect("could not get wallpaper info")
             .clone()

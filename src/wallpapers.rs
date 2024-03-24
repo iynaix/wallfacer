@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use crate::{
     cropper::{AspectRatio, Cropper, Direction},
-    full_path,
+    filename, full_path,
     geometry::Geometry,
     wallpaper_dir,
 };
@@ -19,24 +19,14 @@ pub struct Face {
 
 impl Face {
     #[inline]
-    pub const fn width(&self) -> u32 {
-        self.xmax - self.xmin
-    }
-
-    #[inline]
-    pub const fn height(&self) -> u32 {
-        self.ymax - self.ymin
-    }
-
-    #[inline]
     pub const fn area(&self) -> u32 {
         (self.xmax - self.xmin) * (self.ymax - self.ymin)
     }
 
     pub const fn geometry(&self) -> Geometry {
         Geometry {
-            w: self.width(),
-            h: self.height(),
+            w: self.xmax - self.xmin,
+            h: self.ymax - self.ymin,
             x: self.xmin,
             y: self.ymin,
         }
@@ -45,8 +35,8 @@ impl Face {
     pub fn geometry_str(&self) -> String {
         format!(
             "{}x{}+{}+{}",
-            self.width(),
-            self.height(),
+            self.xmax - self.xmin,
+            self.ymax - self.ymin,
             self.xmin,
             self.ymin
         )
@@ -120,14 +110,7 @@ impl WallInfo {
     }
 
     pub fn cropper(&self) -> Cropper {
-        Cropper::new(
-            &self
-                .path()
-                .to_str()
-                .expect("could not convert path to str")
-                .to_string(),
-            &self.faces,
-        )
+        Cropper::new(&filename(&self.path()), &self.faces)
     }
 
     pub fn get_geometry(&self, ratio: &AspectRatio) -> Geometry {
@@ -137,7 +120,7 @@ impl WallInfo {
             AspectRatio(3440, 1440) => self.r3440x1440.clone(),
             AspectRatio(1920, 1080) => self.r1920x1080.clone(),
             AspectRatio(1, 1) => self.r1x1.clone(),
-            _ => self.cropper().crop(ratio).geometry(),
+            _ => self.cropper().crop(ratio),
         }
     }
 
@@ -150,6 +133,23 @@ impl WallInfo {
             AspectRatio(1, 1) => self.r1x1 = new_geom.clone(),
             _ => {}
         }
+    }
+
+    pub fn is_default_crops(&self) -> bool {
+        let cropper = self.cropper();
+
+        for ratio in [
+            AspectRatio(1440, 2560),
+            AspectRatio(2256, 1504),
+            AspectRatio(3440, 1440),
+            AspectRatio(1920, 1080),
+            AspectRatio(1, 1),
+        ] {
+            if self.get_geometry(&ratio) != cropper.crop(&ratio) {
+                return false;
+            }
+        }
+        true
     }
 
     pub fn overlay_transforms(&self, g: &Geometry) -> (Direction, f32, f32) {

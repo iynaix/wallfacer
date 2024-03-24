@@ -1,16 +1,14 @@
 use rayon::prelude::*;
-use regex::Regex;
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
 use wallpaper_ui::{
     cropper::{Cropper, FRAMEWORK_RATIO, HD_RATIO, SQUARE_RATIO, ULTRAWIDE_RATIO, VERTICAL_RATIO},
-    detect_faces_iter, filename, full_path,
-    geometry::Geometry,
-    wallpaper_dir,
+    detect_faces_iter, filename, filter_images, full_path, wallpaper_dir,
     wallpapers::{WallInfo, WallpapersCsv},
+    PathBufExt,
 };
 
 const TARGET_WIDTH: u32 = 3440; // ultrawide width
@@ -41,7 +39,7 @@ fn upscale_images(to_upscale: &[(PathBuf, u32)]) {
     });
 }
 
-fn optimize_images(paths: &[PathBuf]) {
+fn optimize_images(paths: &[PathBuf]) -> Vec<PathBuf> {
     let (pngs, jpgs): (Vec<_>, Vec<_>) = paths.iter().partition(|path| {
         path.extension()
             .map_or(false, |ext| ext.eq_ignore_ascii_case("png"))
@@ -78,122 +76,136 @@ fn optimize_images(paths: &[PathBuf]) {
         .expect("could not spawn process")
         .wait()
         .expect("could not wait for process");
+
+    paths.to_vec()
 }
 
 // returns the faces that need to be previewed for selection
-fn detect_faces(paths: &[PathBuf]) -> Vec<(String, Geometry)> {
+fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<PathBuf> {
     for path in paths {
         println!("Detecting faces in {}...", filename(path));
     }
 
-    let mut wallpapers = WallpapersCsv::new();
     let mut to_preview = Vec::new();
 
     for (fname, faces) in detect_faces_iter(paths) {
-        let mut cropper = Cropper::new(&fname, &faces);
+        let cropper = Cropper::new(&fname, &faces);
 
         // create WallInfo and save it
-        let vertical_crop = cropper.crop(&VERTICAL_RATIO).geometry();
+        let vertical_crop = cropper.crop(&VERTICAL_RATIO);
         let wall_info = WallInfo {
             filename: fname.clone(),
             faces,
             r1440x2560: vertical_crop.clone(),
-            r2256x1504: cropper.crop(&FRAMEWORK_RATIO).geometry(),
-            r3440x1440: cropper.crop(&ULTRAWIDE_RATIO).geometry(),
-            r1920x1080: cropper.crop(&HD_RATIO).geometry(),
-            r1x1: cropper.crop(&SQUARE_RATIO).geometry(),
+            r2256x1504: cropper.crop(&FRAMEWORK_RATIO),
+            r3440x1440: cropper.crop(&ULTRAWIDE_RATIO),
+            r1920x1080: cropper.crop(&HD_RATIO),
+            r1x1: cropper.crop(&SQUARE_RATIO),
             wallust: String::new(),
         };
 
         if wall_info.faces.len() > 1 {
-            to_preview.push((fname.clone(), vertical_crop));
+            to_preview.push(wallpaper_dir().join(&fname));
         }
 
-        wallpapers.insert(fname.clone(), wall_info);
+        wallpapers_csv.insert(fname.clone(), wall_info);
     }
-
-    wallpapers.save();
-
-    // Wait for the command to finish
-    // let output = child
-    //     .wait_with_output()
-    //     .unwrap_or_else(|_| panic!("anime-face-detector failed"));
-
-    // Check if the command succeeded
-    // if !output.status.success() {
-    //     eprintln!(
-    //         "anime-face-detector failed: {}",
-    //         String::from_utf8_lossy(&output.stderr)
-    //     );
-    // }
+    wallpapers_csv.save();
 
     to_preview
 }
 
-fn create_previews(to_preview: &[(String, Geometry)]) {
-    let preview_dir = full_path("~/projects/wallpaper-utils/in").join("preview");
-    std::fs::create_dir_all(&preview_dir).expect("could not create directory");
-
-    to_preview.par_iter().for_each(|(fname, geom)| {
-        println!("Generating preview for {fname}...");
-
-        let mut img = image::open(wallpaper_dir().join(fname)).expect("could not open image");
-        let dest = preview_dir.join(fname.replace(".png", ".jpg"));
-        img.crop(geom.x, geom.y, geom.w, geom.h)
-            .save(dest)
-            .expect("could not save preview image");
-    });
+fn get_output_path(img: &Path) -> Option<PathBuf> {
+    let wall_dir = wallpaper_dir();
+    for ext in &["png", "jpg", "jpeg"] {
+        let output_path = img.with_extension(ext).with_directory(&wall_dir);
+        if output_path.exists() {
+            return Some(output_path);
+        }
+    }
+    None
 }
 
 fn main() {
-    let input_dir = full_path("~/projects/wallpaper-utils/in");
+    let input_dir = full_path("~/Pictures/wallpapers_in");
+    let wall_dir = wallpaper_dir();
+    let mut wallpapers_csv = WallpapersCsv::new();
+
     let mut to_copy = Vec::new();
     let mut to_upscale = Vec::new();
-    let mut output_paths = Vec::new();
-    let jpeg_re = Regex::new(r"(?i)\.(jpeg|jpg)$").expect("could not create jpeg regex");
+    let mut to_optimize = Vec::new();
+    let mut to_detect = Vec::new();
+    let mut to_preview = Vec::new();
 
     // get image dimensions of files within input_dir
-    for entry in std::fs::read_dir(&input_dir).expect("could not read input_dir") {
-        let path = entry.expect("could not get entry").path();
-
-        if path.is_dir() {
-            continue;
-        }
-
-        let fname = filename(&path);
+    for img in filter_images(&input_dir) {
         let (width, height) =
-            image::image_dimensions(&path).expect("could not get image dimensions");
+            image::image_dimensions(&img).expect("could not get image dimensions");
 
-        for scale_factor in 1..=4 {
-            if width * scale_factor >= TARGET_WIDTH && height * scale_factor >= TARGET_HEIGHT {
-                if scale_factor > 1 {
-                    let out_fname = jpeg_re.replace(&fname, ".png").to_string();
-                    output_paths.push(wallpaper_dir().join(out_fname));
-                    to_upscale.push((input_dir.join(fname), scale_factor));
-                } else {
-                    to_copy.push(fname.clone());
-                    output_paths.push(wallpaper_dir().join(fname));
+        match get_output_path(&img) {
+            Some(out_path) => {
+                // check if corresponding WallInfo exists
+                match wallpapers_csv.get(&filename(&out_path)) {
+                    // re-preview if multiple faces detected and still using default crop
+                    Some(info) => {
+                        if info.faces.len() > 1 && info.is_default_crops() {
+                            to_preview.push(img.clone());
+                        }
+                    }
+                    // no WallInfo, redetect faces to write to csv
+                    None => {
+                        to_detect.push(img.clone());
+                    }
                 }
-                break;
+            }
+            // no output file found, perform normal processing
+            None => {
+                for scale_factor in 1..=4 {
+                    if width * scale_factor >= TARGET_WIDTH
+                        && height * scale_factor >= TARGET_HEIGHT
+                    {
+                        if scale_factor > 1 {
+                            let out_path = img.with_extension("png").with_directory(&wall_dir);
+                            to_optimize.push(out_path);
+                            to_upscale.push((img, scale_factor));
+                        } else {
+                            to_copy.push(img.clone());
+                            to_optimize.push(img.with_directory(&wall_dir));
+                        }
+                        break;
+                    }
+                }
             }
         }
     }
 
     // copy images that don't need to be upscaled
-    for fname in &to_copy {
-        let src = input_dir.join(fname);
-        let dest = wallpaper_dir().join(fname);
-        std::fs::copy(&src, &dest).expect("could not copy file");
+    for img in &to_copy {
+        std::fs::copy(img, img.with_directory(&wall_dir)).expect("could not copy file");
     }
 
     upscale_images(&to_upscale);
 
-    optimize_images(&output_paths);
+    to_detect.extend(optimize_images(&to_optimize));
 
-    let to_preview = detect_faces(&output_paths);
+    to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv));
 
     if !to_preview.is_empty() {
-        println!("Creating previews...");
-        create_previews(&to_preview);
+        if cfg!(debug_assertions) {
+            Command::new("cargo")
+                .args(["run", "--bin", "wallpaper-ui", "--"])
+                .args(to_preview)
+                .spawn()
+                .expect("could not spawn process")
+                .wait()
+                .expect("could not wait for process");
+        } else {
+            Command::new("wallpaper-ui")
+                .args(to_preview)
+                .spawn()
+                .expect("could not spawn process")
+                .wait()
+                .expect("could not wait for process");
+        }
     }
 }

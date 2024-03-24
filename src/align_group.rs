@@ -31,7 +31,7 @@ pub fn AlignGroup(mut props: AlignGroupProps) -> Element {
                     let ratio = props.current_ratio.clone();
                     move |_| {
                         props.wall_info.with_mut(|info| {
-                            info.set_geometry(&ratio, &info.cropper().crop(&ratio).geometry());
+                            info.set_geometry(&ratio, &info.cropper().crop(&ratio));
                         });
                     }
                 },

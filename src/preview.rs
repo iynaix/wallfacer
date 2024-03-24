@@ -7,7 +7,7 @@ use wallpaper_ui::{
 };
 
 #[component]
-fn FacesOverlay(faces: Vec<Face>, image_dimensions: (u32, u32)) -> Element {
+fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
     if faces.is_empty() {
         return None;
     }
@@ -16,11 +16,11 @@ fn FacesOverlay(faces: Vec<Face>, image_dimensions: (u32, u32)) -> Element {
 
     rsx! {
         {faces.iter().map(|face| {
-            let start_x = face.xmin as f32 / img_w as f32 * 100.0;
-            let start_y = face.ymin as f32 / img_h as f32 * 100.0;
+            let start_x = f64::from(face.xmin) / img_w * 100.0;
+            let start_y = f64::from(face.ymin) / img_h * 100.0;
 
-            let w = face.width() as f32 / img_w as f32 * 100.0;
-            let h = face.height() as f32 / img_h as f32 * 100.0;
+            let w = f64::from(face.xmax - face.xmin) / img_w * 100.0;
+            let h = f64::from(face.ymax - face.ymin) / img_h * 100.0;
 
             rsx! {
                 div {
@@ -177,7 +177,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
             if props.show_faces {
                 FacesOverlay {
                     faces: props.info.faces,
-                    image_dimensions: (img_w as u32, img_h as u32),
+                    image_dimensions: (img_w, img_h),
                 }
             }
         }

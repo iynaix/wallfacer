@@ -114,8 +114,8 @@ pub fn FileList(mut props: FileListProps) -> Element {
                         filename: fname.clone(),
                         bytes: bytes,
                         onclick: move |_| {
-                            let wallpapers = WallpapersCsv::new();
-                            let new_info = wallpapers.get(&fname).expect("could not get wallpaper info");
+                            let wallpapers_csv = WallpapersCsv::new();
+                            let new_info = wallpapers_csv.get(&fname).expect("could not get wallpaper info");
 
                             props.wall_info.set(new_info.clone());
                             props.show.set(false);

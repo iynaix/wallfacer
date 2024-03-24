@@ -19,48 +19,45 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
         return None;
     }
 
-    let candidates = info.cropper().crop_candidates(&props.current_ratio);
-    let candidates_geoms: Vec<_> = candidates
-        .iter()
-        .map(wallpaper_ui::wallpapers::Face::geometry)
+    let candidates_geom: Vec<_> = info
+        .cropper()
+        .crop_candidates(&props.current_ratio)
+        .into_iter()
         .unique()
+        .enumerate()
         .collect();
 
-    if candidates_geoms.len() <= 1 {
+    if candidates_geom.len() <= 1 {
         return None;
     }
-
-    let candidates_btns = candidates_geoms.into_iter().enumerate().map(|(i, geom)| {
-        rsx! {
-            Button {
-                class: "flex-1 justify-center text-sm",
-                text: (i + 1).to_string(),
-                onmouseenter: {
-                    let geom = geom.clone();
-                    move |_| {
-                        props.preview_geometry.set(Some(geom.clone()));
-                    }
-                },
-                onmouseleave: move |_| {
-                    props.preview_geometry.set(None);
-                },
-                onclick: {
-                    let ratio = props.current_ratio.clone();
-                    move |_| {
-                        props.info.with_mut(|info| {
-                            info.set_geometry(&ratio, &geom);
-                        });
-                    }
-                },
-            }
-        }
-    });
 
     rsx! {
         div {
             class: "flex {props.class.unwrap_or_default()}",
 
-            {candidates_btns}
+            for (i, geom) in candidates_geom {
+                Button {
+                    class: "flex-1 justify-center text-sm",
+                    text: (i + 1).to_string(),
+                    onmouseenter: {
+                        let geom = geom.clone();
+                        move |_| {
+                            props.preview_geometry.set(Some(geom.clone()));
+                        }
+                    },
+                    onmouseleave: move |_| {
+                        props.preview_geometry.set(None);
+                    },
+                    onclick: {
+                        let ratio = props.current_ratio.clone();
+                        move |_| {
+                            props.info.with_mut(|info| {
+                                info.set_geometry(&ratio, &geom);
+                            });
+                        }
+                    },
+                }
+            }
         }
     }
 }

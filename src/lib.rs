@@ -35,7 +35,18 @@ pub fn filename(path: &Path) -> String {
         .to_string()
 }
 
-fn filter_images(dir: &Path) -> impl Iterator<Item = PathBuf> {
+// extend PathBuf with utility methods
+pub trait PathBufExt {
+    fn with_directory(&self, dir: &Path) -> PathBuf;
+}
+
+impl PathBufExt for PathBuf {
+    fn with_directory(&self, dir: &Path) -> PathBuf {
+        dir.join(self.file_name().expect("could not get filename"))
+    }
+}
+
+pub fn filter_images(dir: &Path) -> impl Iterator<Item = PathBuf> {
     dir.read_dir()
         .unwrap_or_else(|_| panic!("could not read {:?}", &dir))
         .flatten()

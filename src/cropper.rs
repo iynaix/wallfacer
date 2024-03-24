@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use image::image_dimensions;
 
-use crate::{wallpaper_dir, wallpapers::Face};
+use crate::{geometry::Geometry, wallpaper_dir, wallpapers::Face};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Direction {
@@ -176,40 +176,44 @@ impl Cropper {
         }
     }
 
-    pub fn crop(&mut self, aspect_ratio: &AspectRatio) -> Face {
+    pub fn crop(&self, aspect_ratio: &AspectRatio) -> Geometry {
         let (target_width, target_height, direction) = self.crop_rect(aspect_ratio);
 
+        // entire image
         if self.width == target_width && self.height == target_height {
-            return Face {
-                xmax: self.width,
-                ymax: self.height,
-                ..Face::default()
+            return Geometry {
+                x: 0,
+                y: 0,
+                w: self.width,
+                h: self.height,
             };
         }
 
         if self.faces.is_empty() {
             return match direction {
-                Direction::X => Face {
-                    xmin: (self.width - target_width) / 2,
-                    xmax: (self.width + target_width) / 2,
-                    ymax: self.height,
-                    ..Face::default()
+                Direction::X => Geometry {
+                    w: target_width,
+                    h: self.height,
+                    x: (self.width - target_width) / 2,
+                    y: 0,
                 },
-                Direction::Y => Face {
-                    ymin: (self.height - target_height) / 2,
-                    ymax: (self.height + target_height) / 2,
-                    xmax: self.width,
-                    ..Face::default()
+                Direction::Y => Geometry {
+                    w: self.width,
+                    h: target_height,
+                    x: 0,
+                    y: (self.height - target_height) / 2,
                 },
             };
         }
 
         if self.faces.len() == 1 {
-            return self.crop_single_face(&direction, target_width, target_height);
+            return self
+                .crop_single_face(&direction, target_width, target_height)
+                .geometry();
         }
 
         // handle multiple faces
-        self.faces.sort_by_key(|face| match direction {
+        self.faces.iter().sorted_by_key(|face| match direction {
             Direction::X => face.xmin,
             Direction::Y => face.ymin,
         });
@@ -253,8 +257,8 @@ impl Cropper {
                     num_faces += (rect_end - min_) as f32 / (max_ - min_) as f32;
                     faces_area += (rect_end - min_)
                         * match direction {
-                            Direction::X => face.height(),
-                            Direction::Y => face.width(),
+                            Direction::X => face.ymax - face.ymin,
+                            Direction::Y => face.xmax - face.xmin,
                         };
                     continue;
                 }
@@ -288,23 +292,27 @@ impl Cropper {
             target_width,
             target_height,
         )
+        .geometry()
     }
 
-    pub fn crop_candidates(&mut self, aspect_ratio: &AspectRatio) -> Vec<Face> {
+    pub fn crop_candidates(&self, aspect_ratio: &AspectRatio) -> Vec<Geometry> {
         let (target_width, target_height, direction) = self.crop_rect(aspect_ratio);
 
         if self.width == target_width && self.height == target_height {
-            return vec![Face {
-                xmax: self.width,
-                ymax: self.height,
-                ..Face::default()
+            return vec![Geometry {
+                x: 0,
+                y: 0,
+                w: self.width,
+                h: self.height,
             }];
         }
 
         if self.faces.len() == 1 {
-            vec![self.crop_single_face(&direction, target_width, target_height)]
+            vec![self
+                .crop_single_face(&direction, target_width, target_height)
+                .geometry()]
         } else {
-            self.faces.sort_by_key(|face| match direction {
+            self.faces.iter().sorted_by_key(|face| match direction {
                 Direction::X => face.xmin,
                 Direction::Y => face.ymin,
             });
@@ -365,6 +373,7 @@ impl Cropper {
                     Direction::X => face.xmin,
                     Direction::Y => face.ymin,
                 })
+                .map(|face| face.geometry())
                 .collect()
         }
     }
