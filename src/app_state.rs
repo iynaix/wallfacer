@@ -14,8 +14,7 @@ use wallpaper_ui::{
 pub struct UiState {
     pub show_filelist: bool,
     pub show_faces: bool,
-    pub align_mode: AlignMode,
-    pub preview_geometry: Option<Geometry>,
+    pub preview_mode: PreviewMode,
     pub ratio: AspectRatio,
 }
 
@@ -24,8 +23,7 @@ impl Default for UiState {
         Self {
             show_filelist: Default::default(),
             show_faces: Default::default(),
-            align_mode: AlignMode::Source,
-            preview_geometry: Option::default(),
+            preview_mode: PreviewMode::Source,
             ratio: AspectRatio(1440, 2560),
         }
     }
@@ -35,13 +33,12 @@ impl UiState {
     pub fn reset(&mut self) {
         self.show_filelist = false;
         self.show_faces = false;
-        self.align_mode = AlignMode::Source;
-        self.preview_geometry = None;
+        self.preview_mode = PreviewMode::Source;
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AlignMode {
+pub enum PreviewMode {
     Source,
     Default,
     Start,
@@ -49,9 +46,11 @@ pub enum AlignMode {
     End,
     Manual(Geometry),
     None,
+    /// stores the last mouseover geometry
+    Candidate(Option<Geometry>),
 }
 
-impl AlignMode {
+impl PreviewMode {
     pub const fn is_manual(&self) -> bool {
         matches!(self, Self::Manual(_))
     }

@@ -6,7 +6,7 @@ use wallpaper_ui::{
     wallpapers::{Face, WallInfo},
 };
 
-use crate::app_state::{AlignMode, UiState};
+use crate::app_state::{PreviewMode, UiState};
 
 #[component]
 fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
@@ -93,7 +93,7 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
                         };
 
                         props.ui.with_mut(|ui| {
-                            ui.align_mode = AlignMode::Manual(new_geom);
+                            ui.preview_mode = PreviewMode::Manual(new_geom);
                         });
                         drag_coords.set((new_x, new_y));
                     }
@@ -122,14 +122,11 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         .to_string();
 
     // preview geometry takes precedence
-    let is_manual = ui.align_mode.is_manual();
-    let geom = if let AlignMode::Manual(manual_geom) = ui.align_mode {
-        manual_geom
-    } else {
-        match ui.preview_geometry {
-            Some(g) => g,
-            None => info.get_geometry(&ui.ratio),
-        }
+    let is_manual = ui.preview_mode.is_manual();
+    let geom = match ui.preview_mode {
+        PreviewMode::Manual(manual_geom) => manual_geom,
+        PreviewMode::Candidate(Some(cand_geom)) => cand_geom,
+        _ => info.get_geometry(&ui.ratio),
     };
 
     let (dir, start_ratio, end_ratio) = info.overlay_transforms(&geom);

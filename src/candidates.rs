@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use itertools::Itertools;
 
 use crate::{
-    app_state::{AlignMode, UiState, Wallpapers},
+    app_state::{PreviewMode, UiState, Wallpapers},
     buttons::Button,
 };
 
@@ -15,6 +15,10 @@ pub struct CandidatesProps {
 }
 
 pub fn Candidates(mut props: CandidatesProps) -> Element {
+    if (props.ui)().preview_mode.is_manual() {
+        return None;
+    }
+
     let current_ratio = (props.ui)().ratio;
     let info = (props.wallpapers)().current;
     let current_geom = info.get_geometry(&current_ratio);
@@ -54,13 +58,13 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
                             let geom = geom.clone();
                             move |_| {
                                 props.ui.with_mut(|ui| {
-                                    ui.preview_geometry = Some(geom.clone());
+                                    ui.preview_mode = PreviewMode::Candidate(Some(geom.clone()));
                                 });
                             }
                         },
                         onmouseleave: move |_| {
                             props.ui.with_mut(|ui| {
-                                ui.preview_geometry = None;
+                                ui.preview_mode = PreviewMode::Candidate(None);
                             });
                         },
                         onclick: {
@@ -70,8 +74,7 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
                                     wallpapers.current.set_geometry(&current_ratio, &geom);
                                 });
                                 props.ui.with_mut(|ui| {
-                                    ui.preview_geometry = None;
-                                    ui.align_mode = AlignMode::None;
+                                    ui.preview_mode = PreviewMode::None;
                                 });
                             }
                         },

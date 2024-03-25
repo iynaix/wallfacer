@@ -99,11 +99,9 @@ fn App() -> Element {
                             wall_info: wall_info,
                         }
 
-                        if !((ui_state)().align_mode.is_manual()) {
-                            Candidates {
-                                wallpapers: wallpapers,
-                                ui: ui_state,
-                            }
+                        Candidates {
+                            wallpapers: wallpapers,
+                            ui: ui_state,
                         }
                     }
                 }

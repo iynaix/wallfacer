@@ -37,7 +37,6 @@ pub fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
                 text: format!("{}x{}", res.0, res.1),
                 onclick: move |_| {
                     props.ui.with_mut(|ui| {
-                        ui.preview_geometry = None;
                         ui.ratio = res.clone();
                     });
                 },
