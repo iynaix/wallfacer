@@ -153,7 +153,7 @@ pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                     direction: dir.clone(),
                     geometry: geom,
                     final_dimensions: final_dimensions(),
-                    wallpapers: wallpapers,
+                    wallpapers,
                 }
             } else {
                 img { src: "{path}" }

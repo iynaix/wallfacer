@@ -42,12 +42,12 @@ pub fn RatioSelector(
             Button {
                 class: "text-sm {cls}",
                 active: is_active,
-                text: format!("{}x{}{}", res.0, res.1, dirty_marker),
                 onclick: move |_| {
                     wallpapers.with_mut(|wallpapers| {
                         wallpapers.ratio = res.clone();
                     });
                 }
+                {format!("{}x{}{}", res.0, res.1, dirty_marker)}
             }
         }
     });

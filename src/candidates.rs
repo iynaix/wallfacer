@@ -49,7 +49,6 @@ pub fn Candidates(
                 rsx! {
                     Button {
                         class: "flex-1 justify-center text-sm {btn_cls}",
-                        text: (i + 1).to_string(),
                         onmouseenter: {
                             let geom = geom.clone();
                             move |_| {
@@ -73,6 +72,7 @@ pub fn Candidates(
                                 });
                             }
                         },
+                        {(i + 1).to_string()}
                     }
                 }
             })}

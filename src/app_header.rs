@@ -116,7 +116,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         }
                     },
 
-                    SaveButton { wallpapers: wallpapers }
+                    SaveButton { wallpapers }
                 }
             }
         }

@@ -5,10 +5,10 @@ use dioxus::prelude::*;
 pub fn Button(
     class: Option<String>,
     active: Option<bool>,
-    text: String,
     onclick: Option<EventHandler<MouseEvent>>,
     onmouseenter: Option<EventHandler<MouseEvent>>,
     onmouseleave: Option<EventHandler<MouseEvent>>,
+    children: Element,
 ) -> Element {
     let active_cls = if active.unwrap_or_default() {
         "bg-active"
@@ -19,7 +19,7 @@ pub fn Button(
     rsx! {
         button {
             r#type: "button",
-            class: "relative inline-flex items-center px-3 py-2 font-semibold text-text ring-1 ring-inset ring-surface0 hover:bg-crust focus:z-10 {active_cls} {class.unwrap_or_default()}",
+            class: "relative inline-flex items-center px-3 py-2 font-semibold text-text ring-1 ring-inset ring-surface1 hover:bg-crust focus:z-10 {active_cls} {class.unwrap_or_default()}",
             onclick: move |evt| {
                 if let Some(handler) = &onclick {
                     handler.call(evt);
@@ -35,7 +35,7 @@ pub fn Button(
                     handler.call(evt);
                 }
             },
-            {text},
+            {children},
         }
     }
 }

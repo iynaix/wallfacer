@@ -94,7 +94,7 @@ pub fn FileList(
                 for (fname, bytes) in images.take(50) {
                     WallpaperFile {
                         filename: fname.clone(),
-                        bytes: bytes,
+                        bytes,
                         onclick: move |_| {
                             wallpapers.with_mut(|wallpapers| {
                                 wallpapers.set_from_filename(&fname);

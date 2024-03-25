@@ -50,25 +50,19 @@ fn main() {
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
     let wallpapers = use_signal(Wallpapers::from_args);
-    let ui_state = use_signal(UiState::default);
+    let ui = use_signal(UiState::default);
 
     rsx! {
         link { rel: "stylesheet", href: "../public/tailwind.css" },
         div {
             class: "dark flex flex-col h-full bg-base overflow-hidden",
-            AppHeader {
-                wallpapers: wallpapers,
-                ui: ui_state,
-            }
+            AppHeader { wallpapers, ui }
 
             div {
                 class: "flex p-4 gap-4",
 
-                if (ui_state)().show_filelist {
-                    FileList {
-                        wallpapers: wallpapers,
-                        ui: ui_state,
-                    }
+                if (ui)().show_filelist {
+                    FileList { wallpapers, ui }
                 } else {
                     // main content
                     div {
@@ -77,32 +71,17 @@ fn App() -> Element {
                         // Toolbar
                         div {
                             class:"flex flex-row justify-between",
-
-                            RatioSelector {
-                                wallpapers: wallpapers,
-                                ui: ui_state,
-                            },
+                            RatioSelector { wallpapers, ui },
 
                             div{
                                 class: "flex justify-end",
-
-                                AlignSelector {
-                                    // class: "ml-16 content-end",
-                                    wallpapers: wallpapers,
-                                    ui: ui_state,
-                                },
+                                AlignSelector { wallpapers, ui },
                             }
                         }
 
-                        Previewer {
-                            wallpapers: wallpapers,
-                            ui: ui_state,
-                        }
+                        Previewer { wallpapers, ui }
 
-                        Candidates {
-                            wallpapers: wallpapers,
-                            ui: ui_state,
-                        }
+                        Candidates { wallpapers, ui }
                     }
                 }
             }

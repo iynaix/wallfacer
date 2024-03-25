@@ -10,18 +10,17 @@ use crate::{
 #[component]
 fn AlignButton(
     class: String,
-    text: String,
     geom: Geometry,
     ui: Signal<UiState>,
     wallpapers: Signal<Wallpapers>,
+    children: Element,
 ) -> Element {
     let current_geom = (wallpapers)().get_geometry();
 
     rsx! {
         Button {
-            class: class,
+            class,
             active: current_geom == geom,
-            text: text,
             onclick: move |_| {
                 wallpapers.with_mut(|wallpapers| {
                     wallpapers.set_geometry(&geom);
@@ -29,7 +28,8 @@ fn AlignButton(
                 ui.with_mut(|ui| {
                     ui.preview_mode = PreviewMode::Candidate(None);
                 });
-            }
+            },
+            {children}
         }
     }
 }
@@ -53,17 +53,17 @@ pub fn AlignSelector(
                 class: "isolate inline-flex rounded-md shadow-sm",
                 AlignButton {
                     class: "text-sm rounded-l-md",
-                    text: "Source",
                     geom: wallpapers().source.get_geometry(&ratio),
-                    wallpapers: wallpapers,
-                    ui: ui,
+                    wallpapers,
+                    ui,
+                    "Source"
                 }
                 AlignButton {
                     class: "text-sm rounded-r-md",
-                    text: "Default",
                     geom: info.cropper().crop(&ratio),
-                    wallpapers: wallpapers,
-                    ui: ui,
+                    wallpapers,
+                    ui,
+                    "Default"
                 }
             }
 
@@ -71,24 +71,24 @@ pub fn AlignSelector(
                 class: "isolate inline-flex rounded-md shadow-sm {class.unwrap_or_default()}",
                 AlignButton {
                     class: "text-sm rounded-l-md",
-                    text: if dir == Direction::X { "Left" } else { "Top" },
                     geom: geom.align_start(img_w, img_h),
-                    wallpapers: wallpapers,
-                    ui: ui,
+                    wallpapers,
+                    ui,
+                    {if dir == Direction::X { "Left" } else { "Top" }}
                 }
                 AlignButton {
                     class: "text-sm -ml-px",
-                    text: if dir == Direction::X { "Center" } else { "Middle" },
                     geom: geom.align_center(img_w, img_h),
-                    wallpapers: wallpapers,
-                    ui: ui,
+                    wallpapers,
+                    ui,
+                    {if dir == Direction::X { "Center" } else { "Middle" }}
                 }
                 AlignButton {
                     class: "text-sm rounded-r-md",
-                    text: if dir == Direction::X { "Right" } else { "Bottom" },
                     geom: geom.align_end(img_w, img_h),
-                    wallpapers: wallpapers,
-                    ui: ui,
+                    wallpapers,
+                    ui,
+                    {if dir == Direction::X { "Right" } else { "Bottom" }}
                 }
             }
 
@@ -97,7 +97,6 @@ pub fn AlignSelector(
                 Button {
                     class: "text-sm rounded-md",
                     active: align == PreviewMode::Manual,
-                    text: "Manual",
                     onclick: move |_| {
                         ui.with_mut(|ui| {
                             ui.preview_mode = if matches!(&ui.preview_mode, PreviewMode::Manual) {
@@ -107,6 +106,7 @@ pub fn AlignSelector(
                             }
                         });
                     }
+                    {"Manual"}
                 }
             }
         }
