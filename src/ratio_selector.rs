@@ -43,7 +43,7 @@ pub fn RatioSelector(mut props: RatioSelectorProps) -> Element {
                     props.wallpapers.with_mut(|wallpapers| {
                         wallpapers.ratio = res.clone();
                     });
-                },
+                }
             }
         }
     });

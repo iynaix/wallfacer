@@ -21,7 +21,7 @@ pub fn Button(props: ButtonProps) -> Element {
     rsx! {
         button {
             r#type: "button",
-            class: "relative inline-flex items-center px-3 py-2 font-semibold text-text ring-1 ring-inset ring-gray-300 hover:bg-crust focus:z-10 {active_cls} {props.class.unwrap_or_default()}",
+            class: "relative inline-flex items-center px-3 py-2 font-semibold text-text ring-1 ring-inset ring-surface0 hover:bg-crust focus:z-10 {active_cls} {props.class.unwrap_or_default()}",
             onclick: move |evt| {
                 if let Some(handler) = &props.onclick {
                     handler.call(evt);

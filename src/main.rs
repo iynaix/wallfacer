@@ -87,7 +87,7 @@ fn App() -> Element {
                                 class: "flex justify-end",
 
                                 AlignSelector {
-                                    class: "ml-16 content-end",
+                                    // class: "ml-16 content-end",
                                     wallpapers: wallpapers,
                                     ui: ui_state,
                                 },

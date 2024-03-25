@@ -10,42 +10,33 @@ use wallpaper_ui::{
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct UiState {
     pub show_filelist: bool,
     pub show_faces: bool,
     pub preview_mode: PreviewMode,
 }
 
-impl Default for UiState {
-    fn default() -> Self {
-        Self {
-            show_filelist: Default::default(),
-            show_faces: Default::default(),
-            preview_mode: PreviewMode::Source,
-        }
-    }
-}
-
 impl UiState {
     pub fn reset(&mut self) {
         self.show_filelist = false;
         self.show_faces = false;
-        self.preview_mode = PreviewMode::Source;
+        self.preview_mode = PreviewMode::None;
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreviewMode {
-    Source,
-    Default,
-    Start,
-    Center,
-    End,
     Manual,
     None,
     /// stores the last mouseover geometry
     Candidate(Option<Geometry>),
+}
+
+impl Default for PreviewMode {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
