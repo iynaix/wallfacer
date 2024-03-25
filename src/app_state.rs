@@ -17,25 +17,16 @@ pub struct UiState {
     pub preview_mode: PreviewMode,
 }
 
-impl UiState {
-    pub fn reset(&mut self) {
-        self.show_filelist = false;
-        self.show_faces = false;
-        self.preview_mode = PreviewMode::None;
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreviewMode {
     Manual,
-    None,
     /// stores the last mouseover geometry
     Candidate(Option<Geometry>),
 }
 
 impl Default for PreviewMode {
     fn default() -> Self {
-        Self::None
+        Self::Candidate(None)
     }
 }
 

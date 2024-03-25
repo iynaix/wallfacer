@@ -27,7 +27,7 @@ fn AlignButton(
                     wallpapers.set_geometry(&geom);
                 });
                 ui.with_mut(|ui| {
-                    ui.preview_mode = PreviewMode::None;
+                    ui.preview_mode = PreviewMode::Candidate(None);
                 });
             }
         }
@@ -101,7 +101,7 @@ pub fn AlignSelector(
                     onclick: move |_| {
                         ui.with_mut(|ui| {
                             ui.preview_mode = if matches!(&ui.preview_mode, PreviewMode::Manual) {
-                                PreviewMode::None
+                                PreviewMode::Candidate(None)
                             } else {
                                 PreviewMode::Manual
                             }

@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 use wallpaper_ui::filename;
 
-use crate::app_state::{UiState, Wallpapers};
+use crate::app_state::{PreviewMode, UiState, Wallpapers};
 
 #[component]
 fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>) -> Element {
@@ -53,12 +53,13 @@ pub fn FileList(
         let fname = filename(path);
         let size = path.metadata().expect("could not get file metadata").len();
 
-        // TODO: add number of faces?
         if search().is_empty() {
+            // TODO: add number of faces?
             return Some((fname, size));
         }
 
         if fname.to_lowercase().contains(&normalized) {
+            // TODO: add number of faces?
             Some((fname, size))
         } else {
             None
@@ -99,7 +100,8 @@ pub fn FileList(
                                 wallpapers.set_from_filename(&fname);
                             });
                             ui.with_mut(|ui| {
-                                ui.reset();
+                                ui.show_filelist = false;
+                                ui.preview_mode = PreviewMode::Candidate(None);
                             });
                         },
                     }

@@ -69,7 +69,7 @@ pub fn Candidates(
                                     wallpapers.set_geometry(&geom);
                                 });
                                 ui.with_mut(|ui| {
-                                    ui.preview_mode = PreviewMode::None;
+                                    ui.preview_mode = PreviewMode::Candidate(None);
                                 });
                             }
                         },
