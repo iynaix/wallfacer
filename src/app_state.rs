@@ -14,7 +14,7 @@ use wallpaper_ui::{
 pub struct UiState {
     pub show_filelist: bool,
     pub show_faces: bool,
-    pub manual_mode: bool,
+    pub align_mode: AlignMode,
     pub preview_geometry: Option<Geometry>,
     pub ratio: AspectRatio,
 }
@@ -24,7 +24,7 @@ impl Default for UiState {
         Self {
             show_filelist: Default::default(),
             show_faces: Default::default(),
-            manual_mode: Default::default(),
+            align_mode: AlignMode::Source,
             preview_geometry: Option::default(),
             ratio: AspectRatio(1440, 2560),
         }
@@ -35,9 +35,20 @@ impl UiState {
     pub fn reset(&mut self) {
         self.show_filelist = false;
         self.show_faces = false;
-        self.manual_mode = false;
+        self.align_mode = AlignMode::Source;
         self.preview_geometry = None;
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AlignMode {
+    Source,
+    Default,
+    Start,
+    Center,
+    End,
+    Manual,
+    None,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]

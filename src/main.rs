@@ -19,7 +19,7 @@ pub mod switch;
 use crate::{
     align_selector::AlignSelector,
     app_header::AppHeader,
-    app_state::{UiState, Wallpapers},
+    app_state::{AlignMode, UiState, Wallpapers},
     candidates::Candidates,
     filelist::FileList,
     preview::Previewer,
@@ -99,7 +99,7 @@ fn App() -> Element {
                             wall_info: wall_info,
                         }
 
-                        if !(ui_state)().manual_mode {
+                        if !((ui_state)().align_mode == AlignMode::Manual) {
                             Candidates {
                                 wallpapers: wallpapers,
                                 ui: ui_state,

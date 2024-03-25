@@ -6,7 +6,7 @@ use wallpaper_ui::{
     wallpapers::{Face, WallInfo},
 };
 
-use crate::app_state::UiState;
+use crate::app_state::{AlignMode, UiState};
 
 #[component]
 fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
@@ -140,10 +140,11 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         Direction::Y => "origin-bottom bottom-0 left-0",
     };
 
+    let is_manual = ui.align_mode == AlignMode::Manual;
     let overlay_cls = format!(
         "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-in-out {}",
-        // don't apply transitions in slider mode
-        if ui.manual_mode { "" } else { "transition" }
+        // don't apply transitions in manual mode
+        if is_manual { "" } else { "transition" }
     );
 
     rsx! {
@@ -157,7 +158,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
                     final_dimensions.set((elem_width, (elem_width / img_w * img_h).floor()));
                 }
             },
-            if ui.manual_mode {
+            if is_manual {
                 DraggableImage {
                     image: path,
                     image_dimensions: (img_w, img_h),
