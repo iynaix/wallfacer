@@ -146,7 +146,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
     };
 
     let overlay_cls = format!(
-        "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-in-out {}",
+        "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-linear {}",
         // don't apply transitions in manual mode
         if is_manual { "" } else { "transition" }
     );

@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use itertools::Itertools;
 
 use crate::{
-    app_state::{UiState, Wallpapers},
+    app_state::{AlignMode, UiState, Wallpapers},
     buttons::Button,
 };
 
@@ -15,10 +15,10 @@ pub struct CandidatesProps {
 }
 
 pub fn Candidates(mut props: CandidatesProps) -> Element {
-    let mut selected_candidate = use_signal(|| None);
     let current_ratio = (props.ui)().ratio;
-
     let info = (props.wallpapers)().current;
+    let current_geom = info.get_geometry(&current_ratio);
+
     if info.faces.len() <= 1 {
         return None;
     }
@@ -40,7 +40,7 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
             class: "flex {props.class.unwrap_or_default()}",
 
             {candidates_geom.into_iter().map(|(i, geom)| {
-                let btn_cls = if (selected_candidate)() == Some(i) {
+                let btn_cls = if geom == current_geom {
                     "!bg-indigo-600"
                 } else {
                     ""
@@ -69,7 +69,10 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
                                 props.wallpapers.with_mut(|wallpapers| {
                                     wallpapers.current.set_geometry(&current_ratio, &geom);
                                 });
-                                selected_candidate.set(Some(i));
+                                props.ui.with_mut(|ui| {
+                                    ui.preview_geometry = None;
+                                    ui.align_mode = AlignMode::None;
+                                });
                             }
                         },
                     }
