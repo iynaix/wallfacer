@@ -15,7 +15,6 @@ pub struct UiState {
     pub show_filelist: bool,
     pub show_faces: bool,
     pub preview_mode: PreviewMode,
-    pub ratio: AspectRatio,
 }
 
 impl Default for UiState {
@@ -24,7 +23,6 @@ impl Default for UiState {
             show_filelist: Default::default(),
             show_faces: Default::default(),
             preview_mode: PreviewMode::Source,
-            ratio: AspectRatio(1440, 2560),
         }
     }
 }
@@ -44,25 +42,32 @@ pub enum PreviewMode {
     Start,
     Center,
     End,
-    Manual(Geometry),
+    Manual,
     None,
     /// stores the last mouseover geometry
     Candidate(Option<Geometry>),
 }
 
-impl PreviewMode {
-    pub const fn is_manual(&self) -> bool {
-        matches!(self, Self::Manual(_))
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Wallpapers {
     pub files: Vec<PathBuf>,
     // the original wallinfo before any modifications
     pub source: WallInfo,
     pub current: WallInfo,
     pub index: usize,
+    pub ratio: AspectRatio,
+}
+
+impl Default for Wallpapers {
+    fn default() -> Self {
+        Self {
+            files: Vec::default(),
+            source: WallInfo::default(),
+            current: WallInfo::default(),
+            index: Default::default(),
+            ratio: AspectRatio(1440, 2560),
+        }
+    }
 }
 
 impl Wallpapers {
@@ -110,7 +115,7 @@ impl Wallpapers {
             files: all_files,
             source: loaded.clone(),
             current: loaded.clone(),
-            index: 0,
+            ..Default::default()
         }
     }
 
@@ -170,5 +175,20 @@ impl Wallpapers {
             .iter()
             .position(|f| filename(f) == fname)
             .unwrap_or_else(|| panic!("could not find wallpaper: {}", fname));
+    }
+
+    /// gets geometry for current aspect ratio
+    pub fn get_geometry(&self) -> Geometry {
+        self.current.get_geometry(&self.ratio)
+    }
+
+    /// sets the geometry for current aspect ratio
+    pub fn set_geometry(&mut self, geom: &Geometry) {
+        self.current.set_geometry(&self.ratio, geom);
+    }
+
+    /// returns crop candidates for current ratio and image
+    pub fn crop_candidates(&self) -> Vec<Geometry> {
+        self.current.cropper().crop_candidates(&self.ratio)
     }
 }

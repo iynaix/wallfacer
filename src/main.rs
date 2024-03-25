@@ -51,7 +51,6 @@ fn main() {
 fn App() -> Element {
     let wallpapers = use_signal(Wallpapers::from_args);
     let ui_state = use_signal(UiState::default);
-    let wall_info = wallpapers().current;
 
     rsx! {
         link { rel: "stylesheet", href: "../public/tailwind.css" },
@@ -80,6 +79,7 @@ fn App() -> Element {
                             class:"flex flex-row justify-between",
 
                             RatioSelector {
+                                wallpapers: wallpapers,
                                 ui: ui_state,
                             },
 
@@ -95,8 +95,8 @@ fn App() -> Element {
                         }
 
                         Previewer {
+                            wallpapers: wallpapers,
                             ui: ui_state,
-                            wall_info: wall_info,
                         }
 
                         Candidates {

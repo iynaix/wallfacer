@@ -1,12 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallpaper_ui::{
-    cropper::Direction,
-    geometry::Geometry,
-    wallpapers::{Face, WallInfo},
-};
+use wallpaper_ui::{cropper::Direction, geometry::Geometry, wallpapers::Face};
 
-use crate::app_state::{PreviewMode, UiState};
+use crate::app_state::{PreviewMode, UiState, Wallpapers};
 
 #[component]
 fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
@@ -41,7 +37,7 @@ pub struct DraggableImageProps {
     direction: Direction,
     geometry: Geometry,
     final_dimensions: (f64, f64),
-    ui: Signal<UiState>,
+    wallpapers: Signal<Wallpapers>,
 }
 
 pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
@@ -91,9 +87,8 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
                                 }
                             },
                         };
-
-                        props.ui.with_mut(|ui| {
-                            ui.preview_mode = PreviewMode::Manual(new_geom);
+                        props.wallpapers.with_mut(|wallpapers| {
+                            wallpapers.set_geometry(&new_geom);
                         });
                         drag_coords.set((new_x, new_y));
                     }
@@ -105,14 +100,15 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
 
 #[derive(Clone, PartialEq, Props)]
 pub struct PreviewerProps {
-    wall_info: WallInfo,
+    wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
 }
 
+#[allow(clippy::needless_pass_by_value)]
 pub fn Previewer(props: PreviewerProps) -> Element {
     // store the final rendered width and height of the image
     let mut final_dimensions = use_signal(|| (0.0, 0.0));
-    let info = props.wall_info;
+    let info = (props.wallpapers)().current;
     let ui = (props.ui)();
 
     let path = info.path();
@@ -121,12 +117,17 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         .expect("could not convert path to str")
         .to_string();
 
+    let is_manual = matches!(ui.preview_mode, PreviewMode::Manual);
+    let overlay_cls = format!(
+        "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-linear {}",
+        // don't apply transitions in manual mode
+        if is_manual { "" } else { "transition" }
+    );
+
     // preview geometry takes precedence
-    let is_manual = ui.preview_mode.is_manual();
     let geom = match ui.preview_mode {
-        PreviewMode::Manual(manual_geom) => manual_geom,
         PreviewMode::Candidate(Some(cand_geom)) => cand_geom,
-        _ => info.get_geometry(&ui.ratio),
+        _ => (props.wallpapers)().get_geometry(),
     };
 
     let (dir, start_ratio, end_ratio) = info.overlay_transforms(&geom);
@@ -142,12 +143,6 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         Direction::Y => "origin-bottom bottom-0 left-0",
     };
 
-    let overlay_cls = format!(
-        "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-linear {}",
-        // don't apply transitions in manual mode
-        if is_manual { "" } else { "transition" }
-    );
-
     rsx! {
         div {
             class: "relative",
@@ -159,14 +154,14 @@ pub fn Previewer(props: PreviewerProps) -> Element {
                     final_dimensions.set((elem_width, (elem_width / img_w * img_h).floor()));
                 }
             },
-            if is_manual {
+            if is_manual{
                 DraggableImage {
                     image: path,
                     image_dimensions: (img_w, img_h),
                     direction: dir.clone(),
                     geometry: geom,
                     final_dimensions: final_dimensions(),
-                    ui: props.ui,
+                    wallpapers: props.wallpapers,
                 }
             } else {
                 img { src: "{path}" }

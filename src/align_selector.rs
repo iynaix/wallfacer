@@ -16,9 +16,9 @@ pub struct AlignSelectorProps {
 
 pub fn AlignSelector(mut props: AlignSelectorProps) -> Element {
     let info = (props.wallpapers)().current;
-    let ratio = (props.ui)().ratio;
+    let ratio = (props.wallpapers)().ratio;
     let align = (props.ui)().preview_mode;
-    let geom: Geometry = info.get_geometry(&(props.ui)().ratio);
+    let geom: Geometry = (props.wallpapers)().get_geometry();
     let (img_w, img_h) = info.image_dimensions();
     let dir = info.direction(&geom);
 
@@ -26,10 +26,9 @@ pub fn AlignSelector(mut props: AlignSelectorProps) -> Element {
         move |_| {
             props.ui.with_mut(|ui| {
                 ui.preview_mode = align.clone();
-
-                props.wallpapers.with_mut(|wallpapers| {
-                    wallpapers.current.set_geometry(&ui.ratio, &geom);
-                });
+            });
+            props.wallpapers.with_mut(|wallpapers| {
+                wallpapers.set_geometry(&geom);
             });
         }
     };
@@ -69,18 +68,14 @@ pub fn AlignSelector(mut props: AlignSelectorProps) -> Element {
             }
             Button {
                 class: "text-sm rounded-r-md",
-                active: align.is_manual(),
+                active: align == PreviewMode::Manual,
                 text: "Manual",
                 onclick: move |_| {
                     props.ui.with_mut(|ui| {
-                        ui.preview_mode = if let PreviewMode::Manual(manual_geom) = &ui.preview_mode {
-                            props.wallpapers.with_mut(|wallpapers| {
-                                wallpapers.current.set_geometry(&ui.ratio, manual_geom);
-                            });
-
+                        ui.preview_mode = if matches!(&ui.preview_mode, PreviewMode::Manual) {
                             PreviewMode::None
                         } else {
-                            PreviewMode::Manual(geom.clone())
+                            PreviewMode::Manual
                         }
                     });
                 }

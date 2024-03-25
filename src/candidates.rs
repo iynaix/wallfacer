@@ -15,21 +15,19 @@ pub struct CandidatesProps {
 }
 
 pub fn Candidates(mut props: CandidatesProps) -> Element {
-    if (props.ui)().preview_mode.is_manual() {
+    if (props.ui)().preview_mode == PreviewMode::Manual {
         return None;
     }
 
-    let current_ratio = (props.ui)().ratio;
-    let info = (props.wallpapers)().current;
-    let current_geom = info.get_geometry(&current_ratio);
+    let walls = (props.wallpapers)();
+    let current_geom = walls.get_geometry();
 
-    if info.faces.len() <= 1 {
+    if walls.current.faces.len() <= 1 {
         return None;
     }
 
-    let candidates_geom: Vec<_> = info
-        .cropper()
-        .crop_candidates(&current_ratio)
+    let candidates_geom: Vec<_> = walls
+        .crop_candidates()
         .into_iter()
         .unique()
         .enumerate()
@@ -68,10 +66,9 @@ pub fn Candidates(mut props: CandidatesProps) -> Element {
                             });
                         },
                         onclick: {
-                            let current_ratio = current_ratio.clone();
                             move |_| {
                                 props.wallpapers.with_mut(|wallpapers| {
-                                    wallpapers.current.set_geometry(&current_ratio, &geom);
+                                    wallpapers.set_geometry(&geom);
                                 });
                                 props.ui.with_mut(|ui| {
                                     ui.preview_mode = PreviewMode::None;
