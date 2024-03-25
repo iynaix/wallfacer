@@ -13,7 +13,7 @@ pub mod buttons;
 pub mod candidates;
 pub mod filelist;
 pub mod preview;
-pub mod resolution_selector;
+pub mod ratio_selector;
 pub mod switch;
 
 use crate::{
@@ -23,7 +23,7 @@ use crate::{
     candidates::Candidates,
     filelist::FileList,
     preview::Previewer,
-    resolution_selector::ResolutionSelector,
+    ratio_selector::RatioSelector,
 };
 
 fn main() {
@@ -79,7 +79,7 @@ fn App() -> Element {
                         div {
                             class:"flex flex-row justify-between",
 
-                            ResolutionSelector {
+                            RatioSelector {
                                 ui: ui_state,
                             },
 

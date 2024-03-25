@@ -4,7 +4,7 @@ use wallpaper_ui::cropper::AspectRatio;
 
 use crate::{app_state::UiState, buttons::Button};
 
-const RESOLUTIONS: [AspectRatio; 5] = [
+const RATIOS: [AspectRatio; 5] = [
     AspectRatio(1440, 2560),
     AspectRatio(2256, 1504),
     AspectRatio(3440, 1440),
@@ -13,27 +13,27 @@ const RESOLUTIONS: [AspectRatio; 5] = [
 ];
 
 #[derive(Clone, PartialEq, Props)]
-pub struct ResolutionSelectorProps {
+pub struct RatioSelectorProps {
     class: Option<String>,
     ui: Signal<UiState>,
 }
 
-pub fn ResolutionSelector(mut props: ResolutionSelectorProps) -> Element {
-    let buttons = RESOLUTIONS.iter().enumerate().map(|(i, res)| {
+pub fn RatioSelector(mut props: RatioSelectorProps) -> Element {
+    let buttons = RATIOS.iter().enumerate().map(|(i, res)| {
         let cls = if i == 0 {
             "rounded-l-md"
-        } else if i == RESOLUTIONS.len() - 1 {
+        } else if i == RATIOS.len() - 1 {
             "rounded-r-md"
         } else {
             "-ml-px"
         };
 
-        let active = (props.ui)().ratio == *res;
+        let is_active = (props.ui)().ratio == *res;
 
         rsx! {
             Button {
                 class: "text-sm {cls}",
-                active: active,
+                active: is_active,
                 text: format!("{}x{}", res.0, res.1),
                 onclick: move |_| {
                     props.ui.with_mut(|ui| {
