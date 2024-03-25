@@ -37,7 +37,8 @@ pub fn Candidates(
 
     rsx! {
         div {
-            class: "flex {class.unwrap_or_default()}",
+            class: "flex",
+            class: class.unwrap_or_default(),
 
             {candidates_geom.into_iter().map(|(i, geom)| {
                 let btn_cls = if geom == current_geom {

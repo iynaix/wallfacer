@@ -5,7 +5,7 @@ use image::image_dimensions;
 
 use crate::{geometry::Geometry, wallpaper_dir, wallpapers::Face};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
     X,
     Y,
@@ -82,13 +82,7 @@ impl Cropper {
         )
     }
 
-    fn clamp(
-        &self,
-        val: f32,
-        direction: &Direction,
-        target_width: u32,
-        target_height: u32,
-    ) -> Face {
+    fn clamp(&self, val: f32, direction: Direction, target_width: u32, target_height: u32) -> Face {
         let min_ = val;
         match direction {
             Direction::X => {
@@ -144,7 +138,7 @@ impl Cropper {
 
     fn crop_single_face(
         &self,
-        direction: &Direction,
+        direction: Direction,
         target_width: u32,
         target_height: u32,
     ) -> Face {
@@ -208,7 +202,7 @@ impl Cropper {
 
         if self.faces.len() == 1 {
             return self
-                .crop_single_face(&direction, target_width, target_height)
+                .crop_single_face(direction, target_width, target_height)
                 .geometry();
         }
 
@@ -288,7 +282,7 @@ impl Cropper {
 
         self.clamp(
             faces_info[faces_info.len() / 2].start as f32,
-            &direction,
+            direction,
             target_width,
             target_height,
         )
@@ -309,7 +303,7 @@ impl Cropper {
 
         if self.faces.len() == 1 {
             vec![self
-                .crop_single_face(&direction, target_width, target_height)
+                .crop_single_face(direction, target_width, target_height)
                 .geometry()]
         } else {
             self.faces.iter().sorted_by_key(|face| match direction {
@@ -367,7 +361,7 @@ impl Cropper {
                 .values()
                 .map(|faces| {
                     let mid = faces[faces.len() / 2];
-                    self.clamp(mid as f32, &direction, target_width, target_height)
+                    self.clamp(mid as f32, direction, target_width, target_height)
                 })
                 .sorted_by_key(|face| match direction {
                     Direction::X => face.xmin,

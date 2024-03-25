@@ -68,7 +68,8 @@ pub fn AlignSelector(
             }
 
             span {
-                class: "isolate inline-flex rounded-md shadow-sm {class.unwrap_or_default()}",
+                class: "isolate inline-flex rounded-md shadow-sm",
+                class: class.unwrap_or_default(),
                 AlignButton {
                     class: "text-sm rounded-l-md",
                     geom: geom.align_start(img_w, img_h),

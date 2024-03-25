@@ -11,6 +11,7 @@ pub mod app_state;
 pub mod args;
 pub mod buttons;
 pub mod candidates;
+pub mod drag_overlay;
 pub mod filelist;
 pub mod preview;
 pub mod ratio_selector;

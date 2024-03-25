@@ -1,8 +1,11 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallpaper_ui::{cropper::Direction, geometry::Geometry, wallpapers::Face};
+use wallpaper_ui::{cropper::Direction, wallpapers::Face};
 
-use crate::app_state::{PreviewMode, UiState, Wallpapers};
+use crate::{
+    app_state::{PreviewMode, UiState, Wallpapers},
+    drag_overlay::DraggableOverlay,
+};
 
 #[component]
 fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
@@ -31,72 +34,6 @@ fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
 }
 
 #[component]
-pub fn DraggableImage(
-    image: String,
-    image_dimensions: (f64, f64),
-    direction: Direction,
-    geometry: Geometry,
-    final_dimensions: (f64, f64),
-    wallpapers: Signal<Wallpapers>,
-) -> Element {
-    let mut is_dragging = use_signal(|| false);
-    let mut drag_coords = use_signal(|| (0.0, 0.0));
-    let cls = match direction {
-        Direction::X => "cursor-ew-resize",
-        Direction::Y => "cursor-ns-resize",
-    };
-
-    let dir = direction;
-    let geom = geometry;
-    let (img_w, img_h) = image_dimensions;
-    let (final_w, final_h) = final_dimensions;
-
-    rsx! {
-        img {
-            src: "{image}",
-            class: cls,
-            onmousedown: move |evt| {
-                is_dragging.set(true);
-                drag_coords.set(evt.client_coordinates().into());
-            },
-            onmouseup: move |_| {
-                is_dragging.set(false);
-            },
-            onmousemove: {
-                move |evt| {
-                    if is_dragging() {
-                        let (x, y) = drag_coords();
-                        let (new_x, new_y) = evt.client_coordinates().into();
-                        let (dx, dy) = (new_x - x, new_y - y);
-
-                        let new_geom = match dir {
-                            Direction::X => {
-                                let scaled_dx = img_w / final_w * dx;
-                                Geometry {
-                                    x: (f64::from(geom.x) + scaled_dx).clamp(0.0, img_w - f64::from(geom.w)) as u32,
-                                    ..geom.clone()
-                                }
-                            },
-                            Direction::Y => {
-                                let scaled_dy = img_h / final_h * dy;
-                                Geometry {
-                                    y: (f64::from(geom.y) + scaled_dy).clamp(0.0, img_h - f64::from(geom.h)) as u32,
-                                    ..geom.clone()
-                                }
-                            },
-                        };
-                        wallpapers.with_mut(|wallpapers| {
-                            wallpapers.set_geometry(&new_geom);
-                        });
-                        drag_coords.set((new_x, new_y));
-                    }
-                }
-            },
-        }
-    }
-}
-
-#[component]
 pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
     // store the final rendered width and height of the image
     let mut final_dimensions = use_signal(|| (0.0, 0.0));
@@ -110,11 +47,7 @@ pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
         .to_string();
 
     let is_manual = matches!(ui.preview_mode, PreviewMode::Manual);
-    let overlay_cls = format!(
-        "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-linear {}",
-        // don't apply transitions in manual mode
-        if is_manual { "" } else { "transition" }
-    );
+    let overlay_cls = "absolute bg-black bg-opacity-60 w-full h-full";
 
     // preview geometry takes precedence
     let geom = match ui.preview_mode {
@@ -122,15 +55,15 @@ pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
         _ => wallpapers().get_geometry(),
     };
 
-    let (dir, start_ratio, end_ratio) = info.overlay_transforms(&geom);
+    let (direction, start_ratio, end_ratio) = info.overlay_transforms(&geom);
 
     let (img_w, img_h) = info.image_dimensions_f64();
-    let start_cls = match dir {
+    let start_cls = match direction {
         Direction::X => "origin-left top-0 left-0",
         Direction::Y => "origin-top top-0 left-0",
     };
 
-    let end_cls = match dir {
+    let end_cls = match direction {
         Direction::X => "origin-right top-0 right-0",
         Direction::Y => "origin-bottom bottom-0 left-0",
     };
@@ -142,29 +75,33 @@ pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
             onmounted: move |evt| {
                 async move {
                     let coords = evt.get_client_rect().await.expect("could not get client rect");
-                    let elem_width = coords.width();
+                    let elem_width = coords.width() - 16.0;
                     final_dimensions.set((elem_width, (elem_width / img_w * img_h).floor()));
                 }
             },
-            if is_manual{
-                DraggableImage {
-                    image: path,
-                    image_dimensions: (img_w, img_h),
-                    direction: dir.clone(),
-                    geometry: geom,
-                    final_dimensions: final_dimensions(),
-                    wallpapers,
-                }
-            } else {
-                img { src: "{path}" }
+            img { src: path }
+            div {
+                class: overlay_cls,
+                class: start_cls,
+                // don't apply transitions in manual mode
+                class: if !is_manual { "transition transition-transform ease-linear" },
+                style: format!("transform: scale{}({})", direction, start_ratio),
             }
             div {
-                class: "{overlay_cls} {start_cls}",
-                style: format!("transform: scale{}({})", dir, start_ratio),
+                class: overlay_cls,
+                class: end_cls,
+                // don't apply transitions in manual mode
+                class: if !is_manual { "transition" },
+                style: format!("transform: scale{}({})", direction, end_ratio),
             }
-            div {
-                class: "{overlay_cls} {end_cls}",
-                style: format!("transform: scale{}({})", dir, end_ratio),
+
+            DraggableOverlay {
+                dimensions: final_dimensions(),
+                image_dimensions: (img_w, img_h),
+                overlay_ratios: (start_ratio, 1.0 - end_ratio),
+                direction,
+                geometry: geom,
+                wallpapers,
             }
 
             if ui.show_faces {

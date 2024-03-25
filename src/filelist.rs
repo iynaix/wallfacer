@@ -22,7 +22,9 @@ fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>
                 //     class: "h-12 w-12 flex-none rounded-full bg-gray-800"
                 // }
                 div { class: "min-w-0 flex-auto",
-                    p { class: "text-sm font-semibold leading-6 text-white", {filename} }
+                    p { class: "text-sm font-semibold leading-6 text-white",
+                        {filename}
+                    }
                     p { class: "mt-1 truncate text-xs leading-5 text-gray-400",
                         { size_in_mb }
                     }
