@@ -38,6 +38,11 @@ pub fn AlignSelector(mut props: AlignSelectorProps) -> Element {
             class: "isolate inline-flex rounded-md shadow-sm {props.class.unwrap_or_default()}",
             Button {
                 class: "text-sm rounded-l-md",
+                text: "Source",
+                onclick: set_alignment((props.wallpapers)().source.get_geometry(&(props.ui)().ratio)),
+            }
+            Button {
+                class: "text-sm -ml-px",
                 text: "Default",
                 onclick: set_alignment(info.cropper().crop(&(props.ui)().ratio)),
             }

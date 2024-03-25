@@ -43,6 +43,8 @@ impl UiState {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Wallpapers {
     pub files: Vec<PathBuf>,
+    // the original wallinfo before any modifications
+    pub source: WallInfo,
     pub current: WallInfo,
     pub index: usize,
 }
@@ -84,13 +86,14 @@ impl Wallpapers {
 
         let wallpapers_csv = WallpapersCsv::new();
         let fname = filename(all_files.first().expect("no wallpapers found"));
+        let loaded = wallpapers_csv
+            .get(&fname)
+            .expect("could not get wallpaper info");
 
         Self {
             files: all_files,
-            current: wallpapers_csv
-                .get(&fname)
-                .expect("could not get wallpaper info")
-                .clone(),
+            source: loaded.clone(),
+            current: loaded.clone(),
             index: 0,
         }
     }
@@ -104,11 +107,12 @@ impl Wallpapers {
         };
 
         let wallpapers_csv = WallpapersCsv::new();
-        self.current = wallpapers_csv
+        let loaded = wallpapers_csv
             // bounds check is not necessary since the index is always valid
             .get(&filename(&self.files[self.index]))
-            .expect("could not get wallpaper info")
-            .clone();
+            .expect("could not get wallpaper info");
+        self.source = loaded.clone();
+        self.current = loaded.clone();
     }
 
     pub fn next_wall(&mut self) {
@@ -120,11 +124,12 @@ impl Wallpapers {
         };
 
         let wallpapers_csv = WallpapersCsv::new();
-        self.current = wallpapers_csv
+        let loaded = wallpapers_csv
             // bounds check is not necessary since the index is always valid
             .get(&filename(&self.files[self.index]))
-            .expect("could not get wallpaper info")
-            .clone();
+            .expect("could not get wallpaper info");
+        self.source = loaded.clone();
+        self.current = loaded.clone();
     }
 
     /// removes the current wallpaper from the list
@@ -138,10 +143,12 @@ impl Wallpapers {
 
     pub fn set_from_filename(&mut self, fname: &str) {
         let wallpapers_csv = WallpapersCsv::new();
-        self.current = wallpapers_csv
+        let loaded = wallpapers_csv
             .get(fname)
             .expect("could not get wallpaper info")
             .clone();
+        self.source = loaded.clone();
+        self.current = loaded;
         self.index = self
             .files
             .iter()
