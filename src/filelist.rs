@@ -4,21 +4,15 @@ use wallpaper_ui::filename;
 
 use crate::app_state::{UiState, Wallpapers};
 
-#[derive(Clone, PartialEq, Props)]
-pub struct WallpaperFileProps {
-    filename: String,
-    bytes: u64,
-    onclick: EventHandler<MouseEvent>,
-}
-
-fn WallpaperFile(props: WallpaperFileProps) -> Element {
-    let size_in_mb = format!("{:.2} MB", props.bytes as f64 / 1024.0 / 1024.0);
+#[component]
+fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>) -> Element {
+    let size_in_mb = format!("{:.2} MB", bytes as f64 / 1024.0 / 1024.0);
 
     rsx! {
         li {
             class: "flex justify-between gap-x-6 py-5",
             onclick: move |evt| {
-                props.onclick.call(evt);
+                onclick.call(evt);
             },
             div { class: "flex min-w-0 gap-x-4",
                 // TODO: thumbnail of wallpaper?
@@ -28,7 +22,7 @@ fn WallpaperFile(props: WallpaperFileProps) -> Element {
                 //     class: "h-12 w-12 flex-none rounded-full bg-gray-800"
                 // }
                 div { class: "min-w-0 flex-auto",
-                    p { class: "text-sm font-semibold leading-6 text-white", {props.filename} }
+                    p { class: "text-sm font-semibold leading-6 text-white", {filename} }
                     p { class: "mt-1 truncate text-xs leading-5 text-gray-400",
                         { size_in_mb }
                     }
@@ -45,18 +39,16 @@ fn WallpaperFile(props: WallpaperFileProps) -> Element {
     }
 }
 
-#[derive(Clone, PartialEq, Props)]
-pub struct FileListProps {
+#[component]
+pub fn FileList(
     class: Option<String>,
     wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
-}
-
-pub fn FileList(mut props: FileListProps) -> Element {
+) -> Element {
     let mut search = use_signal(String::new);
     let normalized = search().to_lowercase();
 
-    let wallpaper_files = (props.wallpapers)().files;
+    let wallpaper_files = wallpapers().files;
     let images = wallpaper_files.iter().filter_map(|path| {
         let fname = filename(path);
         let size = path.metadata().expect("could not get file metadata").len();
@@ -75,7 +67,7 @@ pub fn FileList(mut props: FileListProps) -> Element {
 
     rsx! {
         div {
-            class: "flex flex-col flex-1 max-h-full gap-4 {props.class.unwrap_or_default()}",
+            class: "flex flex-col flex-1 max-h-full gap-4 {class.unwrap_or_default()}",
             // onkeydown: handle_key_down_event,
 
             // filter input
@@ -103,10 +95,10 @@ pub fn FileList(mut props: FileListProps) -> Element {
                         filename: fname.clone(),
                         bytes: bytes,
                         onclick: move |_| {
-                            props.wallpapers.with_mut(|wallpapers| {
+                            wallpapers.with_mut(|wallpapers| {
                                 wallpapers.set_from_filename(&fname);
                             });
-                            props.ui.with_mut(|ui| {
+                            ui.with_mut(|ui| {
                                 ui.reset();
                             });
                         },

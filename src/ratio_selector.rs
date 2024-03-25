@@ -15,14 +15,12 @@ const RATIOS: [AspectRatio; 5] = [
     AspectRatio(1, 1),
 ];
 
-#[derive(Clone, PartialEq, Props)]
-pub struct RatioSelectorProps {
+#[component]
+pub fn RatioSelector(
     class: Option<String>,
     wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
-}
-
-pub fn RatioSelector(mut props: RatioSelectorProps) -> Element {
+) -> Element {
     let buttons = RATIOS.iter().enumerate().map(|(i, res)| {
         let cls = if i == 0 {
             "rounded-l-md"
@@ -32,7 +30,7 @@ pub fn RatioSelector(mut props: RatioSelectorProps) -> Element {
             "-ml-px"
         };
 
-        let is_active = (props.wallpapers)().ratio == *res;
+        let is_active = wallpapers().ratio == *res;
 
         rsx! {
             Button {
@@ -40,7 +38,7 @@ pub fn RatioSelector(mut props: RatioSelectorProps) -> Element {
                 active: is_active,
                 text: format!("{}x{}", res.0, res.1),
                 onclick: move |_| {
-                    props.wallpapers.with_mut(|wallpapers| {
+                    wallpapers.with_mut(|wallpapers| {
                         wallpapers.ratio = res.clone();
                     });
                 }

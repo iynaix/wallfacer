@@ -30,32 +30,30 @@ fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
     }
 }
 
-#[derive(Clone, PartialEq, Props)]
-pub struct DraggableImageProps {
+#[component]
+pub fn DraggableImage(
     image: String,
     image_dimensions: (f64, f64),
     direction: Direction,
     geometry: Geometry,
     final_dimensions: (f64, f64),
     wallpapers: Signal<Wallpapers>,
-}
-
-pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
+) -> Element {
     let mut is_dragging = use_signal(|| false);
     let mut drag_coords = use_signal(|| (0.0, 0.0));
-    let cls = match props.direction {
+    let cls = match direction {
         Direction::X => "cursor-ew-resize",
         Direction::Y => "cursor-ns-resize",
     };
 
-    let dir = props.direction;
-    let geom = props.geometry;
-    let (img_w, img_h) = props.image_dimensions;
-    let (final_w, final_h) = props.final_dimensions;
+    let dir = direction;
+    let geom = geometry;
+    let (img_w, img_h) = image_dimensions;
+    let (final_w, final_h) = final_dimensions;
 
     rsx! {
         img {
-            src: "{props.image}",
+            src: "{image}",
             class: cls,
             onmousedown: move |evt| {
                 is_dragging.set(true);
@@ -87,7 +85,7 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
                                 }
                             },
                         };
-                        props.wallpapers.with_mut(|wallpapers| {
+                        wallpapers.with_mut(|wallpapers| {
                             wallpapers.set_geometry(&new_geom);
                         });
                         drag_coords.set((new_x, new_y));
@@ -98,18 +96,12 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
     }
 }
 
-#[derive(Clone, PartialEq, Props)]
-pub struct PreviewerProps {
-    wallpapers: Signal<Wallpapers>,
-    ui: Signal<UiState>,
-}
-
-#[allow(clippy::needless_pass_by_value)]
-pub fn Previewer(props: PreviewerProps) -> Element {
+#[component]
+pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
     // store the final rendered width and height of the image
     let mut final_dimensions = use_signal(|| (0.0, 0.0));
-    let info = (props.wallpapers)().current;
-    let ui = (props.ui)();
+    let info = wallpapers().current;
+    let ui = ui();
 
     let path = info.path();
     let path = path
@@ -127,7 +119,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
     // preview geometry takes precedence
     let geom = match ui.preview_mode {
         PreviewMode::Candidate(Some(cand_geom)) => cand_geom,
-        _ => (props.wallpapers)().get_geometry(),
+        _ => wallpapers().get_geometry(),
     };
 
     let (dir, start_ratio, end_ratio) = info.overlay_transforms(&geom);
@@ -161,7 +153,7 @@ pub fn Previewer(props: PreviewerProps) -> Element {
                     direction: dir.clone(),
                     geometry: geom,
                     final_dimensions: final_dimensions(),
-                    wallpapers: props.wallpapers,
+                    wallpapers: wallpapers,
                 }
             } else {
                 img { src: "{path}" }
