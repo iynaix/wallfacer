@@ -30,13 +30,19 @@ pub fn RatioSelector(
             "-ml-px"
         };
 
-        let is_active = wallpapers().ratio == *res;
+        let walls = wallpapers();
+        let is_active = walls.ratio == *res;
+        let dirty_marker = if walls.current.get_geometry(res) == walls.source.get_geometry(res) {
+            ""
+        } else {
+            " *"
+        };
 
         rsx! {
             Button {
                 class: "text-sm {cls}",
                 active: is_active,
-                text: format!("{}x{}", res.0, res.1),
+                text: format!("{}x{}{}", res.0, res.1, dirty_marker),
                 onclick: move |_| {
                     wallpapers.with_mut(|wallpapers| {
                         wallpapers.ratio = res.clone();

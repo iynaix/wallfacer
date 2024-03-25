@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallpaper_ui::wallpapers::{WallInfo, WallpapersCsv};
+use wallpaper_ui::wallpapers::WallpapersCsv;
 
 use crate::{
     app_state::{UiState, Wallpapers},
@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[component]
-pub fn SaveButton(info: WallInfo) -> Element {
+pub fn SaveButton(wallpapers: Signal<Wallpapers>) -> Element {
     let mut clicked = use_signal(|| false);
 
     use_future(move || async move {
@@ -31,11 +31,16 @@ pub fn SaveButton(info: WallInfo) -> Element {
         a {
             class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer {btn_color}",
             onclick: {
-                let info = info;
                 move |_| {
+                    let info = wallpapers().current;
                     let mut wallpapers_csv = WallpapersCsv::new();
-                    wallpapers_csv.insert(info.filename.clone(), info.clone());
+                    wallpapers_csv.insert(info.filename.clone(), info);
                     wallpapers_csv.save();
+
+                    // source has now been updated!
+                    wallpapers.with_mut(|wallpapers| {
+                        wallpapers.source = wallpapers.current.clone();
+                    });
 
                     clicked.set(true);
                 }
@@ -111,9 +116,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         }
                     },
 
-                    SaveButton {
-                        info: info,
-                    }
+                    SaveButton { wallpapers: wallpapers }
                 }
             }
         }
