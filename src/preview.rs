@@ -93,7 +93,7 @@ pub fn DraggableImage(mut props: DraggableImageProps) -> Element {
                         };
 
                         props.ui.with_mut(|ui| {
-                            ui.preview_geometry = Some(new_geom);
+                            ui.align_mode = AlignMode::Manual(new_geom);
                         });
                         drag_coords.set((new_x, new_y));
                     }
@@ -122,9 +122,14 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         .to_string();
 
     // preview geometry takes precedence
-    let geom = match ui.preview_geometry {
-        Some(g) => g,
-        None => info.get_geometry(&ui.ratio),
+    let is_manual = ui.align_mode.is_manual();
+    let geom = if let AlignMode::Manual(manual_geom) = ui.align_mode {
+        manual_geom
+    } else {
+        match ui.preview_geometry {
+            Some(g) => g,
+            None => info.get_geometry(&ui.ratio),
+        }
     };
 
     let (dir, start_ratio, end_ratio) = info.overlay_transforms(&geom);
@@ -140,7 +145,6 @@ pub fn Previewer(props: PreviewerProps) -> Element {
         Direction::Y => "origin-bottom bottom-0 left-0",
     };
 
-    let is_manual = ui.align_mode == AlignMode::Manual;
     let overlay_cls = format!(
         "absolute bg-black bg-opacity-60 w-full h-full transition-transform ease-in-out {}",
         // don't apply transitions in manual mode

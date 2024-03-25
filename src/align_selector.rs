@@ -70,15 +70,18 @@ pub fn AlignSelector(mut props: AlignSelectorProps) -> Element {
             }
             Button {
                 class: "text-sm rounded-r-md",
-                active: align == AlignMode::Manual,
+                active: align.is_manual(),
                 text: "Manual",
                 onclick: move |_| {
                     props.ui.with_mut(|ui| {
-                        if ui.align_mode == AlignMode::Manual {
-                            ui.align_mode = AlignMode::None;
+                        ui.align_mode = if let AlignMode::Manual(manual_geom) = &ui.align_mode {
+                            props.wallpapers.with_mut(|wallpapers| {
+                                wallpapers.current.set_geometry(&ui.ratio, manual_geom);
+                            });
+
+                            AlignMode::None
                         } else {
-                            ui.align_mode = AlignMode::Manual;
-                            ui.preview_geometry = Some(geom.clone());
+                            AlignMode::Manual(geom.clone())
                         }
                     });
                 }

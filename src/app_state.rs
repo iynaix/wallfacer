@@ -47,8 +47,14 @@ pub enum AlignMode {
     Start,
     Center,
     End,
-    Manual,
+    Manual(Geometry),
     None,
+}
+
+impl AlignMode {
+    pub const fn is_manual(&self) -> bool {
+        matches!(self, Self::Manual(_))
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
