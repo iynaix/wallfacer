@@ -1,134 +1,122 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    systems.url = "github:nix-systems/default";
     devenv.url = "github:cachix/devenv";
     anime-face-detector.url = "github:iynaix/anime-face-detector";
   };
 
   outputs =
-    {
+    inputs@{
+      flake-parts,
       nixpkgs,
-      devenv,
-      systems,
       self,
       ...
-    }@inputs:
-    let
-      forEachSystem = nixpkgs.lib.genAttrs (import systems);
-    in
-    {
-      devenv-up = self.devShells.x86_64-linux.default.config.procfileScript;
+    }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [ inputs.devenv.flakeModule ];
+      systems = nixpkgs.lib.systems.flakeExposed;
 
-      devShells = forEachSystem (
-        system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-          libraries = with pkgs; [
-            atk
-            cairo
-            dbus
-            gdk-pixbuf
-            glib
-            gtk3
-            libappindicator
-            libsoup_3
-            openssl_3
-            pango
-            webkitgtk_4_1
-            xdotool
-          ];
-        in
+      perSystem =
         {
-          default = devenv.lib.mkShell {
-            inherit inputs pkgs;
-
-            modules = [
-              {
-                packages =
-                  with pkgs;
-                  # pipeline dependencies
-                  [
-                    oxipng
-                    jpegoptim
-                    inputs.anime-face-detector.packages.${system}.anime-face-detector
-                    (callPackage ./nix/realcugan-ncnn-vulkan { })
-                  ]
-                  ++ [
-                    pkg-config
-                    tailwindcss
-                    (dioxus-cli.overrideAttrs (o: rec {
-                      version = "0.5.0-alpha.2";
-
-                      src = pkgs.fetchCrate {
-                        inherit (o) pname;
-                        inherit version;
-                        hash = "sha256-ACvWXDx844f0kSKVhrZ0VLImjRfcGu45BIFtXP5Tf5I=";
-                      };
-
-                      checkFlags = [ "--skip=cli::autoformat::test_auto_fmt" ];
-
-                      cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = src + "/Cargo.lock"; };
-                    }))
-                  ]
-                  ++ libraries;
-
-                env = {
-                  XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:$XDG_DATA_DIRS";
-                  # FIXME: fix lag on wayland?
-                  # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
-                  WEBKIT_DISABLE_COMPOSITING_MODE = 1;
-                  # GDK_BACKEND = "x11";
-                };
-
-                languages = {
-                  javascript = {
-                    enable = true;
-                    npm.enable = true;
-                  };
-                  rust.enable = true;
-                };
-
-                processes = {
-                  # workaround so the tailwind task doesn't exit immediately
-                  tailwind.exec = "(while true; do sleep 10; done) | tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
-                  # dev.exec = "dx serve --platform desktop";
-                };
-
-                scripts = {
-                  tailwind.exec = "tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
-                  dev.exec = "dx serve --platform desktop --hot-reload";
-                  rsx.exec = ''dx translate --raw "$@"'';
-                };
-              }
-            ];
-          };
-        }
-      );
-
-      packages = forEachSystem (
-        system:
+          config,
+          self',
+          inputs',
+          pkgs,
+          system,
+          ...
+        }:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          # custom packages here
+          inherit (inputs.anime-face-detector.packages.${system}) anime-face-detector;
+          realcugan-ncnn-vulkan = (pkgs.callPackage ./nix/realcugan-ncnn-vulkan { });
           catppuccin-tailwindcss =
             (pkgs.callPackage ./nix/catppuccin-tailwindcss { })."@catppuccin/tailwindcss";
-          realcugan-ncnn-vulkan = (pkgs.callPackage ./nix/realcugan-ncnn-vulkan { });
+          # custom tailwind with prebaked catppuccin
+          tailwindcss-with-catppuccin = pkgs.nodePackages.tailwindcss.overrideAttrs (o: {
+            plugins = [ catppuccin-tailwindcss ];
+          });
+          dioxus-cli-0_5 = pkgs.dioxus-cli.overrideAttrs (o: rec {
+            version = "0.5.0-alpha.2";
+
+            src = pkgs.fetchCrate {
+              inherit (o) pname;
+              inherit version;
+              hash = "sha256-ACvWXDx844f0kSKVhrZ0VLImjRfcGu45BIFtXP5Tf5I=";
+            };
+
+            checkFlags = [ "--skip=cli::autoformat::test_auto_fmt" ];
+
+            cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = src + "/Cargo.lock"; };
+          });
         in
-        rec {
-          default = pkgs.callPackage ./nix/wallpaper-ui {
-            inherit realcugan-ncnn-vulkan;
-            inherit (inputs.anime-face-detector.packages.${system}) anime-face-detector;
-            tailwindcss = pkgs.nodePackages.tailwindcss.overrideAttrs (o: {
-              plugins = [ catppuccin-tailwindcss ];
-            });
-            version =
-              if self ? "shortRev" then
-                self.shortRev
-              else
-                nixpkgs.lib.replaceStrings [ "-dirty" ] [ "" ] self.dirtyShortRev;
+        {
+          # Per-system attributes can be defined here. The self' and inputs'
+          # module parameters provide easy access to attributes of the same
+          # system.
+          devenv.shells.default = {
+            packages =
+              with pkgs;
+              # pipeline dependencies
+              [
+                oxipng
+                jpegoptim
+                realcugan-ncnn-vulkan
+              ]
+              ++ [
+                pkg-config
+                tailwindcss-with-catppuccin
+                dioxus-cli-0_5
+              ]
+              ++ [
+                atk
+                cairo
+                dbus
+                gdk-pixbuf
+                glib
+                gtk3
+                libappindicator
+                libsoup_3
+                openssl_3
+                pango
+                webkitgtk_4_1
+                xdotool
+              ];
+
+            env = {
+              XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:$XDG_DATA_DIRS";
+              # FIXME: fix lag on wayland?
+              # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
+              WEBKIT_DISABLE_COMPOSITING_MODE = 1;
+              # GDK_BACKEND = "x11";
+            };
+
+            languages.rust.enable = true;
+
+            processes = {
+              # workaround so the tailwind task doesn't exit immediately
+              tailwind.exec = "(while true; do sleep 10; done) | tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
+              # dev.exec = "dx serve --platform desktop";
+            };
+
+            scripts = {
+              tailwind.exec = "tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
+              dev.exec = "dx serve --platform desktop --hot-reload";
+              rsx.exec = ''dx translate --raw "$@"'';
+            };
           };
-          wallpaper-ui = default;
-        }
-      );
+
+          packages = rec {
+            default = pkgs.callPackage ./nix/wallpaper-ui {
+              inherit realcugan-ncnn-vulkan anime-face-detector;
+              tailwindcss = tailwindcss-with-catppuccin;
+              version =
+                if self ? "shortRev" then
+                  self.shortRev
+                else
+                  nixpkgs.lib.replaceStrings [ "-dirty" ] [ "" ] self.dirtyShortRev;
+            };
+            wallpaper-ui = default;
+          };
+        };
     };
 }
