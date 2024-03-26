@@ -1,5 +1,13 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
+use dioxus_free_icons::icons::{
+    md_action_icons::MdPanTool,
+    md_editor_icons::{
+        MdFormatAlignCenter, MdFormatAlignLeft, MdFormatAlignRight, MdVerticalAlignBottom,
+        MdVerticalAlignCenter, MdVerticalAlignTop,
+    },
+};
+use dioxus_free_icons::Icon;
 use wallpaper_ui::{cropper::Direction, geometry::Geometry};
 
 use crate::{
@@ -48,7 +56,7 @@ pub fn AlignSelector(
     let dir = info.direction(&geom);
 
     rsx! {
-        div { class: "flex gap-x-8",
+        div { class: "flex gap-x-6",
             span {
                 class: "isolate inline-flex rounded-md shadow-sm",
                 AlignButton {
@@ -75,21 +83,33 @@ pub fn AlignSelector(
                     geom: geom.align_start(img_w, img_h),
                     wallpapers,
                     ui,
-                    {if dir == Direction::X { "Left" } else { "Top" }}
+                    if dir == Direction::X {
+                        Icon { fill: "white", icon:  MdFormatAlignLeft }
+                    } else {
+                        Icon { fill: "white", icon: MdVerticalAlignTop }
+                    }
                 }
                 AlignButton {
                     class: "text-sm -ml-px",
                     geom: geom.align_center(img_w, img_h),
                     wallpapers,
                     ui,
-                    {if dir == Direction::X { "Center" } else { "Middle" }}
-                }
+                    if dir == Direction::X {
+                        Icon { fill: "white", icon:  MdFormatAlignCenter }
+                    } else {
+                        Icon { fill: "white", icon: MdVerticalAlignCenter }
+                    }
+               }
                 AlignButton {
                     class: "text-sm rounded-r-md",
                     geom: geom.align_end(img_w, img_h),
                     wallpapers,
                     ui,
-                    {if dir == Direction::X { "Right" } else { "Bottom" }}
+                    if dir == Direction::X {
+                        Icon { fill: "white", icon:  MdFormatAlignRight }
+                    } else {
+                        Icon { fill: "white", icon: MdVerticalAlignBottom }
+                    }
                 }
             }
 
@@ -106,8 +126,8 @@ pub fn AlignSelector(
                                 PreviewMode::Manual
                             }
                         });
-                    }
-                    {"Manual"}
+                    },
+                    Icon { fill: "white", icon: MdPanTool }
                 }
             }
         }

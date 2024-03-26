@@ -13,7 +13,6 @@ pub mod drag_overlay;
 pub mod filelist;
 pub mod preview;
 pub mod ratio_selector;
-pub mod switch;
 
 use crate::{
     align_selector::AlignSelector,
