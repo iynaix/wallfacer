@@ -71,15 +71,17 @@ pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
     rsx! {
         div {
             class: "relative",
-            // store the final rendered width and height of the image
-            onmounted: move |evt| {
-                async move {
-                    let coords = evt.get_client_rect().await.expect("could not get client rect");
-                    let elem_width = coords.width() - 16.0;
-                    final_dimensions.set((elem_width, (elem_width / img_w * img_h).floor()));
-                }
-            },
-            img { src: path }
+            img {
+                src: path,
+                // store the final rendered width and height of the image
+                onmounted: move |evt| {
+                    async move {
+                        let coords = evt.get_client_rect().await.expect("could not get client rect");
+                        let elem_width = coords.width() - 16.0;
+                        final_dimensions.set((elem_width, (elem_width / img_w * img_h).floor()));
+                    }
+                },
+            }
             div {
                 class: overlay_cls,
                 class: start_cls,

@@ -10,7 +10,7 @@ fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>
 
     rsx! {
         li {
-            class: "flex justify-between gap-x-6 py-5",
+            class: "flex justify-between gap-x-6 py-5 cursor-pointer",
             onclick: move |evt| {
                 onclick.call(evt);
             },
