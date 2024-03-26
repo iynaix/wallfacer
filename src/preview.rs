@@ -4,7 +4,7 @@ use wallpaper_ui::{cropper::Direction, wallpapers::Face};
 
 use crate::{
     app_state::{PreviewMode, UiState, Wallpapers},
-    drag_overlay::DraggableOverlay,
+    drag_overlay::DragOverlay,
 };
 
 #[component]
@@ -95,13 +95,15 @@ pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                 style: format!("transform: scale{}({})", direction, end_ratio),
             }
 
-            DraggableOverlay {
-                dimensions: final_dimensions(),
-                image_dimensions: (img_w, img_h),
-                overlay_ratios: (start_ratio, 1.0 - end_ratio),
-                direction,
-                geometry: geom,
-                wallpapers,
+            if is_manual {
+                DragOverlay {
+                    dimensions: final_dimensions(),
+                    image_dimensions: (img_w, img_h),
+                    overlay_ratios: (start_ratio, 1.0 - end_ratio),
+                    direction,
+                    geometry: geom,
+                    wallpapers,
+                }
             }
 
             if ui.show_faces {

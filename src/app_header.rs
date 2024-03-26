@@ -71,7 +71,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         },
                         "<"
                     }
-                    a { class: "text-sm font-semibold leading-6 text-white",
+                    a { class: "text-sm font-semibold leading-6 text-white text-center w-48",
                         onclick: move |_| {
                             ui.with_mut(|ui| {
                                 ui.show_filelist = !ui.show_filelist;

@@ -6,7 +6,7 @@ use wallpaper_ui::{cropper::Direction, geometry::Geometry};
 use crate::app_state::Wallpapers;
 
 #[component]
-pub fn DraggableOverlay(
+pub fn DragOverlay(
     dimensions: (f64, f64),
     image_dimensions: (f64, f64),
     overlay_ratios: (f64, f64),
