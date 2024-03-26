@@ -61,6 +61,7 @@
                 oxipng
                 jpegoptim
                 realcugan-ncnn-vulkan
+                anime-face-detector
               ]
               ++ [
                 pkg-config

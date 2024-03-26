@@ -58,8 +58,21 @@ fn App() -> Element {
     let wallpapers = use_signal(Wallpapers::from_args);
     let ui = use_signal(UiState::default);
 
+    if wallpapers().files.is_empty() {
+        return rsx! {
+            main {
+                class: "dark flex items-center h-full justify-center bg-base overflow-hidden",
+                div {
+                    h1 { class: "mt-4 text-4xl font-bold tracking-tight text-text text-center h-full",
+                        "No more wallpapers to process! 🎉"
+                    }
+                }
+            }
+        };
+    }
+
     rsx! {
-        div {
+        main {
             class: "dark flex flex-col h-full bg-base overflow-hidden",
             AppHeader { wallpapers, ui }
 

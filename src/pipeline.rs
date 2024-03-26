@@ -41,7 +41,7 @@ fn upscale_images(to_upscale: &[(PathBuf, u32)]) {
     });
 }
 
-fn optimize_images(paths: &[PathBuf]) -> Vec<PathBuf> {
+fn optimize_images(paths: &[PathBuf]) {
     let (pngs, jpgs): (Vec<_>, Vec<_>) = paths.iter().partition(|path| {
         path.extension()
             .map_or(false, |ext| ext.eq_ignore_ascii_case("png"))
@@ -78,8 +78,6 @@ fn optimize_images(paths: &[PathBuf]) -> Vec<PathBuf> {
         .expect("could not spawn oxipng")
         .wait()
         .expect("could not wait for oxipng");
-
-    paths.to_vec()
 }
 
 // returns the faces that need to be previewed for selection
@@ -179,11 +177,13 @@ fn main() {
                     {
                         if scale_factor > 1 {
                             let out_path = img.with_extension("png").with_directory(&wall_dir);
-                            to_optimize.push(out_path);
+                            to_optimize.push(out_path.clone());
                             to_upscale.push((img, scale_factor));
+                            to_detect.push(out_path);
                         } else {
                             to_copy.push(img.clone());
                             to_optimize.push(img.with_directory(&wall_dir));
+                            to_detect.push(img);
                         }
                         break;
                     }
@@ -199,7 +199,7 @@ fn main() {
 
     upscale_images(&to_upscale);
 
-    to_detect.extend(optimize_images(&to_optimize));
+    optimize_images(&to_optimize);
 
     to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv));
 
