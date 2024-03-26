@@ -1,9 +1,7 @@
 #![allow(non_snake_case)]
+use clap::Parser;
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
-
-// urls are relative to your Cargo.toml file
-const _TAILWIND_URL: &str = manganis::mg!(file("./public/tailwind.css"));
 
 pub mod align_selector;
 pub mod app_header;
@@ -28,6 +26,12 @@ use crate::{
 };
 
 fn main() {
+    let args = args::WallpaperUIArgs::parse();
+    if args.version {
+        println!("wallpaper-ui {}", env!("CARGO_PKG_VERSION"));
+        std::process::exit(0);
+    }
+
     // use a custom index.html to set the height of body to the full height of the window
     LaunchBuilder::desktop()
         .with_cfg(
@@ -37,6 +41,7 @@ fn main() {
     <head>
         <title>Dioxus app</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="public/tailwind.css">
     </head>
     <body>
         <div id="main" style="height: 100vh;"></div>
@@ -54,7 +59,6 @@ fn App() -> Element {
     let ui = use_signal(UiState::default);
 
     rsx! {
-        link { rel: "stylesheet", href: "../public/tailwind.css" },
         div {
             class: "dark flex flex-col h-full bg-base overflow-hidden",
             AppHeader { wallpapers, ui }

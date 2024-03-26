@@ -2,12 +2,12 @@
 name = "wallpaper-ui"
 version = "0.1.0"
 edition = "2021"
-# build = "build.rs"
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [[bin]]
 name = "wallpaper-pipeline"
-path = "src/cli/pipeline.rs"
+path = "src/pipeline.rs"
 
 [dependencies]
 clap = { version = "4.5.3", features = ["derive"] }
@@ -17,7 +17,7 @@ dirs = "5.0.1"
 image = "0.25.0"
 indexmap = "2.2.5"
 itertools = "0.12.1"
-manganis = "0.2.1"
+# manganis = "0.2.1"
 rayon = "1.9.0"
 serde = "1.0.197"
 serde_json = "1.0.114"
@@ -25,6 +25,7 @@ thiserror = "1.0.58"
 tokio = "1.36.0"
 
 [build-dependencies]
+clap = { version = "4.5.3", features = ["derive"] }
 clap_complete = "4.5.1"
 
 [lints.rust]

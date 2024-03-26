@@ -68,10 +68,7 @@
 
                       checkFlags = [ "--skip=cli::autoformat::test_auto_fmt" ];
 
-                      cargoDeps = pkgs.rustPlatform.importCargoLock {
-                        lockFile = src + "/Cargo.lock";
-                        # allowBuiltinFetchGit = true;
-                      };
+                      cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = src + "/Cargo.lock"; };
                     }))
                   ]
                   ++ libraries;
@@ -106,6 +103,31 @@
               }
             ];
           };
+        }
+      );
+
+      packages = forEachSystem (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          catppuccin-tailwindcss =
+            (pkgs.callPackage ./nix/catppuccin-tailwindcss { })."@catppuccin/tailwindcss";
+          realcugan-ncnn-vulkan = (pkgs.callPackage ./nix/realcugan-ncnn-vulkan { });
+        in
+        rec {
+          default = pkgs.callPackage ./nix/wallpaper-ui {
+            inherit realcugan-ncnn-vulkan;
+            inherit (inputs.anime-face-detector.packages.${system}) anime-face-detector;
+            tailwindcss = pkgs.nodePackages.tailwindcss.overrideAttrs (o: {
+              plugins = [ catppuccin-tailwindcss ];
+            });
+            version =
+              if self ? "shortRev" then
+                self.shortRev
+              else
+                nixpkgs.lib.replaceStrings [ "-dirty" ] [ "" ] self.dirtyShortRev;
+          };
+          wallpaper-ui = default;
         }
       );
     };

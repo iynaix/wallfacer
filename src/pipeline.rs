@@ -1,3 +1,4 @@
+use clap::Parser;
 use rayon::prelude::*;
 use std::{
     path::{Path, PathBuf},
@@ -5,6 +6,7 @@ use std::{
 };
 
 use wallpaper_ui::{
+    args::WallpaperPipelineArgs,
     cropper::{Cropper, FRAMEWORK_RATIO, HD_RATIO, SQUARE_RATIO, ULTRAWIDE_RATIO, VERTICAL_RATIO},
     detect_faces_iter, filename, filter_images, full_path, wallpaper_dir,
     wallpapers::{WallInfo, WallpapersCsv},
@@ -33,9 +35,9 @@ fn upscale_images(to_upscale: &[(PathBuf, u32)]) {
             // silence output
             .stderr(std::process::Stdio::null())
             .spawn()
-            .expect("could not spawn process")
+            .expect("could not spawn realcugan-ncnn-vulkan")
             .wait()
-            .expect("could not wait for process");
+            .expect("could not wait for realcugan-ncnn-vulkan");
     });
 }
 
@@ -57,9 +59,9 @@ fn optimize_images(paths: &[PathBuf]) -> Vec<PathBuf> {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("could not spawn process")
+        .expect("could not spawn jpegoptim")
         .wait()
-        .expect("could not wait for process");
+        .expect("could not wait for jpegoptim");
 
     // oxipng for pngs
     for png in &pngs {
@@ -73,9 +75,9 @@ fn optimize_images(paths: &[PathBuf]) -> Vec<PathBuf> {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("could not spawn process")
+        .expect("could not spawn oxipng")
         .wait()
-        .expect("could not wait for process");
+        .expect("could not wait for oxipng");
 
     paths.to_vec()
 }
@@ -131,6 +133,13 @@ fn get_output_path(img: &Path) -> Option<PathBuf> {
 }
 
 fn main() {
+    let args = WallpaperPipelineArgs::parse();
+
+    if args.version {
+        println!("wallpaper-pipeline {}", env!("CARGO_PKG_VERSION"));
+        std::process::exit(0);
+    }
+
     let input_dir = full_path("~/Pictures/wallpapers_in");
     let wall_dir = wallpaper_dir();
     let mut wallpapers_csv = WallpapersCsv::new();
@@ -205,16 +214,16 @@ fn main() {
                 .args(["run", "--bin", "wallpaper-ui", "--"])
                 .args(to_preview)
                 .spawn()
-                .expect("could not spawn process")
+                .expect("could not spawn wallpaper-ui")
                 .wait()
-                .expect("could not wait for process");
+                .expect("could not wait for wallpaper-ui");
         } else {
             Command::new("wallpaper-ui")
                 .args(to_preview)
                 .spawn()
-                .expect("could not spawn process")
+                .expect("could not spawn wallpaper-ui")
                 .wait()
-                .expect("could not wait for process");
+                .expect("could not wait for wallpaper-ui");
         }
     }
 }

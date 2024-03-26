@@ -1,7 +1,9 @@
 .devenv
 .direnv
 __pycache__
-target/*
+completions
+result
+target
 node_modules/*
 dist/*
 public/tailwind.css
