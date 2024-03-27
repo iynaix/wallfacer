@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use dioxus_free_icons::icons::{
-    md_action_icons::MdDone,
     md_image_icons::MdFaceRetouchingNatural,
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
@@ -41,9 +40,8 @@ pub fn SaveButton(wallpapers: Signal<Wallpapers>) -> Element {
                     wallpapers_csv.insert(info.filename.clone(), info);
                     wallpapers_csv.save();
 
-                    // source has now been updated!
                     wallpapers.with_mut(|wallpapers| {
-                        wallpapers.source = wallpapers.current.clone();
+                        wallpapers.remove();
                     });
 
                     clicked.set(true);
@@ -89,16 +87,6 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                             });
                         },
                         Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
-                    }
-                    // done checkbox
-                    a {
-                        class: "rounded-md bg-indigo-600 ml-3 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
-                        onclick: move |_| {
-                            wallpapers.with_mut(|wallpapers| {
-                                wallpapers.remove();
-                            });
-                        },
-                        Icon { fill: "white", icon:  MdDone }
                     }
                 }
                 div { class: "gap-8 flex flex-1 justify-end",
