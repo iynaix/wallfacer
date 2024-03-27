@@ -30,7 +30,12 @@ rustPlatform.buildRustPackage {
 
   src = ../../.;
 
-  cargoLock.lockFile = ../../Cargo.lock;
+  cargoLock = {
+    lockFile = ../../Cargo.lock;
+    outputHashes = {
+      "dioxus-free-icons-0.8.0" = "sha256-YjBPeRWLq0n1M3LFplOFv4F2Z90hKjzdSCikB9g958M=";
+    };
+  };
 
   env.NIX_RELEASE_VERSION = version;
 
@@ -84,8 +89,8 @@ rustPlatform.buildRustPackage {
       --zsh completions/_*
   '';
 
-  # add own path so wallpaper-pipeline can run wallpaper-ui
   postFixup = ''
+    # add own path so wallpaper-pipeline can run wallpaper-ui
     wrapProgram $out/bin/wallpaper-pipeline \
       --prefix PATH : "$out/bin" \
       --prefix PATH : "${
@@ -96,6 +101,11 @@ rustPlatform.buildRustPackage {
           jpegoptim
         ]
       }"
+
+    # FIXME: GDK_BACKEND=x11 is required for keyboard shortcuts to work?
+    wrapProgram $out/bin/wallpaper-ui \
+      --set WEBKIT_DISABLE_COMPOSITING_MODE 1 \
+      --set GDK_BACKEND x11
   '';
 
   meta = with lib; {
