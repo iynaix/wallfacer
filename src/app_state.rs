@@ -82,6 +82,33 @@ impl Wallpapers {
             all_files.extend(filter_images(&wall_dir));
         }
 
+        let wallpapers_csv = WallpapersCsv::new();
+
+        // filter only wallpapers that still use the default crops if needed
+        all_files.retain(|f| {
+            let fname = filename(f);
+            if let Some(info) = wallpapers_csv.get(&fname) {
+                if args.only_unmodified && !info.is_default_crops() {
+                    return false;
+                }
+
+                if args.only_single && info.faces.len() != 1 {
+                    return false;
+                }
+
+                if args.only_none && !info.faces.is_empty() {
+                    return false;
+                }
+
+                if args.only_multiple && info.faces.len() <= 1 {
+                    return false;
+                }
+
+                return true;
+            }
+            false
+        });
+
         // order by reverse chronological order
         all_files.sort_by_key(|f| {
             f.metadata()
@@ -91,7 +118,6 @@ impl Wallpapers {
         });
         all_files.reverse();
 
-        let wallpapers_csv = WallpapersCsv::new();
         let fname = filename(all_files.first().expect("no wallpapers found"));
         let loaded = wallpapers_csv
             .get(&fname)

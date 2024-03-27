@@ -7,10 +7,10 @@ use dioxus_free_icons::icons::{
 use dioxus_free_icons::Icon;
 use wallpaper_ui::wallpapers::WallpapersCsv;
 
-use crate::app_state::{UiState, Wallpapers};
+use crate::app_state::{PreviewMode, UiState, Wallpapers};
 
 #[component]
-pub fn SaveButton(wallpapers: Signal<Wallpapers>) -> Element {
+pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
     let mut clicked = use_signal(|| false);
 
     use_future(move || async move {
@@ -43,6 +43,9 @@ pub fn SaveButton(wallpapers: Signal<Wallpapers>) -> Element {
                     wallpapers.with_mut(|wallpapers| {
                         wallpapers.remove();
                     });
+                    ui.with_mut(|ui| {
+                        ui.preview_mode = PreviewMode::Candidate(None);
+                    });
 
                     clicked.set(true);
                 }
@@ -69,6 +72,9 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                             wallpapers.with_mut(|wallpapers| {
                                 wallpapers.prev_wall();
                             });
+                            ui.with_mut(|ui| {
+                                ui.preview_mode = PreviewMode::Candidate(None);
+                            });
                         },
                         Icon { fill: "white", icon:  MdChevronLeft, width: 16, height: 16 }
                     }
@@ -84,6 +90,9 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         onclick: move |_| {
                             wallpapers.with_mut(|wallpapers| {
                                 wallpapers.next_wall();
+                            });
+                            ui.with_mut(|ui| {
+                                ui.preview_mode = PreviewMode::Candidate(None);
                             });
                         },
                         Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
@@ -104,7 +113,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         },
                         Icon { fill: "white", icon:  MdFaceRetouchingNatural }
                     }
-                    SaveButton { wallpapers }
+                    SaveButton { wallpapers, ui }
                 }
             }
         }

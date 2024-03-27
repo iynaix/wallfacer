@@ -207,10 +207,14 @@ impl Cropper {
         }
 
         // handle multiple faces
-        self.faces.iter().sorted_by_key(|face| match direction {
-            Direction::X => face.xmin,
-            Direction::Y => face.ymin,
-        });
+        let faces: Vec<_> = self
+            .faces
+            .iter()
+            .sorted_by_key(|face| match direction {
+                Direction::X => face.xmin,
+                Direction::Y => face.ymin,
+            })
+            .collect();
 
         let mut max_faces = 0.0;
         let mut faces_info: Vec<FaceInfo> = vec![];
@@ -224,7 +228,7 @@ impl Cropper {
             let mut num_faces: f32 = 0.0;
             let mut faces_area = 0;
 
-            for face in &self.faces {
+            for face in &faces {
                 // check number of faces in decimal within enclosed within larger rectangle
                 let (min_, max_) = match direction {
                     Direction::X => (face.xmin, face.xmax),
@@ -302,73 +306,91 @@ impl Cropper {
         }
 
         if self.faces.len() == 1 {
-            vec![self
+            return vec![self
                 .crop_single_face(direction, target_width, target_height)
-                .geometry()]
-        } else {
-            self.faces.iter().sorted_by_key(|face| match direction {
+                .geometry()];
+        }
+
+        // finally being multiple faces
+        let faces: Vec<_> = self
+            .faces
+            .iter()
+            .sorted_by_key(|face| match direction {
                 Direction::X => face.xmin,
                 Direction::Y => face.ymin,
-            });
+            })
+            .collect();
 
-            let mut faces_info: Vec<FaceInfo> = vec![];
-            let (rect_max, rect_len) = match direction {
-                Direction::X => (self.width - target_width, target_width),
-                Direction::Y => (self.height - target_height, target_height),
-            };
+        let mut faces_info: Vec<FaceInfo> = vec![];
+        let last_face = faces.last().expect("could not get last face");
 
-            for rect_start in 0..rect_max {
-                // check number of faces in decimal within enclosed within larger rectangle
-                let rect_end = rect_start + rect_len;
+        let rect_len = match direction {
+            Direction::X => target_width,
+            Direction::Y => target_height,
+        };
+        // the max can only be last face + half of target width
+        let rect_max = match direction {
+            Direction::X => std::cmp::min(
+                (last_face.xmin + last_face.xmax + target_width) / 2,
+                self.width - target_width,
+            ),
+            Direction::Y => std::cmp::min(
+                (last_face.ymin + last_face.ymax + target_height) / 2,
+                self.height - target_height,
+            ),
+        };
 
-                for face in &self.faces {
-                    let (min_, max_) = match direction {
-                        Direction::X => (face.xmin, face.xmax),
-                        Direction::Y => (face.ymin, face.ymax),
-                    };
+        for rect_start in 0..rect_max {
+            // check number of faces in decimal within enclosed within larger rectangle
+            let rect_end = rect_start + rect_len;
 
-                    // no intersection, we overshot the final box
-                    if min_ > rect_end {
-                        break;
-                    }
-                    // no intersection
-                    else if max_ < rect_start {
-                        continue;
-                    }
-                    // full intersection
-                    else if min_ >= rect_start && max_ <= rect_end {
-                        faces_info.push(FaceInfo {
-                            area: face.area(),
-                            start: rect_start,
-                        });
-                        continue;
-                    }
+            for face in &faces {
+                let (min_, max_) = match direction {
+                    Direction::X => (face.xmin, face.xmax),
+                    Direction::Y => (face.ymin, face.ymax),
+                };
+
+                // no intersection, we overshot the final box
+                if min_ > rect_end {
+                    break;
+                }
+                // no intersection
+                else if max_ < rect_start {
+                    continue;
+                }
+                // full intersection
+                else if min_ >= rect_start && max_ <= rect_end {
+                    faces_info.push(FaceInfo {
+                        area: face.area(),
+                        start: rect_start,
+                    });
+                    continue;
                 }
             }
-
-            faces_info.sort_by_key(|face_info| (face_info.area, face_info.start));
-
-            // group faces by area
-            let faces_by_area: HashMap<_, Vec<_>> =
-                faces_info
-                    .iter()
-                    .fold(HashMap::new(), |mut acc, face_info| {
-                        acc.entry(face_info.area).or_default().push(face_info.start);
-                        acc
-                    });
-
-            faces_by_area
-                .values()
-                .map(|faces| {
-                    let mid = faces[faces.len() / 2];
-                    self.clamp(mid as f32, direction, target_width, target_height)
-                })
-                .sorted_by_key(|face| match direction {
-                    Direction::X => face.xmin,
-                    Direction::Y => face.ymin,
-                })
-                .map(|face| face.geometry())
-                .collect()
         }
+
+        faces_info.sort_by_key(|face_info| (face_info.area, face_info.start));
+
+        // group faces by area
+        let faces_by_area: HashMap<_, Vec<_>> =
+            faces_info
+                .iter()
+                .fold(HashMap::new(), |mut acc, face_info| {
+                    acc.entry(face_info.area).or_default().push(face_info.start);
+                    acc
+                });
+
+        faces_by_area
+            .values()
+            .map(|faces| {
+                let mid = faces[faces.len() / 2];
+                self.clamp(mid as f32, direction, target_width, target_height)
+            })
+            .sorted_by_key(|face| match direction {
+                Direction::X => face.xmin,
+                Direction::Y => face.ymin,
+            })
+            .map(|face| face.geometry())
+            .collect()
     }
 }
