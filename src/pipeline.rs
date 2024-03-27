@@ -158,9 +158,9 @@ fn main() {
             Some(out_path) => {
                 // check if corresponding WallInfo exists
                 match wallpapers_csv.get(&filename(&out_path)) {
-                    // re-preview if multiple faces detected and still using default crop
+                    // re-preview if no / multiple faces detected and still using default crop
                     Some(info) => {
-                        if info.faces.len() > 1 && info.is_default_crops() {
+                        if info.faces.len() != 1 && info.is_default_crops() {
                             to_preview.push(img.clone());
                         }
                     }
