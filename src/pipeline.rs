@@ -108,7 +108,8 @@ fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<Pa
             wallust: String::new(),
         };
 
-        if wall_info.faces.len() > 1 {
+        // preview both multiple faces and no faces
+        if wall_info.faces.len() != 1 {
             to_preview.push(wallpaper_dir().join(&fname));
         }
 

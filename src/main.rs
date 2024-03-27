@@ -34,8 +34,13 @@ fn main() {
     // use a custom index.html to set the height of body to the full height of the window
     LaunchBuilder::desktop()
         .with_cfg(
-            Config::new().with_custom_index(
-                r#"<!DOCTYPE html>
+            Config::new()
+                .with_background_color((30, 30, 46, 255))
+                .with_default_menu_bar(false)
+                // disable on release builds
+                .with_disable_context_menu(!cfg!(debug_assertions))
+                .with_custom_index(
+                    r#"<!DOCTYPE html>
 <html>
     <head>
         <title>Dioxus app</title>
@@ -46,8 +51,8 @@ fn main() {
         <div id="main" style="height: 100vh;"></div>
     </body>
 </html>"#
-                    .to_string(),
-            ),
+                        .to_string(),
+                ),
         )
         .launch(App);
 }
