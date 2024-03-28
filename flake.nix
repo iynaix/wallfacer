@@ -35,19 +35,6 @@
           tailwindcss-with-catppuccin = pkgs.nodePackages.tailwindcss.overrideAttrs (o: {
             plugins = [ catppuccin-tailwindcss ];
           });
-          dioxus-cli-0_5 = pkgs.dioxus-cli.overrideAttrs (o: rec {
-            version = "0.5.0-alpha.2";
-
-            src = pkgs.fetchCrate {
-              inherit (o) pname;
-              inherit version;
-              hash = "sha256-ACvWXDx844f0kSKVhrZ0VLImjRfcGu45BIFtXP5Tf5I=";
-            };
-
-            checkFlags = [ "--skip=cli::autoformat::test_auto_fmt" ];
-
-            cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = src + "/Cargo.lock"; };
-          });
         in
         {
           # Per-system attributes can be defined here. The self' and inputs'
@@ -66,7 +53,7 @@
               ++ [
                 pkg-config
                 tailwindcss-with-catppuccin
-                dioxus-cli-0_5
+                dioxus-cli
               ]
               ++ [
                 atk

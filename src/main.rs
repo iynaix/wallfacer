@@ -36,7 +36,7 @@ fn main() {
         .with_cfg(
             Config::new()
                 .with_background_color((30, 30, 46, 255))
-                .with_default_menu_bar(false)
+                .with_menu(None)
                 // disable on release builds
                 .with_disable_context_menu(!cfg!(debug_assertions))
                 .with_custom_index(
@@ -61,8 +61,9 @@ fn main() {
 fn App() -> Element {
     let wallpapers = use_signal(Wallpapers::from_args);
     let ui = use_signal(UiState::default);
+    let has_files = !wallpapers().files.is_empty();
 
-    if wallpapers().files.is_empty() {
+    if !has_files {
         return rsx! {
             main {
                 class: "dark flex items-center h-full justify-center bg-base overflow-hidden",

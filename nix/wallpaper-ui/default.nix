@@ -30,12 +30,7 @@ rustPlatform.buildRustPackage {
 
   src = ../../.;
 
-  cargoLock = {
-    lockFile = ../../Cargo.lock;
-    outputHashes = {
-      "dioxus-free-icons-0.8.0" = "sha256-YjBPeRWLq0n1M3LFplOFv4F2Z90hKjzdSCikB9g958M=";
-    };
-  };
+  cargoLock.lockFile = ../../Cargo.lock;
 
   env.NIX_RELEASE_VERSION = version;
 
