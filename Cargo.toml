@@ -9,6 +9,10 @@ build = "build.rs"
 name = "wallpaper-pipeline"
 path = "src/pipeline.rs"
 
+[[bin]]
+name = "batch"
+path = "src/batch.rs"
+
 [dependencies]
 dioxus-free-icons = { version = "0.8.3", features = [
     "material-design-icons-action",

@@ -18,6 +18,13 @@ pub struct Face {
 }
 
 impl Face {
+    pub const fn dir_bounds(&self, direction: Direction) -> (u32, u32) {
+        match direction {
+            Direction::X => (self.xmin, self.xmax),
+            Direction::Y => (self.ymin, self.ymax),
+        }
+    }
+
     #[inline]
     pub const fn area(&self) -> u32 {
         (self.xmax - self.xmin) * (self.ymax - self.ymin)

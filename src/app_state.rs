@@ -103,10 +103,8 @@ impl Wallpapers {
                 if args.only_multiple && info.faces.len() <= 1 {
                     return false;
                 }
-
-                return true;
             }
-            false
+            true
         });
 
         // order by reverse chronological order
@@ -118,7 +116,11 @@ impl Wallpapers {
         });
         all_files.reverse();
 
-        let fname = filename(all_files.first().expect("no wallpapers found"));
+        let fname = filename(
+            all_files
+                .first()
+                .unwrap_or_else(|| panic!("no wallpapers found")),
+        );
         let loaded = wallpapers_csv
             .get(&fname)
             .expect("could not get wallpaper info");

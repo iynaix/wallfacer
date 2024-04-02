@@ -17,7 +17,8 @@ impl std::fmt::Display for Direction {
     }
 }
 
-struct FaceInfo {
+#[derive(Debug)]
+struct FaceArea {
     area: u32,
     start: u32,
 }
@@ -36,6 +37,15 @@ impl std::fmt::Display for AspectRatio {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}x{}", self.0, self.1)
     }
+}
+
+fn sort_faces_by_direction(faces: Vec<Face>, direction: Direction) -> Vec<Face> {
+    let mut faces = faces;
+    faces.sort_by_key(|face| match direction {
+        Direction::X => face.xmin,
+        Direction::Y => face.ymin,
+    });
+    faces
 }
 
 pub const HD_RATIO: AspectRatio = AspectRatio(1920, 1080);
@@ -82,57 +92,41 @@ impl Cropper {
         )
     }
 
-    fn clamp(&self, val: f32, direction: Direction, target_width: u32, target_height: u32) -> Face {
-        let min_ = val;
-        match direction {
+    fn clamp(
+        &self,
+        val: f32,
+        direction: Direction,
+        target_width: u32,
+        target_height: u32,
+    ) -> Geometry {
+        let (x, y) = match direction {
             Direction::X => {
-                let max_ = min_ + target_width as f32;
-                if min_ < 0.0 {
-                    Face {
-                        xmax: target_width,
-                        ymax: self.height,
-                        ..Face::default()
-                    }
+                let max_ = val + target_width as f32;
+                if val < 0.0 {
+                    (0, 0)
                 } else if max_ > self.width as f32 {
-                    Face {
-                        xmin: self.width - target_width,
-                        xmax: self.width,
-                        ymax: self.height,
-                        ..Face::default()
-                    }
+                    (self.width - target_width, 0)
                 } else {
-                    Face {
-                        xmin: min_ as u32,
-                        xmax: max_ as u32,
-                        ymax: self.height,
-                        ..Face::default()
-                    }
+                    (val as u32, 0)
                 }
             }
             Direction::Y => {
-                let max_ = min_ + target_height as f32;
-                if min_ < 0.0 {
-                    Face {
-                        ymax: target_height,
-                        xmax: self.width,
-                        ..Face::default()
-                    }
+                let max_ = val + target_height as f32;
+                if val < 0.0 {
+                    (0, 0)
                 } else if max_ > self.height as f32 {
-                    Face {
-                        ymin: self.height - target_height,
-                        ymax: self.height,
-                        xmax: self.width,
-                        ..Face::default()
-                    }
+                    (0, self.height - target_height)
                 } else {
-                    Face {
-                        ymin: min_ as u32,
-                        ymax: max_ as u32,
-                        xmax: self.width,
-                        ..Face::default()
-                    }
+                    (0, val as u32)
                 }
             }
+        };
+
+        Geometry {
+            x,
+            y,
+            w: target_width,
+            h: target_height,
         }
     }
 
@@ -141,99 +135,112 @@ impl Cropper {
         direction: Direction,
         target_width: u32,
         target_height: u32,
-    ) -> Face {
-        let Face {
-            xmin,
-            xmax,
-            ymin,
-            ymax,
-        } = &self.faces[0];
-        match direction {
-            Direction::X => {
-                let mid = (xmin + xmax) as f32 / 2.0;
-                self.clamp(
-                    mid - (target_width as f32 / 2.0),
-                    direction,
-                    target_width,
-                    target_height,
-                )
-            }
-            Direction::Y => {
-                let mid = (ymin + ymax) as f32 / 2.0;
-                self.clamp(
-                    mid - (target_height as f32 / 2.0),
-                    direction,
-                    target_width,
-                    target_height,
-                )
-            }
+    ) -> Geometry {
+        let face = &self.faces[0];
+        let mid = match direction {
+            Direction::X => (face.xmin + face.xmax) as f32 / 2.0 - target_width as f32 / 2.0,
+            Direction::Y => (face.ymin + face.ymax) as f32 / 2.0 - target_height as f32 / 2.0,
+        };
+        self.clamp(mid, direction, target_width, target_height)
+    }
+
+    /// trivial crops, either same aspect ratio (entire image), no facec or single face
+    fn crop_trivial(
+        &self,
+        direction: Direction,
+        target_width: u32,
+        target_height: u32,
+    ) -> Option<Geometry> {
+        // entire image
+        if self.width == target_width && self.height == target_height {
+            return Some(Geometry {
+                x: 0,
+                y: 0,
+                w: target_width,
+                h: target_height,
+            });
         }
+
+        // midpoint of image
+        if self.faces.is_empty() {
+            let (x, y) = match direction {
+                Direction::X => ((self.width - target_width) / 2, 0),
+                Direction::Y => (0, (self.height - target_height) / 2),
+            };
+            return Some(Geometry {
+                x,
+                y,
+                w: target_width,
+                h: target_height,
+            });
+        }
+
+        if self.faces.len() == 1 {
+            return Some(self.crop_single_face(direction, target_width, target_height));
+        }
+
+        // multiple faces, more processing is needed
+        None
+    }
+
+    /// creates a range for a sliding window of target geometry to check for face intersections
+    fn sliding_window_range(
+        &self,
+        faces: &[Face],
+        direction: Direction,
+        target: u32,
+    ) -> impl Iterator<Item = (u32, u32)> {
+        // cannot exceed the image dimensions
+        let img_max = match direction {
+            Direction::X => self.width - target,
+            Direction::Y => self.height - target,
+        };
+
+        // the min can only be first face - half of target width
+        let (first_min, first_max) = faces[0].dir_bounds(direction);
+        let start = {
+            // prevent subtract overflow
+            let tmp = first_min + first_max;
+            if tmp < target {
+                0
+            } else {
+                (tmp - target) / 2
+            }
+        };
+        let start = std::cmp::min(start, img_max);
+
+        // the max can only be last face + half of target width
+        let (last_min, last_max) = faces[faces.len() - 1].dir_bounds(direction);
+        let end = std::cmp::min((last_min + last_max + target) / 2, img_max);
+
+        (start..=end).map(move |rect_start| (rect_start, rect_start + target))
     }
 
     pub fn crop(&self, aspect_ratio: &AspectRatio) -> Geometry {
         let (target_width, target_height, direction) = self.crop_rect(aspect_ratio);
+        let target = match direction {
+            Direction::X => target_width,
+            Direction::Y => target_height,
+        };
 
-        // entire image
-        if self.width == target_width && self.height == target_height {
-            return Geometry {
-                x: 0,
-                y: 0,
-                w: self.width,
-                h: self.height,
-            };
-        }
-
-        if self.faces.is_empty() {
-            return match direction {
-                Direction::X => Geometry {
-                    w: target_width,
-                    h: self.height,
-                    x: (self.width - target_width) / 2,
-                    y: 0,
-                },
-                Direction::Y => Geometry {
-                    w: self.width,
-                    h: target_height,
-                    x: 0,
-                    y: (self.height - target_height) / 2,
-                },
-            };
-        }
-
-        if self.faces.len() == 1 {
-            return self
-                .crop_single_face(direction, target_width, target_height)
-                .geometry();
+        if let Some(cropped_geom) = self.crop_trivial(direction, target_width, target_height) {
+            return cropped_geom;
         }
 
         // handle multiple faces
-        let faces: Vec<_> = self
-            .faces
-            .iter()
-            .sorted_by_key(|face| match direction {
-                Direction::X => face.xmin,
-                Direction::Y => face.ymin,
-            })
-            .collect();
+        let faces = sort_faces_by_direction(self.faces.clone(), direction);
 
         let mut max_faces = 0.0;
-        let mut faces_info: Vec<FaceInfo> = vec![];
-        let (rect_max, rect_len) = match direction {
-            Direction::X => (self.width - target_width, target_width),
-            Direction::Y => (self.height - target_height, target_height),
-        };
+        let mut face_areas: Vec<FaceArea> = vec![];
 
-        for rect_start in 0..rect_max {
-            let rect_end = rect_start + rect_len;
+        // slides a window of target geometry across the image, counting faces and intersections
+        for (rect_start, rect_end) in self.sliding_window_range(&faces, direction, target) {
             let mut num_faces: f32 = 0.0;
             let mut faces_area = 0;
 
             for face in &faces {
                 // check number of faces in decimal within enclosed within larger rectangle
-                let (min_, max_) = match direction {
-                    Direction::X => (face.xmin, face.xmax),
-                    Direction::Y => (face.ymin, face.ymax),
-                };
+                let (min_, max_) = face.dir_bounds(direction);
 
                 // no intersection, we overshot the final box
                 if min_ > rect_end {
@@ -266,12 +273,12 @@ impl Cropper {
             if num_faces > 0.0 {
                 if num_faces > max_faces {
                     max_faces = num_faces;
-                    faces_info = vec![FaceInfo {
+                    face_areas = vec![FaceArea {
                         area: faces_area,
                         start: rect_start,
                     }];
                 } else if (num_faces - max_faces).abs() < f32::EPSILON {
-                    faces_info.push(FaceInfo {
+                    face_areas.push(FaceArea {
                         area: faces_area,
                         start: rect_start,
                     });
@@ -279,76 +286,40 @@ impl Cropper {
             }
         }
 
-        faces_info.sort_by_key(|face_info| (face_info.area, face_info.start));
+        face_areas.sort_by_key(|face_info| (face_info.area, face_info.start));
         // use the match with the maximum area of face coverage
-        let max_face_area = faces_info.last().expect("could not get max face area").area;
-        faces_info.retain(|face_info| face_info.area == max_face_area);
+        let max_face_area = face_areas.last().expect("face_areas is empty!").area;
+        face_areas.retain(|face_info| face_info.area == max_face_area);
 
         self.clamp(
-            faces_info[faces_info.len() / 2].start as f32,
+            face_areas[face_areas.len() / 2].start as f32,
             direction,
             target_width,
             target_height,
         )
-        .geometry()
     }
 
+    /// shows cropping candidate rectangles for multiple faces
     pub fn crop_candidates(&self, aspect_ratio: &AspectRatio) -> Vec<Geometry> {
         let (target_width, target_height, direction) = self.crop_rect(aspect_ratio);
-
-        if self.width == target_width && self.height == target_height {
-            return vec![Geometry {
-                x: 0,
-                y: 0,
-                w: self.width,
-                h: self.height,
-            }];
-        }
-
-        if self.faces.len() == 1 {
-            return vec![self
-                .crop_single_face(direction, target_width, target_height)
-                .geometry()];
-        }
-
-        // finally being multiple faces
-        let faces: Vec<_> = self
-            .faces
-            .iter()
-            .sorted_by_key(|face| match direction {
-                Direction::X => face.xmin,
-                Direction::Y => face.ymin,
-            })
-            .collect();
-
-        let mut faces_info: Vec<FaceInfo> = vec![];
-        let last_face = faces.last().expect("could not get last face");
-
-        let rect_len = match direction {
+        let target = match direction {
             Direction::X => target_width,
             Direction::Y => target_height,
         };
-        // the max can only be last face + half of target width
-        let rect_max = match direction {
-            Direction::X => std::cmp::min(
-                (last_face.xmin + last_face.xmax + target_width) / 2,
-                self.width - target_width,
-            ),
-            Direction::Y => std::cmp::min(
-                (last_face.ymin + last_face.ymax + target_height) / 2,
-                self.height - target_height,
-            ),
-        };
 
-        for rect_start in 0..rect_max {
+        if let Some(cropped_geom) = self.crop_trivial(direction, target_width, target_height) {
+            return vec![cropped_geom];
+        }
+
+        // handle multiple faces
+        let faces = sort_faces_by_direction(self.faces.clone(), direction);
+        let mut face_areas: Vec<FaceArea> = vec![];
+
+        // slides a window of target geometry across the image, counting faces and intersections
+        for (rect_start, rect_end) in self.sliding_window_range(&faces, direction, target) {
             // check number of faces in decimal within enclosed within larger rectangle
-            let rect_end = rect_start + rect_len;
-
             for face in &faces {
-                let (min_, max_) = match direction {
-                    Direction::X => (face.xmin, face.xmax),
-                    Direction::Y => (face.ymin, face.ymax),
-                };
+                let (min_, max_) = face.dir_bounds(direction);
 
                 // no intersection, we overshot the final box
                 if min_ > rect_end {
@@ -360,7 +331,7 @@ impl Cropper {
                 }
                 // full intersection
                 else if min_ >= rect_start && max_ <= rect_end {
-                    faces_info.push(FaceInfo {
+                    face_areas.push(FaceArea {
                         area: face.area(),
                         start: rect_start,
                     });
@@ -369,11 +340,11 @@ impl Cropper {
             }
         }
 
-        faces_info.sort_by_key(|face_info| (face_info.area, face_info.start));
+        face_areas.sort_by_key(|face_info| (face_info.area, face_info.start));
 
         // group faces by area
         let faces_by_area: HashMap<_, Vec<_>> =
-            faces_info
+            face_areas
                 .iter()
                 .fold(HashMap::new(), |mut acc, face_info| {
                     acc.entry(face_info.area).or_default().push(face_info.start);
@@ -386,11 +357,10 @@ impl Cropper {
                 let mid = faces[faces.len() / 2];
                 self.clamp(mid as f32, direction, target_width, target_height)
             })
-            .sorted_by_key(|face| match direction {
-                Direction::X => face.xmin,
-                Direction::Y => face.ymin,
+            .sorted_by_key(|geom| match direction {
+                Direction::X => geom.x,
+                Direction::Y => geom.y,
             })
-            .map(|face| face.geometry())
             .collect()
     }
 }
