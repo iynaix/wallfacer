@@ -88,6 +88,18 @@ impl Wallpapers {
         all_files.retain(|f| {
             let fname = filename(f);
             if let Some(info) = wallpapers_csv.get(&fname) {
+                if args.filter.is_some()
+                    && !fname.to_lowercase().contains(
+                        &args
+                            .filter
+                            .as_ref()
+                            .expect("no --filter provided")
+                            .to_lowercase(),
+                    )
+                {
+                    return false;
+                }
+
                 if args.only_unmodified && !info.is_default_crops() {
                     return false;
                 }

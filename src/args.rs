@@ -36,6 +36,9 @@ pub struct WallpaperUIArgs {
     )]
     pub only_multiple: bool,
 
+    #[arg(long, help = "filters wallpapers by filename (case-insensitive)")]
+    pub filter: Option<String>,
+
     // positional arguments for file paths
     pub paths: Option<Vec<String>>,
 }
