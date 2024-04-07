@@ -63,15 +63,13 @@ pub fn Candidates(
                                 ui.preview_mode = PreviewMode::Candidate(None);
                             });
                         },
-                        onclick: {
-                            move |_| {
-                                wallpapers.with_mut(|wallpapers| {
-                                    wallpapers.set_geometry(&geom);
-                                });
-                                ui.with_mut(|ui| {
-                                    ui.preview_mode = PreviewMode::Candidate(None);
-                                });
-                            }
+                        onclick: move |_| {
+                            wallpapers.with_mut(|wallpapers| {
+                                wallpapers.set_geometry(&geom);
+                            });
+                            ui.with_mut(|ui| {
+                                ui.preview_mode = PreviewMode::Candidate(None);
+                            });
                         },
                         {(i + 1).to_string()}
                     }

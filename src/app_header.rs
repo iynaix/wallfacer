@@ -33,22 +33,20 @@ pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Elemen
         a {
             class: "rounded-md px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
             class: btn_color,
-            onclick: {
-                move |_| {
-                    let info = wallpapers().current;
-                    let mut wallpapers_csv = WallpapersCsv::new();
-                    wallpapers_csv.insert(info.filename.clone(), info);
-                    wallpapers_csv.save();
+            onclick: move |_| {
+                let info = wallpapers().current;
+                let mut wallpapers_csv = WallpapersCsv::load();
+                wallpapers_csv.insert(info.filename.clone(), info);
+                wallpapers_csv.save();
 
-                    wallpapers.with_mut(|wallpapers| {
-                        wallpapers.remove();
-                    });
-                    ui.with_mut(|ui| {
-                        ui.preview_mode = PreviewMode::Candidate(None);
-                    });
+                wallpapers.with_mut(|wallpapers| {
+                    wallpapers.remove();
+                });
+                ui.with_mut(|ui| {
+                    ui.preview_mode = PreviewMode::Candidate(None);
+                });
 
-                    clicked.set(true);
-                }
+                clicked.set(true);
             },
             {btn_text}
         }

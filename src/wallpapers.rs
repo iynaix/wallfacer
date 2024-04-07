@@ -1,6 +1,11 @@
 use indexmap::IndexMap;
-use serde::{Deserialize, Serialize, Serializer};
-use std::path::PathBuf;
+use itertools::Itertools;
+use serde::{
+    de::{self},
+    ser::SerializeSeq,
+    Deserialize, Deserializer, Serialize, Serializer,
+};
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
     cropper::{AspectRatio, Cropper, Direction},
@@ -60,35 +65,115 @@ impl Serialize for Face {
     }
 }
 
-// serialize Vec<Face> as a json string
-fn to_faces<S>(faces: &Vec<Face>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    let s = serde_json::to_string(faces).map_err(serde::ser::Error::custom)?;
-    serializer.serialize_str(&s)
-}
-
-// deserialize as a json string into a Vec<Face>
-fn from_faces<'de, D>(deserializer: D) -> Result<Vec<Face>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    serde_json::from_str(&s).map_err(serde::de::Error::custom)
-}
-
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct WallInfo {
     pub filename: String,
-    #[serde(serialize_with = "to_faces", deserialize_with = "from_faces")]
     pub faces: Vec<Face>,
-    pub r1440x2560: Geometry,
-    pub r2256x1504: Geometry,
-    pub r3440x1440: Geometry,
-    pub r1920x1080: Geometry,
-    pub r1x1: Geometry,
+    pub geometries: HashMap<AspectRatio, Geometry>,
     pub wallust: String,
+}
+
+impl Serialize for WallInfo {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(3 + self.geometries.len()))?;
+
+        seq.serialize_element(&self.filename)?;
+        seq.serialize_element(
+            // serialize Vec<Face> as a json string
+            &serde_json::to_string(&self.faces).expect("could not serialize faces"),
+        )?;
+        for (_, geom) in self.sorted_geometries() {
+            seq.serialize_element(&geom)?;
+        }
+        seq.serialize_element(&self.wallust)?;
+
+        seq.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for WallInfo {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field {
+            Filename,
+            Faces,
+            Geometries,
+            Wallust,
+        }
+
+        struct WallInfo2Visitor;
+
+        impl<'de> de::Visitor<'de> for WallInfo2Visitor {
+            type Value = WallInfo;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct WallInfo2")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
+            where
+                V: de::MapAccess<'de>,
+            {
+                let mut filename = None;
+                let mut faces = None;
+                let mut geometries: HashMap<AspectRatio, Geometry> = HashMap::new();
+                let mut wallust = None;
+
+                while let Some((key, value)) = map.next_entry::<&str, String>()? {
+                    match key {
+                        "filename" => {
+                            if filename.is_some() {
+                                return Err(de::Error::duplicate_field("filename"));
+                            }
+                            filename = Some(value);
+                        }
+                        "faces" => {
+                            if faces.is_some() {
+                                return Err(de::Error::duplicate_field("faces"));
+                            }
+                            faces = Some(value);
+                        }
+                        "wallust" => {
+                            if wallust.is_some() {
+                                return Err(de::Error::duplicate_field("wallust"));
+                            }
+                            wallust = Some(value);
+                        }
+                        _ => {
+                            geometries.insert(
+                                key.try_into()
+                                    .expect("could not convert aspect ratio into string"),
+                                value
+                                    .try_into()
+                                    .expect("could not convert geometry into string"),
+                            );
+                        }
+                    }
+                }
+
+                let filename = filename.ok_or_else(|| de::Error::missing_field("filename"))?;
+                let faces = faces.ok_or_else(|| de::Error::missing_field("faces"))?;
+                let wallust = wallust.ok_or_else(|| de::Error::missing_field("wallust"))?;
+
+                Ok(WallInfo {
+                    filename,
+                    faces: serde_json::from_str(&faces).expect("could not deserialize faces"),
+                    geometries,
+                    wallust,
+                })
+            }
+        }
+
+        const FIELDS: &[&str] = &["filename", "faces", "geometries", "wallust"];
+        deserializer.deserialize_struct("WallInfo2", FIELDS, WallInfo2Visitor)
+    }
 }
 
 impl WallInfo {
@@ -121,25 +206,18 @@ impl WallInfo {
     }
 
     pub fn get_geometry(&self, ratio: &AspectRatio) -> Geometry {
-        match ratio {
-            AspectRatio(1440, 2560) => self.r1440x2560.clone(),
-            AspectRatio(2256, 1504) => self.r2256x1504.clone(),
-            AspectRatio(3440, 1440) => self.r3440x1440.clone(),
-            AspectRatio(1920, 1080) => self.r1920x1080.clone(),
-            AspectRatio(1, 1) => self.r1x1.clone(),
-            _ => self.cropper().crop(ratio),
-        }
+        self.geometries
+            .get(ratio)
+            .map_or_else(|| self.cropper().crop(ratio), std::clone::Clone::clone)
     }
 
     pub fn set_geometry(&mut self, ratio: &AspectRatio, new_geom: &Geometry) {
-        match ratio {
-            AspectRatio(1440, 2560) => self.r1440x2560 = new_geom.clone(),
-            AspectRatio(2256, 1504) => self.r2256x1504 = new_geom.clone(),
-            AspectRatio(3440, 1440) => self.r3440x1440 = new_geom.clone(),
-            AspectRatio(1920, 1080) => self.r1920x1080 = new_geom.clone(),
-            AspectRatio(1, 1) => self.r1x1 = new_geom.clone(),
-            _ => {}
-        }
+        self.geometries.insert(ratio.clone(), new_geom.clone());
+    }
+
+    // sort geometries by key
+    pub fn sorted_geometries(&self) -> impl Iterator<Item = (&AspectRatio, &Geometry)> {
+        self.geometries.iter().sorted_by_key(|(k, _)| *k)
     }
 
     pub fn is_default_crops(&self) -> bool {
@@ -184,7 +262,7 @@ pub struct WallpapersCsv {
 }
 
 impl WallpapersCsv {
-    pub fn new() -> Self {
+    pub fn load() -> Self {
         let wallpapers_csv = full_path("~/Pictures/Wallpapers/wallpapers.csv");
 
         let reader = std::io::BufReader::new(
@@ -223,13 +301,33 @@ impl WallpapersCsv {
         );
 
         let mut wtr = csv::WriterBuilder::new()
-            .has_headers(true)
+            .has_headers(false)
             .from_writer(writer);
+
+        // manually write the header
+        let mut header = vec!["filename".to_string(), "faces".to_string()];
+        for (ratio, _) in self
+            .wallpapers
+            .iter()
+            .next()
+            .expect("could not get first column")
+            .1
+            .sorted_geometries()
+        {
+            let ratio = ratio.to_string();
+            header.push(ratio);
+        }
+        header.push("wallust".to_string());
+
+        wtr.write_record(header)
+            .expect("could not write csv header");
 
         for row in self.wallpapers.values() {
             if wallpaper_dir().join(&row.filename).exists() {
-                wtr.serialize(row)
-                    .unwrap_or_else(|_| panic!("could not write row: {:?}", &row));
+                wtr.serialize(row).unwrap_or_else(|e| {
+                    eprintln!("{:?}", e);
+                    panic!("could not write row: {:?}", &row);
+                });
             }
         }
     }
@@ -237,7 +335,7 @@ impl WallpapersCsv {
 
 impl Default for WallpapersCsv {
     fn default() -> Self {
-        Self::new()
+        Self::load()
     }
 }
 

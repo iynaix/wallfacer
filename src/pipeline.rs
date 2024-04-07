@@ -7,7 +7,7 @@ use std::{
 
 use wallpaper_ui::{
     args::WallpaperPipelineArgs,
-    cropper::{Cropper, FRAMEWORK_RATIO, HD_RATIO, SQUARE_RATIO, ULTRAWIDE_RATIO, VERTICAL_RATIO},
+    cropper::{AspectRatio, Cropper},
     detect_faces_iter, filename, filter_images, full_path, wallpaper_dir,
     wallpapers::{WallInfo, WallpapersCsv},
     PathBufExt,
@@ -96,15 +96,19 @@ fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<Pa
         let cropper = Cropper::new(&fname, &faces);
 
         // create WallInfo and save it
-        let vertical_crop = cropper.crop(&VERTICAL_RATIO);
         let wall_info = WallInfo {
             filename: fname.clone(),
             faces,
-            r1440x2560: vertical_crop.clone(),
-            r2256x1504: cropper.crop(&FRAMEWORK_RATIO),
-            r3440x1440: cropper.crop(&ULTRAWIDE_RATIO),
-            r1920x1080: cropper.crop(&HD_RATIO),
-            r1x1: cropper.crop(&SQUARE_RATIO),
+            geometries: [
+                AspectRatio(1440, 2560), // vertical
+                AspectRatio(1, 1),       // square
+                AspectRatio(2256, 1504), // framework
+                AspectRatio(1920, 1080), // hd
+                AspectRatio(3440, 1440), // ultrawide
+            ]
+            .iter()
+            .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
+            .collect(),
             wallust: String::new(),
         };
 
@@ -141,7 +145,7 @@ fn main() {
 
     let input_dir = full_path("~/Pictures/wallpapers_in");
     let wall_dir = wallpaper_dir();
-    let mut wallpapers_csv = WallpapersCsv::new();
+    let mut wallpapers_csv = WallpapersCsv::load();
 
     let mut to_copy = Vec::new();
     let mut to_upscale = Vec::new();

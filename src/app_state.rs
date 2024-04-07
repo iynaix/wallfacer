@@ -82,7 +82,7 @@ impl Wallpapers {
             all_files.extend(filter_images(&wall_dir));
         }
 
-        let wallpapers_csv = WallpapersCsv::new();
+        let wallpapers_csv = WallpapersCsv::load();
 
         // filter only wallpapers that still use the default crops if needed
         all_files.retain(|f| {
@@ -153,7 +153,7 @@ impl Wallpapers {
             self.index - 1
         };
 
-        let wallpapers_csv = WallpapersCsv::new();
+        let wallpapers_csv = WallpapersCsv::load();
         let loaded = wallpapers_csv
             // bounds check is not necessary since the index is always valid
             .get(&filename(&self.files[self.index]))
@@ -170,7 +170,7 @@ impl Wallpapers {
             self.index + 1
         };
 
-        let wallpapers_csv = WallpapersCsv::new();
+        let wallpapers_csv = WallpapersCsv::load();
         let loaded = wallpapers_csv
             // bounds check is not necessary since the index is always valid
             .get(&filename(&self.files[self.index]))
@@ -189,7 +189,7 @@ impl Wallpapers {
     }
 
     pub fn set_from_filename(&mut self, fname: &str) {
-        let wallpapers_csv = WallpapersCsv::new();
+        let wallpapers_csv = WallpapersCsv::load();
         let loaded = wallpapers_csv
             .get(fname)
             .expect("could not get wallpaper info")

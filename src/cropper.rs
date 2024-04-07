@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use serde::Serialize;
 use std::{collections::HashMap, path::PathBuf};
 
 use image::image_dimensions;
@@ -30,12 +31,53 @@ pub struct Cropper {
     pub height: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AspectRatio(pub u32, pub u32);
 
 impl std::fmt::Display for AspectRatio {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}x{}", self.0, self.1)
+    }
+}
+
+impl std::cmp::PartialOrd for AspectRatio {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl std::cmp::Ord for AspectRatio {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let self_ratio = f64::from(self.0) / f64::from(self.1);
+        let other_ratio = f64::from(other.0) / f64::from(other.1);
+        self_ratio
+            .partial_cmp(&other_ratio)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    }
+}
+
+impl std::convert::TryFrom<&str> for AspectRatio {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let parts: Vec<&str> = s.split('x').collect();
+        if parts.len() != 2 {
+            return Err(());
+        }
+
+        Ok(Self(
+            parts[0].parse().map_err(|_| ())?,
+            parts[1].parse().map_err(|_| ())?,
+        ))
+    }
+}
+
+impl Serialize for AspectRatio {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        serializer.serialize_str(&format!("{}", self))
     }
 }
 
@@ -47,12 +89,6 @@ fn sort_faces_by_direction(faces: Vec<Face>, direction: Direction) -> Vec<Face> 
     });
     faces
 }
-
-pub const HD_RATIO: AspectRatio = AspectRatio(1920, 1080);
-pub const ULTRAWIDE_RATIO: AspectRatio = AspectRatio(3440, 1440);
-pub const VERTICAL_RATIO: AspectRatio = AspectRatio(1440, 2560);
-pub const FRAMEWORK_RATIO: AspectRatio = AspectRatio(2256, 1504);
-pub const SQUARE_RATIO: AspectRatio = AspectRatio(1, 1);
 
 impl Cropper {
     pub fn new(image: &String, faces: &[Face]) -> Self {
