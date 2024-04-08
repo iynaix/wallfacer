@@ -52,7 +52,6 @@ pub fn AlignSelector(
     let ratio = wallpapers().ratio;
     let align = ui().preview_mode;
     let geom: Geometry = wallpapers().get_geometry();
-    let (img_w, img_h) = info.image_dimensions();
     let dir = info.direction(&geom);
 
     rsx! {
@@ -80,7 +79,7 @@ pub fn AlignSelector(
                 class: class.unwrap_or_default(),
                 AlignButton {
                     class: "text-sm rounded-l-md",
-                    geom: geom.align_start(img_w, img_h),
+                    geom: geom.align_start(info.width, info.height),
                     wallpapers,
                     ui,
                     if dir == Direction::X {
@@ -91,7 +90,7 @@ pub fn AlignSelector(
                 }
                 AlignButton {
                     class: "text-sm -ml-px",
-                    geom: geom.align_center(img_w, img_h),
+                    geom: geom.align_center(info.width, info.height),
                     wallpapers,
                     ui,
                     if dir == Direction::X {
@@ -102,7 +101,7 @@ pub fn AlignSelector(
                }
                 AlignButton {
                     class: "text-sm rounded-r-md",
-                    geom: geom.align_end(img_w, img_h),
+                    geom: geom.align_end(info.width, info.height),
                     wallpapers,
                     ui,
                     if dir == Direction::X {

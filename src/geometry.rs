@@ -28,22 +28,19 @@ impl std::convert::TryFrom<String> for Geometry {
     type Error = GeometryError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = s.split(['x', '+'].as_ref()).collect();
-        if parts.len() != 4 {
+        let parts: Vec<&str> = s.split(['+'].as_ref()).collect();
+        if parts.len() != 2 {
             return Err(GeometryError::InvalidGeometry);
         }
 
         Ok(Self {
-            w: parts[0]
+            // width and height are computed from wall info and unknown at parse time
+            w: Default::default(),
+            h: Default::default(),
+            x: parts[0]
                 .parse()
                 .map_err(|_| GeometryError::InvalidCoordinate)?,
-            h: parts[1]
-                .parse()
-                .map_err(|_| GeometryError::InvalidCoordinate)?,
-            x: parts[2]
-                .parse()
-                .map_err(|_| GeometryError::InvalidCoordinate)?,
-            y: parts[3]
+            y: parts[1]
                 .parse()
                 .map_err(|_| GeometryError::InvalidCoordinate)?,
         })
@@ -55,7 +52,7 @@ impl Serialize for Geometry {
     where
         S: serde::Serializer,
     {
-        Some(format!("{}x{}+{}+{}", self.w, self.h, self.x, self.y)).serialize(serializer)
+        Some(format!("{}+{}", self.x, self.y)).serialize(serializer)
     }
 }
 

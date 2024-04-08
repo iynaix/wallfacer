@@ -68,6 +68,8 @@ impl Serialize for Face {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct WallInfo {
     pub filename: String,
+    pub width: u32,
+    pub height: u32,
     pub faces: Vec<Face>,
     pub geometries: HashMap<AspectRatio, Geometry>,
     pub wallust: String,
@@ -78,9 +80,13 @@ impl Serialize for WallInfo {
     where
         S: Serializer,
     {
-        let mut seq = serializer.serialize_seq(Some(3 + self.geometries.len()))?;
+        let mut seq = serializer.serialize_seq(Some(5 + self.geometries.len()))?;
+
+        let (width, height) = image::image_dimensions(self.path()).expect("could not open image");
 
         seq.serialize_element(&self.filename)?;
+        seq.serialize_element(&width)?;
+        seq.serialize_element(&height)?;
         seq.serialize_element(
             // serialize Vec<Face> as a json string
             &serde_json::to_string(&self.faces).expect("could not serialize faces"),
@@ -122,6 +128,8 @@ impl<'de> Deserialize<'de> for WallInfo {
                 V: de::MapAccess<'de>,
             {
                 let mut filename = None;
+                let mut width = None;
+                let mut height = None;
                 let mut faces = None;
                 let mut geometries: HashMap<AspectRatio, Geometry> = HashMap::new();
                 let mut wallust = None;
@@ -129,21 +137,21 @@ impl<'de> Deserialize<'de> for WallInfo {
                 while let Some((key, value)) = map.next_entry::<&str, String>()? {
                     match key {
                         "filename" => {
-                            if filename.is_some() {
-                                return Err(de::Error::duplicate_field("filename"));
-                            }
                             filename = Some(value);
                         }
+                        "width" => {
+                            width = Some(value.parse::<u32>().map_err(de::Error::custom)?);
+                        }
+                        "height" => {
+                            height = Some(value.parse::<u32>().map_err(de::Error::custom)?);
+                        }
                         "faces" => {
-                            if faces.is_some() {
-                                return Err(de::Error::duplicate_field("faces"));
-                            }
-                            faces = Some(value);
+                            faces =
+                                Some(serde_json::from_str::<Vec<Face>>(&value).unwrap_or_else(
+                                    |_| panic!("could not parse faces: {:?}", &value),
+                                ));
                         }
                         "wallust" => {
-                            if wallust.is_some() {
-                                return Err(de::Error::duplicate_field("wallust"));
-                            }
                             wallust = Some(value);
                         }
                         _ => {
@@ -159,12 +167,33 @@ impl<'de> Deserialize<'de> for WallInfo {
                 }
 
                 let filename = filename.ok_or_else(|| de::Error::missing_field("filename"))?;
+                let width = width.ok_or_else(|| de::Error::missing_field("width"))?;
+                let height = height.ok_or_else(|| de::Error::missing_field("height"))?;
                 let faces = faces.ok_or_else(|| de::Error::missing_field("faces"))?;
                 let wallust = wallust.ok_or_else(|| de::Error::missing_field("wallust"))?;
 
+                // geometries have no width and height, calculate from wall info
+                let cropper = Cropper::new(&filename, &faces);
+                let geometries = geometries
+                    .iter()
+                    .map(|(ratio, geom)| {
+                        let (w, h, _) = cropper.crop_rect(ratio);
+                        (
+                            ratio.clone(),
+                            Geometry {
+                                w,
+                                h,
+                                ..geom.clone()
+                            },
+                        )
+                    })
+                    .collect();
+
                 Ok(WallInfo {
                     filename,
-                    faces: serde_json::from_str(&faces).expect("could not deserialize faces"),
+                    width,
+                    height,
+                    faces,
                     geometries,
                     wallust,
                 })
@@ -181,20 +210,8 @@ impl WallInfo {
         wallpaper_dir().join(&self.filename)
     }
 
-    #[inline]
-    pub fn image_dimensions(&self) -> (u32, u32) {
-        image::image_dimensions(self.path()).expect("could not open image")
-    }
-
-    #[inline]
-    pub fn image_dimensions_f64(&self) -> (f64, f64) {
-        let (w, h) = image::image_dimensions(self.path()).expect("could not open image");
-        (f64::from(w), f64::from(h))
-    }
-
-    pub fn direction(&self, g: &Geometry) -> Direction {
-        let (_, img_h) = self.image_dimensions();
-        if img_h == g.h {
+    pub const fn direction(&self, g: &Geometry) -> Direction {
+        if self.height == g.h {
             Direction::X
         } else {
             Direction::Y
@@ -238,9 +255,10 @@ impl WallInfo {
     }
 
     pub fn overlay_transforms(&self, g: &Geometry) -> (Direction, f64, f64) {
-        let (img_w, img_h) = self.image_dimensions_f64();
+        let img_w = f64::from(self.width);
+        let img_h = f64::from(self.height);
 
-        if img_h as u32 == g.h {
+        if self.height == g.h {
             (
                 Direction::X,
                 f64::from(g.x) / img_w,
@@ -295,6 +313,27 @@ impl WallpapersCsv {
         self.wallpapers.insert(filename, wall_info);
     }
 
+    pub fn header(&self) -> Vec<String> {
+        let mut header: Vec<String> = vec![
+            "filename".into(),
+            "width".into(),
+            "height".into(),
+            "faces".into(),
+        ];
+        for (ratio, _) in self
+            .wallpapers
+            .iter()
+            .next()
+            .expect("could not get first column")
+            .1
+            .sorted_geometries()
+        {
+            header.push(ratio.to_string());
+        }
+        header.push("wallust".into());
+        header
+    }
+
     pub fn save(&self) {
         let writer = std::io::BufWriter::new(
             std::fs::File::create(&self.csv).expect("could not create wallpapers.csv"),
@@ -305,21 +344,7 @@ impl WallpapersCsv {
             .from_writer(writer);
 
         // manually write the header
-        let mut header = vec!["filename".to_string(), "faces".to_string()];
-        for (ratio, _) in self
-            .wallpapers
-            .iter()
-            .next()
-            .expect("could not get first column")
-            .1
-            .sorted_geometries()
-        {
-            let ratio = ratio.to_string();
-            header.push(ratio);
-        }
-        header.push("wallust".to_string());
-
-        wtr.write_record(header)
+        wtr.write_record(self.header())
             .expect("could not write csv header");
 
         for row in self.wallpapers.values() {

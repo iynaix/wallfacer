@@ -103,12 +103,13 @@ impl Cropper {
         }
     }
 
-    fn crop_rect(&self, aspect_ratio: &AspectRatio) -> (u32, u32, Direction) {
+    pub fn crop_rect(&self, aspect_ratio: &AspectRatio) -> (u32, u32, Direction) {
+        use std::cmp::min;
         let AspectRatio(target_w, target_h) = aspect_ratio;
 
         // Calculate width and height that can be cropped while maintaining aspect ratio
-        let crop_w = std::cmp::min(self.width, self.height * target_w / target_h);
-        let crop_h = std::cmp::min(self.height, self.width * target_h / target_w);
+        let crop_w = min(self.width, self.height * target_w / target_h);
+        let crop_h = min(self.height, self.width * target_h / target_w);
 
         // Choose the larger dimension to get the largest possible cropped rectangle
         let (crop_w, crop_h) = if crop_w * target_h > crop_h * target_w {
@@ -130,27 +131,27 @@ impl Cropper {
 
     fn clamp(
         &self,
-        val: f32,
+        val: f64,
         direction: Direction,
         target_width: u32,
         target_height: u32,
     ) -> Geometry {
         let (x, y) = match direction {
             Direction::X => {
-                let max_ = val + target_width as f32;
+                let max_: f64 = val + f64::from(target_width);
                 if val < 0.0 {
                     (0, 0)
-                } else if max_ > self.width as f32 {
+                } else if max_ > self.width.into() {
                     (self.width - target_width, 0)
                 } else {
                     (val as u32, 0)
                 }
             }
             Direction::Y => {
-                let max_ = val + target_height as f32;
+                let max_ = val + f64::from(target_height);
                 if val < 0.0 {
                     (0, 0)
-                } else if max_ > self.height as f32 {
+                } else if max_ > self.height.into() {
                     (0, self.height - target_height)
                 } else {
                     (0, val as u32)
@@ -174,8 +175,8 @@ impl Cropper {
     ) -> Geometry {
         let face = &self.faces[0];
         let mid = match direction {
-            Direction::X => (face.xmin + face.xmax) as f32 / 2.0 - target_width as f32 / 2.0,
-            Direction::Y => (face.ymin + face.ymax) as f32 / 2.0 - target_height as f32 / 2.0,
+            Direction::X => (f64::from(face.xmin + face.xmax) - f64::from(target_width)) / 2.0,
+            Direction::Y => (f64::from(face.ymin + face.ymax) - f64::from(target_height)) / 2.0,
         };
         self.clamp(mid, direction, target_width, target_height)
     }
@@ -328,7 +329,7 @@ impl Cropper {
         face_areas.retain(|face_info| face_info.area == max_face_area);
 
         self.clamp(
-            face_areas[face_areas.len() / 2].start as f32,
+            f64::from(face_areas[face_areas.len() / 2].start),
             direction,
             target_width,
             target_height,
@@ -391,7 +392,7 @@ impl Cropper {
             .values()
             .map(|faces| {
                 let mid = faces[faces.len() / 2];
-                self.clamp(mid as f32, direction, target_width, target_height)
+                self.clamp(f64::from(mid), direction, target_width, target_height)
             })
             .sorted_by_key(|geom| match direction {
                 Direction::X => geom.x,

@@ -57,7 +57,8 @@ pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
 
     let (direction, start_ratio, end_ratio) = info.overlay_transforms(&geom);
 
-    let (img_w, img_h) = info.image_dimensions_f64();
+    let img_w = f64::from(info.width);
+    let img_h = f64::from(info.height);
     let start_cls = match direction {
         Direction::X => "origin-left top-0 left-0",
         Direction::Y => "origin-top top-0 left-0",

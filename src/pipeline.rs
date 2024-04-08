@@ -94,10 +94,14 @@ fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<Pa
 
     for (fname, faces) in detect_faces_iter(paths) {
         let cropper = Cropper::new(&fname, &faces);
+        let (width, height) =
+            image::image_dimensions(&fname).expect("could not get image dimensions");
 
         // create WallInfo and save it
         let wall_info = WallInfo {
             filename: fname.clone(),
+            width,
+            height,
             faces,
             geometries: [
                 AspectRatio(1440, 2560), // vertical
