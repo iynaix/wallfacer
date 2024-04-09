@@ -3,8 +3,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum GeometryError {
-    #[error("Invalid geometry string")]
-    InvalidGeometry,
     #[error("Invalid geometry coordinates")]
     InvalidCoordinate,
 }
@@ -29,9 +27,7 @@ impl std::convert::TryFrom<String> for Geometry {
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         let parts: Vec<&str> = s.split(['+'].as_ref()).collect();
-        if parts.len() != 2 {
-            return Err(GeometryError::InvalidGeometry);
-        }
+        assert!(parts.len() == 2, "Invalid geometry: {}", s);
 
         Ok(Self {
             // width and height are computed from wall info and unknown at parse time

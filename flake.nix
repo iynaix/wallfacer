@@ -77,7 +77,7 @@
               # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
               WEBKIT_DISABLE_COMPOSITING_MODE = 1;
               # FIXME: keyboard shortcuts do not seem to work without this option
-              GDK_BACKEND = "x11";
+              # GDK_BACKEND = "x11";
             };
 
             languages.rust.enable = true;

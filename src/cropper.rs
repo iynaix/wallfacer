@@ -61,9 +61,7 @@ impl std::convert::TryFrom<&str> for AspectRatio {
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let parts: Vec<&str> = s.split('x').collect();
-        if parts.len() != 2 {
-            return Err(());
-        }
+        assert!(parts.len() == 2, "Invalid aspect ratio: {}", s);
 
         Ok(Self(
             parts[0].parse().map_err(|_| ())?,

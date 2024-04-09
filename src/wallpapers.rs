@@ -114,9 +114,9 @@ impl<'de> Deserialize<'de> for WallInfo {
             Wallust,
         }
 
-        struct WallInfo2Visitor;
+        struct WallInfoVisitor;
 
-        impl<'de> de::Visitor<'de> for WallInfo2Visitor {
+        impl<'de> de::Visitor<'de> for WallInfoVisitor {
             type Value = WallInfo;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -200,8 +200,15 @@ impl<'de> Deserialize<'de> for WallInfo {
             }
         }
 
-        const FIELDS: &[&str] = &["filename", "faces", "geometries", "wallust"];
-        deserializer.deserialize_struct("WallInfo2", FIELDS, WallInfo2Visitor)
+        const FIELDS: &[&str] = &[
+            "filename",
+            "width",
+            "height",
+            "faces",
+            "geometries",
+            "wallust",
+        ];
+        deserializer.deserialize_struct("WallInfo", FIELDS, WallInfoVisitor)
     }
 }
 
