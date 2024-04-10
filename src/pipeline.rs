@@ -92,10 +92,11 @@ fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<Pa
 
     let mut to_preview = Vec::new();
 
-    for (fname, faces) in detect_faces_iter(paths) {
-        let cropper = Cropper::new(&fname, &faces);
-        let (width, height) =
-            image::image_dimensions(&fname).expect("could not get image dimensions");
+    for (path, faces) in detect_faces_iter(paths) {
+        let fname = filename(path);
+        let (width, height) = image::image_dimensions(path)
+            .unwrap_or_else(|_| panic!("could not get image dimensions: {fname:?}"));
+        let cropper = Cropper::new(&fname, &faces, width, height);
 
         // create WallInfo and save it
         let wall_info = WallInfo {
@@ -159,8 +160,8 @@ fn main() {
 
     // get image dimensions of files within input_dir
     for img in filter_images(&input_dir) {
-        let (width, height) =
-            image::image_dimensions(&img).expect("could not get image dimensions");
+        let (width, height) = image::image_dimensions(&img)
+            .unwrap_or_else(|_| panic!("could not get image dimensions for {img:?}"));
 
         match get_output_path(&img) {
             Some(out_path) => {
@@ -169,12 +170,12 @@ fn main() {
                     // re-preview if no / multiple faces detected and still using default crop
                     Some(info) => {
                         if info.faces.len() != 1 && info.is_default_crops() {
-                            to_preview.push(img.clone());
+                            to_preview.push(out_path);
                         }
                     }
                     // no WallInfo, redetect faces to write to csv
                     None => {
-                        to_detect.push(img.clone());
+                        to_detect.push(out_path);
                     }
                 }
             }
@@ -203,7 +204,8 @@ fn main() {
 
     // copy images that don't need to be upscaled
     for img in &to_copy {
-        std::fs::copy(img, img.with_directory(&wall_dir)).expect("could not copy file");
+        std::fs::copy(img, img.with_directory(&wall_dir))
+            .unwrap_or_else(|_| panic!("could not copy {img:?}"));
     }
 
     upscale_images(&to_upscale);
@@ -215,7 +217,10 @@ fn main() {
     if !to_preview.is_empty() {
         let to_preview: Vec<_> = to_preview
             .iter()
-            .map(|img| get_output_path(img).expect("could not get output path to preview"))
+            .map(|img| {
+                get_output_path(img)
+                    .unwrap_or_else(|| panic!("could not get output path of {img:?} to preview"))
+            })
             .collect();
 
         if cfg!(debug_assertions) {

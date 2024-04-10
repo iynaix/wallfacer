@@ -2,8 +2,6 @@ use itertools::Itertools;
 use serde::Serialize;
 use std::{collections::HashMap, path::PathBuf};
 
-use image::image_dimensions;
-
 use crate::{geometry::Geometry, wallpaper_dir, wallpapers::Face};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -89,10 +87,8 @@ fn sort_faces_by_direction(faces: Vec<Face>, direction: Direction) -> Vec<Face> 
 }
 
 impl Cropper {
-    pub fn new(image: &String, faces: &[Face]) -> Self {
+    pub fn new(image: &String, faces: &[Face], width: u32, height: u32) -> Self {
         let image = wallpaper_dir().join(image);
-        let (width, height) = image_dimensions(&image).expect("Failed to read image dimensions");
-
         Self {
             faces: faces.to_vec(),
             image,

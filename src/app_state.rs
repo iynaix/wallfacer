@@ -122,9 +122,9 @@ impl Wallpapers {
         // order by reverse chronological order
         all_files.sort_by_key(|f| {
             f.metadata()
-                .expect("could not get file metadata")
+                .unwrap_or_else(|_| panic!("could not get file metadata: {:?}", f))
                 .modified()
-                .expect("could not get file mtime")
+                .unwrap_or_else(|_| panic!("could not get file mtime: {:?}", f))
         });
         all_files.reverse();
 
@@ -135,7 +135,7 @@ impl Wallpapers {
         );
         let loaded = wallpapers_csv
             .get(&fname)
-            .expect("could not get wallpaper info");
+            .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
 
         Self {
             files: all_files,
@@ -154,10 +154,11 @@ impl Wallpapers {
         };
 
         let wallpapers_csv = WallpapersCsv::load();
+        let fname = filename(&self.files[self.index]);
         let loaded = wallpapers_csv
             // bounds check is not necessary since the index is always valid
-            .get(&filename(&self.files[self.index]))
-            .expect("could not get wallpaper info");
+            .get(&fname)
+            .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
         self.source = loaded.clone();
         self.current = loaded.clone();
     }
@@ -171,10 +172,11 @@ impl Wallpapers {
         };
 
         let wallpapers_csv = WallpapersCsv::load();
+        let fname = filename(&self.files[self.index]);
         let loaded = wallpapers_csv
             // bounds check is not necessary since the index is always valid
             .get(&filename(&self.files[self.index]))
-            .expect("could not get wallpaper info");
+            .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
         self.source = loaded.clone();
         self.current = loaded.clone();
     }
@@ -192,7 +194,7 @@ impl Wallpapers {
         let wallpapers_csv = WallpapersCsv::load();
         let loaded = wallpapers_csv
             .get(fname)
-            .expect("could not get wallpaper info")
+            .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"))
             .clone();
         self.source = loaded.clone();
         self.current = loaded;

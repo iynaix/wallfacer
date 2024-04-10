@@ -26,9 +26,9 @@ pub fn wallpaper_dir() -> PathBuf {
 
 pub fn filename(path: &Path) -> String {
     path.file_name()
-        .expect("could not get filename")
+        .unwrap_or_else(|| panic!("could not get filename: {:?}", path))
         .to_str()
-        .expect("could not convert filename to str")
+        .unwrap_or_else(|| panic!("could not convert filename to str: {:?}", path))
         .to_string()
 }
 
@@ -38,8 +38,11 @@ pub trait PathBufExt {
 }
 
 impl PathBufExt for PathBuf {
-    fn with_directory(&self, dir: &Path) -> PathBuf {
-        dir.join(self.file_name().expect("could not get filename"))
+    fn with_directory(&self, path: &Path) -> PathBuf {
+        path.join(
+            self.file_name()
+                .unwrap_or_else(|| panic!("could not get filename for {path:?}")),
+        )
     }
 }
 
@@ -82,14 +85,19 @@ impl FaceJson {
 }
 
 /// reads anime-face-detector's stdout one line at a time, yielding (filename, faces) pairs
-pub fn detect_faces_iter(paths: &[PathBuf]) -> impl Iterator<Item = (String, Vec<Face>)> + '_ {
+pub fn detect_faces_iter(paths: &[PathBuf]) -> impl Iterator<Item = (&PathBuf, Vec<Face>)> + '_ {
     let mut child = Command::new("anime-face-detector")
         .args(paths)
         .stdout(Stdio::piped())
         .spawn()
         .expect("failed to spawn anime-face-detector");
 
-    let reader = std::io::BufReader::new(child.stdout.take().expect("failed to get stdout"));
+    let reader = std::io::BufReader::new(
+        child
+            .stdout
+            .take()
+            .expect("failed to get stdout of anime-face-detector"),
+    );
 
     std::iter::zip(paths, reader.lines().map_while(Result::ok)).map(|(path, line)| {
         let faces: Vec<FaceJson> =
@@ -99,8 +107,6 @@ pub fn detect_faces_iter(paths: &[PathBuf]) -> impl Iterator<Item = (String, Vec
             .map(|f: FaceJson| FaceJson::to_face(&f))
             .collect();
 
-        let fname = filename(path);
-
-        (fname, faces)
+        (path, faces)
     })
 }

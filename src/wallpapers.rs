@@ -82,7 +82,8 @@ impl Serialize for WallInfo {
     {
         let mut seq = serializer.serialize_seq(Some(5 + self.geometries.len()))?;
 
-        let (width, height) = image::image_dimensions(self.path()).expect("could not open image");
+        let (width, height) = image::image_dimensions(self.path())
+            .unwrap_or_else(|_| panic!("could not open image: {:?}", self.path()));
 
         seq.serialize_element(&self.filename)?;
         seq.serialize_element(&width)?;
@@ -156,8 +157,9 @@ impl<'de> Deserialize<'de> for WallInfo {
                         }
                         _ => {
                             geometries.insert(
-                                key.try_into()
-                                    .expect("could not convert aspect ratio into string"),
+                                key.try_into().unwrap_or_else(|()| {
+                                    panic!("could not convert aspect ratio {key} into string")
+                                }),
                                 value
                                     .try_into()
                                     .expect("could not convert geometry into string"),
@@ -173,7 +175,7 @@ impl<'de> Deserialize<'de> for WallInfo {
                 let wallust = wallust.ok_or_else(|| de::Error::missing_field("wallust"))?;
 
                 // geometries have no width and height, calculate from wall info
-                let cropper = Cropper::new(&filename, &faces);
+                let cropper = Cropper::new(&filename, &faces, width, height);
                 let geometries = geometries
                     .iter()
                     .map(|(ratio, geom)| {
@@ -226,7 +228,12 @@ impl WallInfo {
     }
 
     pub fn cropper(&self) -> Cropper {
-        Cropper::new(&filename(&self.path()), &self.faces)
+        Cropper::new(
+            &filename(&self.path()),
+            &self.faces,
+            self.width,
+            self.height,
+        )
     }
 
     pub fn get_geometry(&self, ratio: &AspectRatio) -> Geometry {

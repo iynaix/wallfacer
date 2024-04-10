@@ -53,7 +53,10 @@ pub fn FileList(
     let wallpaper_files = wallpapers().files;
     let images = wallpaper_files.iter().filter_map(|path| {
         let fname = filename(path);
-        let size = path.metadata().expect("could not get file metadata").len();
+        let size = path
+            .metadata()
+            .unwrap_or_else(|_| panic!("could not get file size for {fname}"))
+            .len();
 
         if search().is_empty() {
             // TODO: add number of faces?

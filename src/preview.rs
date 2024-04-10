@@ -43,7 +43,7 @@ pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
     let path = info.path();
     let path = path
         .to_str()
-        .expect("could not convert path to str")
+        .unwrap_or_else(|| panic!("could not convert {path:?} to str"))
         .to_string();
 
     let is_manual = matches!(ui.preview_mode, PreviewMode::Manual);
