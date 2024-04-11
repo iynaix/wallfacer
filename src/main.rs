@@ -10,9 +10,11 @@ pub mod args;
 pub mod buttons;
 pub mod candidates;
 pub mod drag_overlay;
+pub mod dropdown;
 pub mod filelist;
 pub mod preview;
 pub mod ratio_selector;
+pub mod wallust;
 
 use crate::{
     align_selector::AlignSelector,
@@ -22,6 +24,7 @@ use crate::{
     filelist::FileList,
     preview::Previewer,
     ratio_selector::RatioSelector,
+    wallust::Wallust,
 };
 
 fn main() {
@@ -86,6 +89,8 @@ fn App() -> Element {
 
                 if (ui)().show_filelist {
                     FileList { wallpapers, ui }
+                } else if (ui)().show_palette {
+                    Wallust {}
                 } else {
                     // main content
                     div {

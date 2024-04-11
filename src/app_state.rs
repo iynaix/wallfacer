@@ -14,6 +14,7 @@ use wallpaper_ui::{
 pub struct UiState {
     pub show_filelist: bool,
     pub show_faces: bool,
+    pub show_palette: bool,
     pub preview_mode: PreviewMode,
 }
 

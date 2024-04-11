@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use dioxus_free_icons::icons::{
-    md_image_icons::MdFaceRetouchingNatural,
+    md_image_icons::{MdFaceRetouchingNatural, MdPalette},
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 use dioxus_free_icons::Icon;
@@ -96,9 +96,25 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
                     }
                 }
-                div { class: "gap-8 flex flex-1 justify-end",
+                div { class: "gap-x-6 flex flex-1 justify-end",
                     a {
-                        class: "rounded-md ml-8 px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
+                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
+                        class: if ui().show_palette {
+                            "bg-indigo-600 hover:bg-indigo-500"
+                        } else {
+                            "bg-surface1 hover:bg-crust"
+                        },
+                        onclick: move |_| {
+                            ui.with_mut(|ui| {
+                                ui.show_palette = !ui.show_palette;
+                            });
+                        },
+                        Icon { fill: "white", icon:  MdPalette }
+                    }
+
+
+                    a {
+                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
                         class: if ui().show_faces {
                             "bg-indigo-600 hover:bg-indigo-500"
                         } else {
@@ -111,6 +127,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         },
                         Icon { fill: "white", icon:  MdFaceRetouchingNatural }
                     }
+
                     SaveButton { wallpapers, ui }
                 }
             }
