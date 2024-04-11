@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+
 use dioxus::prelude::*;
 
 use crate::{
@@ -12,9 +13,18 @@ pub fn RatioSelector(
     wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
 ) -> Element {
-    let ratios: Vec<_> = wallpapers()
+    let walls = wallpapers();
+    let ratios: Vec<_> = walls
         .current
         .sorted_geometries()
+        .filter(|(ratio, _)| {
+            // do not show resolution if aspect ratio of image is the same,
+            // as there is only a single possible crop
+            (f64::from(walls.current.width) / f64::from(walls.current.height)
+                - f64::from(ratio.0) / f64::from(ratio.1))
+            .abs()
+                > f64::EPSILON
+        })
         .map(|(ratio, _)| ratio.clone())
         .collect();
     let len = ratios.len();
@@ -28,7 +38,6 @@ pub fn RatioSelector(
             "-ml-px"
         };
 
-        let walls = wallpapers();
         let is_active = walls.ratio == res;
         let dirty_marker = if walls.current.get_geometry(&res) == walls.source.get_geometry(&res) {
             ""
