@@ -12,7 +12,7 @@ use wallpaper_ui::{cropper::Direction, geometry::Geometry};
 
 use crate::{
     app_state::{PreviewMode, UiState, Wallpapers},
-    buttons::Button,
+    button::Button,
 };
 
 #[component]

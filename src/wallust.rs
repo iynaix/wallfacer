@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 use clap::Parser;
 use dioxus::prelude::*;
-use std::{path::Path, process::Command};
+use std::path::Path;
 
 use crate::{
     app_state::Wallpapers,
-    buttons::Button,
+    button::Button,
     dropdown::{Dropdown, DropdownOptions},
     slider::Slider,
 };
@@ -101,8 +101,11 @@ impl WallustConfig {
         new_args.trim().to_lowercase()
     }
 
-    fn preview(&self, img: &Path) {
-        Command::new("wallust")
+    fn preview(
+        &self,
+        img: &Path,
+    ) -> impl std::future::Future<Output = Result<async_process::ExitStatus, std::io::Error>> {
+        async_process::Command::new("wallust")
             .arg("run")
             .args([
                 "--quiet",
@@ -112,14 +115,19 @@ impl WallustConfig {
             ])
             .args(self.to_args_str().split_whitespace())
             .arg(img)
-            .spawn()
-            .unwrap_or_else(|_| panic!("could not spawn wallust"));
+            .status()
     }
 }
 
 #[component]
 pub fn Wallust(wallpapers: Signal<Wallpapers>) -> Element {
     let mut conf = use_signal(|| WallustConfig::from_args_str(&wallpapers.read().source.wallust));
+    let mut is_running = use_signal(|| false);
+    let preview_cls = if is_running() {
+        "!bg-surface0"
+    } else {
+        "!bg-indigo-600"
+    };
 
     let backend = DropdownOptions::new(vec![
         Backend::Full,
@@ -239,6 +247,11 @@ pub fn Wallust(wallpapers: Signal<Wallpapers>) -> Element {
                     class: "rounded-md px-5 py-2 w-full text-sm font-semibold justify-center text-white shadow-sm !bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
                     onclick: move |_| {
                         conf.set(WallustConfig::from_args_str(&wallpapers.read().source.wallust));
+                        spawn(async move {
+                            is_running.set(true);
+                            let _ = conf.read().preview(&wallpapers.read().current.path()).await;
+                            is_running.set(false);
+                        });
                     },
                     "Reset"
                 }
@@ -247,9 +260,14 @@ pub fn Wallust(wallpapers: Signal<Wallpapers>) -> Element {
             div {
                 class: "w-1/2 py-4 px-8",
                 Button {
-                    class: "rounded-md px-5 py-2 w-full text-sm font-semibold justify-center text-white shadow-sm !bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
+                    spin: Some(is_running()),
+                    class: "rounded-md px-5 py-2 w-full text-sm font-semibold justify-center text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer {preview_cls}",
                     onclick: move |_| {
-                        conf.read().preview(&wallpapers.read().current.path());
+                        spawn(async move {
+                            is_running.set(true);
+                            let _ = conf.read().preview(&wallpapers.read().current.path()).await;
+                            is_running.set(false);
+                        });
                     },
                     "Preview"
                 }

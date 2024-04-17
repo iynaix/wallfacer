@@ -7,7 +7,7 @@ pub mod align_selector;
 pub mod app_header;
 pub mod app_state;
 pub mod args;
-pub mod buttons;
+pub mod button;
 pub mod candidates;
 pub mod drag_overlay;
 pub mod dropdown;
