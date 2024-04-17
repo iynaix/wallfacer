@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use crate::{
     buttons::Button,
     dropdown::{Dropdown, DropdownOptions},
+    slider::Slider,
 };
 
 use wallust::{
@@ -57,13 +58,12 @@ pub fn Wallust() -> Element {
     ])
     .to_label(|v| v.to_string().replace("16", ""));
 
-    // TODO: saturation and threshold
-
     rsx! {
         div {
-            class: "flex flex-col gap-y-4",
+            class: "flex flex-wrap w-full gap-y-8",
             Dropdown {
                 name: "Palette",
+                class: "w-1/2 py-4 px-8",
                 options: palettes,
                 value: conf.read().palette,
                 onchange: move |new_value| {
@@ -75,6 +75,7 @@ pub fn Wallust() -> Element {
 
             Dropdown {
                 name: "Backend",
+                class: "w-1/2 py-4 px-8",
                 options: backend,
                 value: conf.read().backend,
                 onchange: move |new_value| {
@@ -86,6 +87,7 @@ pub fn Wallust() -> Element {
 
             Dropdown {
                 name: "Colorspace",
+                class: "w-1/2 py-4 px-8",
                 options: colorspace,
                 value: conf.read().color_space,
                 onchange: move |new_value| {
@@ -97,6 +99,7 @@ pub fn Wallust() -> Element {
 
             Dropdown {
                 name: "Fallback Generator",
+                class: "w-1/2 py-4 px-8",
                 options: fallback_generator,
                 value: conf.read().fallback_generator.unwrap_or_default(),
                 onchange: move |new_value| {
@@ -106,16 +109,50 @@ pub fn Wallust() -> Element {
                 }
             }
 
-            Button {
-                onclick: move |_| {
-                },
-                "Reset"
+            Slider {
+                name: "Saturation",
+                class: "w-1/2 py-4 px-8",
+                value: conf.read().saturation.unwrap_or_default(),
+                onchange: move |new_value| {
+                    conf.with_mut(|conf| {
+                        conf.saturation = if new_value == 0 {
+                            None
+                        } else {
+                            Some(new_value)
+                        };
+                    });
+                }
             }
 
-            Button {
-                onclick: move |_| {
-                },
-                "Preview"
+            Slider {
+                name: "Threshold",
+                class: "w-1/2 py-4 px-8",
+                value: conf.read().threshold.unwrap_or_default(),
+                onchange: move |new_value| {
+                    conf.with_mut(|conf| {
+                        conf.threshold = if new_value == 0 {
+                            None
+                        } else {
+                            Some(new_value)
+                        };
+                    });
+                }
+            }
+
+            div {
+                class: "w-full flex justify-center gap-x-8",
+                Button {
+                    onclick: move |_| {
+                        conf.set(wallust_config());
+                    },
+                    "Reset"
+                }
+
+                Button {
+                    onclick: move |_| {
+                    },
+                    "Preview"
+                }
             }
         }
     }
