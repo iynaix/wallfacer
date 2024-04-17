@@ -14,6 +14,7 @@ pub mod dropdown;
 pub mod filelist;
 pub mod preview;
 pub mod ratio_selector;
+pub mod slider;
 pub mod wallust;
 
 use crate::{
@@ -90,7 +91,7 @@ fn App() -> Element {
                 if (ui)().show_filelist {
                     FileList { wallpapers, ui }
                 } else if (ui)().show_palette {
-                    Wallust {}
+                    Wallust { wallpapers }
                 } else {
                     // main content
                     div {

@@ -87,7 +87,7 @@ fn sort_faces_by_direction(faces: Vec<Face>, direction: Direction) -> Vec<Face> 
 }
 
 impl Cropper {
-    pub fn new(image: &String, faces: &[Face], width: u32, height: u32) -> Self {
+    pub fn new(image: &str, faces: &[Face], width: u32, height: u32) -> Self {
         let image = wallpaper_dir().join(image);
         Self {
             faces: faces.to_vec(),
