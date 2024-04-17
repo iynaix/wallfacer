@@ -233,9 +233,16 @@ fn main() {
                 .expect("could not wait for wallpaper-ui");
         } else {
             Command::new("wallpaper-ui")
-                .args(to_preview)
+                .args(&to_preview)
                 .spawn()
-                .expect("could not spawn wallpaper-ui")
+                .unwrap_or_else(|_| {
+                    // try running it via cargo instead
+                    Command::new("cargo")
+                        .args(["run", "--release", "--bin", "wallpaper-ui", "--"])
+                        .args(to_preview)
+                        .spawn()
+                        .expect("could not spawn wallpaper-ui")
+                })
                 .wait()
                 .expect("could not wait for wallpaper-ui");
         }
