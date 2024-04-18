@@ -158,6 +158,14 @@ fn main() {
     let mut to_detect = Vec::new();
     let mut to_preview = Vec::new();
 
+    // add images from wallpapers dir that are not in the csv
+    for img in filter_images(&wall_dir) {
+        if wallpapers_csv.get(&filename(&img)).is_none() {
+            to_optimize.push(img.clone());
+            to_detect.push(img.clone());
+        }
+    }
+
     // get image dimensions of files within input_dir
     for img in filter_images(&input_dir) {
         let (width, height) = image::image_dimensions(&img)
