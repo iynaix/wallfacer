@@ -16,10 +16,10 @@ fn main() {
     // ];
 }
 
-#[cfg(test)]
-mod tests {
-    use clap::Parser;
+// #[cfg(test)]
+// mod tests {
+//     use clap::Parser;
 
-    #[test]
-    fn test_wallust_to() {}
-}
+//     #[test]
+//     fn test_wallust_to() {}
+// }
