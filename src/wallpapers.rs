@@ -228,12 +228,7 @@ impl WallInfo {
     }
 
     pub fn cropper(&self) -> Cropper {
-        Cropper::new(
-            &filename(&self.path()),
-            &self.faces,
-            self.width,
-            self.height,
-        )
+        Cropper::new(&filename(self.path()), &self.faces, self.width, self.height)
     }
 
     pub fn get_geometry(&self, ratio: &AspectRatio) -> Geometry {

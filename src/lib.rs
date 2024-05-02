@@ -24,8 +24,12 @@ pub fn wallpaper_dir() -> PathBuf {
     full_path("~/Pictures/Wallpapers")
 }
 
-pub fn filename(path: &Path) -> String {
-    path.file_name()
+pub fn filename<P>(path: P) -> String
+where
+    P: AsRef<Path> + std::fmt::Debug,
+{
+    path.as_ref()
+        .file_name()
         .unwrap_or_else(|| panic!("could not get filename: {:?}", path))
         .to_str()
         .unwrap_or_else(|| panic!("could not convert filename to str: {:?}", path))
@@ -34,20 +38,29 @@ pub fn filename(path: &Path) -> String {
 
 // extend PathBuf with utility methods
 pub trait PathBufExt {
-    fn with_directory(&self, dir: &Path) -> PathBuf;
+    fn with_directory<P>(&self, dir: P) -> PathBuf
+    where
+        P: AsRef<Path> + std::fmt::Debug;
 }
 
 impl PathBufExt for PathBuf {
-    fn with_directory(&self, path: &Path) -> PathBuf {
-        path.join(
+    fn with_directory<P>(&self, path: P) -> PathBuf
+    where
+        P: AsRef<Path> + std::fmt::Debug,
+    {
+        path.as_ref().join(
             self.file_name()
                 .unwrap_or_else(|| panic!("could not get filename for {path:?}")),
         )
     }
 }
 
-pub fn filter_images(dir: &Path) -> impl Iterator<Item = PathBuf> {
-    dir.read_dir()
+pub fn filter_images<P>(dir: P) -> impl Iterator<Item = PathBuf>
+where
+    P: AsRef<Path> + std::fmt::Debug,
+{
+    dir.as_ref()
+        .read_dir()
         .unwrap_or_else(|_| panic!("could not read {:?}", &dir))
         .flatten()
         .filter_map(|entry| {
