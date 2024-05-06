@@ -1,8 +1,8 @@
 use itertools::Itertools;
 use serde::Serialize;
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
-use crate::{geometry::Geometry, wallpaper_dir, wallpapers::Face};
+use crate::{geometry::Geometry, wallpapers::Face};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
@@ -24,7 +24,6 @@ struct FaceArea {
 
 pub struct Cropper {
     pub faces: Vec<Face>,
-    pub image: PathBuf,
     pub width: u32,
     pub height: u32,
 }
@@ -87,11 +86,9 @@ fn sort_faces_by_direction(faces: Vec<Face>, direction: Direction) -> Vec<Face> 
 }
 
 impl Cropper {
-    pub fn new(image: &str, faces: &[Face], width: u32, height: u32) -> Self {
-        let image = wallpaper_dir().join(image);
+    pub fn new(faces: &[Face], width: u32, height: u32) -> Self {
         Self {
             faces: faces.to_vec(),
-            image,
             width,
             height,
         }

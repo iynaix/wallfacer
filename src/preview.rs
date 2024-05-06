@@ -1,4 +1,6 @@
 #![allow(non_snake_case)]
+use std::path::PathBuf;
+
 use dioxus::prelude::*;
 use wallpaper_ui::{cropper::Direction, wallpapers::Face};
 
@@ -34,13 +36,17 @@ fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
 }
 
 #[component]
-pub fn Previewer(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
+pub fn Previewer(
+    wallpapers: Signal<Wallpapers>,
+    ui: Signal<UiState>,
+    wallpapers_path: PathBuf,
+) -> Element {
     // store the final rendered width and height of the image
     let mut final_dimensions = use_signal(|| (0.0, 0.0));
     let info = wallpapers().current;
     let ui = ui();
 
-    let path = info.path();
+    let path = wallpapers_path.join(&info.filename);
     let path = path
         .to_str()
         .unwrap_or_else(|| panic!("could not convert {path:?} to str"))

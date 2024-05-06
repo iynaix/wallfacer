@@ -65,7 +65,7 @@ fn main() {
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
     let config = WallpaperConfig::new();
-    let wallpapers = use_signal(Wallpapers::from_args);
+    let wallpapers = use_signal(|| Wallpapers::from_args(&config.wallpapers_path));
     let ui = use_signal(UiState::default);
     let has_files = !wallpapers().files.is_empty();
 
@@ -110,7 +110,7 @@ fn App() -> Element {
                             }
                         }
 
-                        Previewer { wallpapers, ui }
+                        Previewer { wallpapers, ui, wallpapers_path: config.wallpapers_path }
 
                         Candidates { wallpapers, ui }
                     }

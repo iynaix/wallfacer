@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 use clap::Parser;
 use rayon::prelude::*;
 use std::{
@@ -9,10 +12,14 @@ use wallpaper_ui::{
     args::WallpaperPipelineArgs,
     config::WallpaperConfig,
     cropper::{AspectRatio, Cropper},
-    detect_faces_iter, filename, filter_images, full_path, wallpaper_dir,
+    detect_faces_iter, filename, filter_images, full_path,
     wallpapers::{WallInfo, WallpapersCsv},
     PathBufExt,
 };
+
+lazy_static! {
+    static ref CONFIG: WallpaperConfig = WallpaperConfig::new();
+}
 
 const TARGET_WIDTH: u32 = 3440; // ultrawide width
 const TARGET_HEIGHT: u32 = 1504; // framework height
@@ -20,7 +27,7 @@ const TARGET_HEIGHT: u32 = 1504; // framework height
 fn upscale_images(to_upscale: &[(PathBuf, u32)]) {
     to_upscale.par_iter().for_each(|(src, scale_factor)| {
         let fname = filename(src);
-        let mut dest = wallpaper_dir().join(&fname);
+        let mut dest = CONFIG.wallpapers_path.join(&fname);
         // always output to png to avoid lossy compression
         dest.set_extension("png");
 
@@ -101,7 +108,7 @@ fn detect_faces(
         let fname = filename(path);
         let (width, height) = image::image_dimensions(path)
             .unwrap_or_else(|_| panic!("could not get image dimensions: {fname:?}"));
-        let cropper = Cropper::new(&fname, &faces, width, height);
+        let cropper = Cropper::new(&faces, width, height);
 
         // create WallInfo and save it
         let wall_info = WallInfo {
@@ -118,7 +125,7 @@ fn detect_faces(
 
         // preview both multiple faces and no faces
         if wall_info.faces.len() != 1 {
-            to_preview.push(wallpaper_dir().join(&fname));
+            to_preview.push(CONFIG.wallpapers_path.join(&fname));
         }
 
         wallpapers_csv.insert(fname.clone(), wall_info);
@@ -129,9 +136,10 @@ fn detect_faces(
 }
 
 fn get_output_path(img: &Path) -> Option<PathBuf> {
-    let wall_dir = wallpaper_dir();
     for ext in &["png", "jpg", "jpeg"] {
-        let output_path = img.with_extension(ext).with_directory(&wall_dir);
+        let output_path = img
+            .with_extension(ext)
+            .with_directory(&CONFIG.wallpapers_path);
         if output_path.exists() {
             return Some(output_path);
         }
@@ -141,8 +149,7 @@ fn get_output_path(img: &Path) -> Option<PathBuf> {
 
 fn main() {
     let args = WallpaperPipelineArgs::parse();
-    let config = WallpaperConfig::new();
-    let resolutions = config.sorted_resolutions();
+    let resolutions = CONFIG.sorted_resolutions();
 
     if args.version {
         println!("wallpaper-pipeline {}", env!("CARGO_PKG_VERSION"));
@@ -150,7 +157,7 @@ fn main() {
     }
 
     let input_dir = full_path("~/Pictures/wallpapers_in");
-    let wall_dir = wallpaper_dir();
+    let wall_dir = &CONFIG.wallpapers_path;
     let mut wallpapers_csv = WallpapersCsv::load();
 
     let mut to_copy = Vec::new();
@@ -195,13 +202,13 @@ fn main() {
                         && height * scale_factor >= TARGET_HEIGHT
                     {
                         if scale_factor > 1 {
-                            let out_path = img.with_extension("png").with_directory(&wall_dir);
+                            let out_path = img.with_extension("png").with_directory(wall_dir);
                             to_optimize.push(out_path.clone());
                             to_upscale.push((img, scale_factor));
                             to_detect.push(out_path);
                         } else {
                             to_copy.push(img.clone());
-                            to_optimize.push(img.with_directory(&wall_dir));
+                            to_optimize.push(img.with_directory(wall_dir));
                             to_detect.push(img);
                         }
                         break;
@@ -213,7 +220,7 @@ fn main() {
 
     // copy images that don't need to be upscaled
     for img in &to_copy {
-        std::fs::copy(img, img.with_directory(&wall_dir))
+        std::fs::copy(img, img.with_directory(wall_dir))
             .unwrap_or_else(|_| panic!("could not copy {img:?}"));
     }
 

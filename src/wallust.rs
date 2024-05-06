@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use clap::Parser;
 use dioxus::prelude::*;
-use std::path::Path;
+use wallpaper_ui::config::WallpaperConfig;
 
 use crate::{
     app_state::Wallpapers,
@@ -103,8 +103,10 @@ impl WallustConfig {
 
     fn preview(
         &self,
-        img: &Path,
+        img_filename: &str,
     ) -> impl std::future::Future<Output = Result<async_process::ExitStatus, std::io::Error>> {
+        let img = WallpaperConfig::new().wallpapers_path.join(img_filename);
+
         async_process::Command::new("wallust")
             .arg("run")
             .args([
@@ -249,7 +251,7 @@ pub fn Wallust(wallpapers: Signal<Wallpapers>) -> Element {
                         conf.set(WallustConfig::from_args_str(&wallpapers.read().source.wallust));
                         spawn(async move {
                             is_running.set(true);
-                            let _ = conf.read().preview(&wallpapers.read().current.path()).await;
+                            let _ = conf.read().preview(&wallpapers.read().current.filename).await;
                             is_running.set(false);
                         });
                     },
@@ -265,7 +267,7 @@ pub fn Wallust(wallpapers: Signal<Wallpapers>) -> Element {
                     onclick: move |_| {
                         spawn(async move {
                             is_running.set(true);
-                            let _ = conf.read().preview(&wallpapers.read().current.path()).await;
+                            let _ = conf.read().preview(&wallpapers.read().current.filename).await;
                             is_running.set(false);
                         });
                     },

@@ -7,14 +7,18 @@ use crate::{cropper::AspectRatio, full_path};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WallpaperConfig {
+    pub wallpapers_path: PathBuf,
     pub csv_path: PathBuf,
     pub resolutions: Vec<(String, AspectRatio)>,
 }
 
 impl Default for WallpaperConfig {
     fn default() -> Self {
+        let wallpapers_path = full_path("~/Pictures/Wallpapers");
+
         Self {
-            csv_path: full_path("~/Pictures/Wallpapers/wallpapers.csv"),
+            wallpapers_path: wallpapers_path.clone(),
+            csv_path: wallpapers_path.join("wallpapers.csv"),
             resolutions: vec![("HD".into(), AspectRatio(1920, 1080))],
         }
     }
@@ -27,11 +31,6 @@ impl WallpaperConfig {
             .join("wallpaper-ui/config.ini");
 
         if let Ok(conf) = Ini::load_from_file(config_file) {
-            let csv_path = conf
-                .general_section()
-                .get("csv_path")
-                .map_or_else(|| Self::default().csv_path, full_path);
-
             let resolutions = conf.section(Some("resolutions")).map_or_else(
                 || Self::default().resolutions,
                 |res| {
@@ -50,7 +49,14 @@ impl WallpaperConfig {
             );
 
             Self {
-                csv_path,
+                wallpapers_path: conf
+                    .general_section()
+                    .get("wallpapers_path")
+                    .map_or_else(|| Self::default().wallpapers_path, full_path),
+                csv_path: conf
+                    .general_section()
+                    .get("csv_path")
+                    .map_or_else(|| Self::default().csv_path, full_path),
                 resolutions,
             }
         } else {

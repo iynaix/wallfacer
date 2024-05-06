@@ -3,14 +3,12 @@ use serde::{
     de::{self},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
 use crate::{
     config::WallpaperConfig,
     cropper::{AspectRatio, Cropper, Direction},
-    filename,
     geometry::Geometry,
-    wallpaper_dir,
 };
 
 #[derive(Debug, Default, Clone, Deserialize, PartialEq, Eq)]
@@ -165,10 +163,6 @@ impl<'de> Deserialize<'de> for WallInfo {
 }
 
 impl WallInfo {
-    pub fn path(&self) -> PathBuf {
-        wallpaper_dir().join(&self.filename)
-    }
-
     pub const fn direction(&self, g: &Geometry) -> Direction {
         if self.height == g.h {
             Direction::X
@@ -178,7 +172,7 @@ impl WallInfo {
     }
 
     pub fn cropper(&self) -> Cropper {
-        Cropper::new(&filename(self.path()), &self.faces, self.width, self.height)
+        Cropper::new(&self.faces, self.width, self.height)
     }
 
     pub fn get_geometry(&self, ratio: &AspectRatio) -> Geometry {
@@ -286,9 +280,10 @@ impl WallpapersCsv {
 
         let resolutions = self.config.sorted_resolutions();
         for wall in self.wallpapers.values() {
-            if wallpaper_dir().join(&wall.filename).exists() {
-                let (width, height) = image::image_dimensions(wall.path())
-                    .unwrap_or_else(|_| panic!("could not open image: {:?}", wall.path()));
+            let wall_path = self.config.wallpapers_path.join(&wall.filename);
+            if wall_path.exists() {
+                let (width, height) = image::image_dimensions(&wall_path)
+                    .unwrap_or_else(|_| panic!("could not open image: {:?}", &wall_path));
                 let mut record: Vec<String> = vec![
                     wall.filename.to_string(),
                     width.to_string(),

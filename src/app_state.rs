@@ -7,7 +7,6 @@ use wallpaper_ui::{
     cropper::AspectRatio,
     filename, filter_images, full_path,
     geometry::Geometry,
-    wallpaper_dir,
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
@@ -43,7 +42,7 @@ pub struct Wallpapers {
 }
 
 impl Wallpapers {
-    pub fn from_args() -> Self {
+    pub fn from_args(wall_dir: &PathBuf) -> Self {
         let args = WallpaperUIArgs::parse();
         let resolutions = WallpaperConfig::new().sorted_resolutions();
 
@@ -63,8 +62,6 @@ impl Wallpapers {
 
         if all_files.is_empty() {
             // defaults to wallpaper directory
-            let wall_dir = wallpaper_dir();
-
             if !wall_dir.exists() {
                 eprintln!("Wallpaper directory does not exist: {:?}", wall_dir);
                 std::process::exit(1);

@@ -29,6 +29,7 @@ tokio = "1.36.0"
 wallust = { git = "https://codeberg.org/explosion-mental/wallust.git", tag = "3.0.0-beta" }
 async-process = "2.2.1"
 rust-ini = "0.21.0"
+lazy_static = "1.4.0"
 
 [build-dependencies]
 clap = { version = "4.5.3", features = ["derive"] }

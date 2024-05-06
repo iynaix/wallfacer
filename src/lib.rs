@@ -21,9 +21,9 @@ pub fn full_path(p: &str) -> PathBuf {
     }
 }
 
-pub fn wallpaper_dir() -> PathBuf {
-    full_path("~/Pictures/Wallpapers")
-}
+// pub fn wallpaper_dir() -> PathBuf {
+//     full_path("~/Pictures/Wallpapers")
+// }
 
 pub fn filename<P>(path: P) -> String
 where
