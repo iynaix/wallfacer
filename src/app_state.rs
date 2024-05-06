@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use wallpaper_ui::{
     args::WallpaperUIArgs,
+    config::WallpaperConfig,
     cropper::AspectRatio,
     filename, filter_images, full_path,
     geometry::Geometry,
@@ -41,21 +42,10 @@ pub struct Wallpapers {
     pub ratio: AspectRatio,
 }
 
-impl Default for Wallpapers {
-    fn default() -> Self {
-        Self {
-            files: Vec::default(),
-            source: WallInfo::default(),
-            current: WallInfo::default(),
-            index: Default::default(),
-            ratio: AspectRatio(1440, 2560),
-        }
-    }
-}
-
 impl Wallpapers {
     pub fn from_args() -> Self {
         let args = WallpaperUIArgs::parse();
+        let resolutions = WallpaperConfig::new().sorted_resolutions();
 
         let mut all_files = Vec::new();
         if let Some(paths) = args.paths {
@@ -101,7 +91,7 @@ impl Wallpapers {
                     return false;
                 }
 
-                if args.only_unmodified && !info.is_default_crops() {
+                if args.only_unmodified && !info.is_default_crops(&resolutions) {
                     return false;
                 }
 
@@ -139,10 +129,11 @@ impl Wallpapers {
             .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
 
         Self {
+            index: Default::default(),
             files: all_files,
             source: loaded.clone(),
             current: loaded.clone(),
-            ..Default::default()
+            ratio: resolutions[0].clone(),
         }
     }
 

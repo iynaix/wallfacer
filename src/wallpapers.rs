@@ -1,15 +1,14 @@
 use indexmap::IndexMap;
-use itertools::Itertools;
 use serde::{
     de::{self},
-    ser::SerializeSeq,
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
+    config::WallpaperConfig,
     cropper::{AspectRatio, Cropper, Direction},
-    filename, full_path,
+    filename,
     geometry::Geometry,
     wallpaper_dir,
 };
@@ -73,32 +72,6 @@ pub struct WallInfo {
     pub faces: Vec<Face>,
     pub geometries: HashMap<AspectRatio, Geometry>,
     pub wallust: String,
-}
-
-impl Serialize for WallInfo {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut seq = serializer.serialize_seq(Some(5 + self.geometries.len()))?;
-
-        let (width, height) = image::image_dimensions(self.path())
-            .unwrap_or_else(|_| panic!("could not open image: {:?}", self.path()));
-
-        seq.serialize_element(&self.filename)?;
-        seq.serialize_element(&width)?;
-        seq.serialize_element(&height)?;
-        seq.serialize_element(
-            // serialize Vec<Face> as a json string
-            &serde_json::to_string(&self.faces).expect("could not serialize faces"),
-        )?;
-        for (_, geom) in self.sorted_geometries() {
-            seq.serialize_element(&geom)?;
-        }
-        seq.serialize_element(&self.wallust)?;
-
-        seq.end()
-    }
 }
 
 impl<'de> Deserialize<'de> for WallInfo {
@@ -168,36 +141,13 @@ impl<'de> Deserialize<'de> for WallInfo {
                     }
                 }
 
-                let filename = filename.ok_or_else(|| de::Error::missing_field("filename"))?;
-                let width = width.ok_or_else(|| de::Error::missing_field("width"))?;
-                let height = height.ok_or_else(|| de::Error::missing_field("height"))?;
-                let faces = faces.ok_or_else(|| de::Error::missing_field("faces"))?;
-                let wallust = wallust.ok_or_else(|| de::Error::missing_field("wallust"))?;
-
-                // geometries have no width and height, calculate from wall info
-                let cropper = Cropper::new(&filename, &faces, width, height);
-                let geometries = geometries
-                    .iter()
-                    .map(|(ratio, geom)| {
-                        let (w, h, _) = cropper.crop_rect(ratio);
-                        (
-                            ratio.clone(),
-                            Geometry {
-                                w,
-                                h,
-                                ..geom.clone()
-                            },
-                        )
-                    })
-                    .collect();
-
                 Ok(WallInfo {
-                    filename,
-                    width,
-                    height,
-                    faces,
+                    filename: filename.ok_or_else(|| de::Error::missing_field("filename"))?,
+                    width: width.ok_or_else(|| de::Error::missing_field("width"))?,
+                    height: height.ok_or_else(|| de::Error::missing_field("height"))?,
+                    faces: faces.ok_or_else(|| de::Error::missing_field("faces"))?,
+                    wallust: wallust.ok_or_else(|| de::Error::missing_field("wallust"))?,
                     geometries,
-                    wallust,
                 })
             }
         }
@@ -241,26 +191,12 @@ impl WallInfo {
         self.geometries.insert(ratio.clone(), new_geom.clone());
     }
 
-    // sort geometries by key
-    pub fn sorted_geometries(&self) -> impl Iterator<Item = (&AspectRatio, &Geometry)> {
-        self.geometries.iter().sorted_by_key(|(k, _)| *k)
-    }
-
-    pub fn is_default_crops(&self) -> bool {
+    pub fn is_default_crops(&self, resolutions: &[AspectRatio]) -> bool {
         let cropper = self.cropper();
 
-        for ratio in [
-            AspectRatio(1440, 2560),
-            AspectRatio(2256, 1504),
-            AspectRatio(3440, 1440),
-            AspectRatio(1920, 1080),
-            AspectRatio(1, 1),
-        ] {
-            if self.get_geometry(&ratio) != cropper.crop(&ratio) {
-                return false;
-            }
-        }
-        true
+        resolutions
+            .iter()
+            .all(|ratio| self.get_geometry(ratio) == cropper.crop(ratio))
     }
 
     pub fn overlay_transforms(&self, g: &Geometry) -> (Direction, f64, f64) {
@@ -285,21 +221,22 @@ impl WallInfo {
 
 pub struct WallpapersCsv {
     wallpapers: IndexMap<String, WallInfo>,
-    csv: PathBuf,
+    // csv: PathBuf,
+    config: WallpaperConfig,
 }
 
 impl WallpapersCsv {
     pub fn load() -> Self {
-        let wallpapers_csv = full_path("~/Pictures/Wallpapers/wallpapers.csv");
+        let config = WallpaperConfig::new();
 
         let reader = std::io::BufReader::new(
-            std::fs::File::open(&wallpapers_csv).expect("could not open wallpapers.csv"),
+            std::fs::File::open(&config.csv_path).expect("could not open wallpapers.csv"),
         );
 
         let mut rdr = csv::Reader::from_reader(reader);
 
         Self {
-            csv: wallpapers_csv,
+            config,
             wallpapers: rdr
                 .deserialize::<WallInfo>()
                 .flatten()
@@ -322,30 +259,21 @@ impl WallpapersCsv {
         self.wallpapers.insert(filename, wall_info);
     }
 
-    pub fn header(&self) -> Vec<String> {
+    pub fn header(&self, ratios: &[AspectRatio]) -> Vec<String> {
         let mut header: Vec<String> = vec![
             "filename".into(),
             "width".into(),
             "height".into(),
             "faces".into(),
         ];
-        for (ratio, _) in self
-            .wallpapers
-            .iter()
-            .next()
-            .expect("could not get first column")
-            .1
-            .sorted_geometries()
-        {
-            header.push(ratio.to_string());
-        }
+        header.extend(ratios.iter().map(std::string::ToString::to_string));
         header.push("wallust".into());
         header
     }
 
-    pub fn save(&self) {
+    pub fn save(&self, ratios: &[AspectRatio]) {
         let writer = std::io::BufWriter::new(
-            std::fs::File::create(&self.csv).expect("could not create wallpapers.csv"),
+            std::fs::File::create(&self.config.csv_path).expect("could not create wallpapers.csv"),
         );
 
         let mut wtr = csv::WriterBuilder::new()
@@ -353,14 +281,28 @@ impl WallpapersCsv {
             .from_writer(writer);
 
         // manually write the header
-        wtr.write_record(self.header())
+        wtr.write_record(self.header(ratios))
             .expect("could not write csv header");
 
-        for row in self.wallpapers.values() {
-            if wallpaper_dir().join(&row.filename).exists() {
-                wtr.serialize(row).unwrap_or_else(|e| {
+        let resolutions = self.config.sorted_resolutions();
+        for wall in self.wallpapers.values() {
+            if wallpaper_dir().join(&wall.filename).exists() {
+                let (width, height) = image::image_dimensions(wall.path())
+                    .unwrap_or_else(|_| panic!("could not open image: {:?}", wall.path()));
+                let mut record: Vec<String> = vec![
+                    wall.filename.to_string(),
+                    width.to_string(),
+                    height.to_string(),
+                    serde_json::to_string(&wall.faces).expect("could not serialize faces"),
+                ];
+                for resolution in &resolutions {
+                    record.push(wall.get_geometry(resolution).to_string());
+                }
+                record.push(wall.wallust.to_string());
+
+                wtr.write_record(record).unwrap_or_else(|e| {
                     eprintln!("{:?}", e);
-                    panic!("could not write row: {:?}", &row);
+                    panic!("could not write row: {:?}", &wall);
                 });
             }
         }

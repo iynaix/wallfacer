@@ -2,6 +2,7 @@
 use clap::Parser;
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
+use wallpaper_ui::config::WallpaperConfig;
 
 pub mod align_selector;
 pub mod app_header;
@@ -63,6 +64,7 @@ fn main() {
 
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
+    let config = WallpaperConfig::new();
     let wallpapers = use_signal(Wallpapers::from_args);
     let ui = use_signal(UiState::default);
     let has_files = !wallpapers().files.is_empty();
@@ -83,7 +85,7 @@ fn App() -> Element {
     rsx! {
         main {
             class: "dark flex flex-col h-full bg-base overflow-hidden",
-            AppHeader { wallpapers, ui }
+            AppHeader { wallpapers, ui, resolutions: config.sorted_resolutions() }
 
             div {
                 class: "flex p-4 gap-4",
@@ -100,7 +102,7 @@ fn App() -> Element {
                         // Toolbar
                         div {
                             class:"flex flex-row justify-between",
-                            RatioSelector { wallpapers, ui },
+                            RatioSelector { wallpapers, ui, resolutions: config.resolutions },
 
                             div{
                                 class: "flex justify-end",

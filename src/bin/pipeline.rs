@@ -7,6 +7,7 @@ use std::{
 
 use wallpaper_ui::{
     args::WallpaperPipelineArgs,
+    config::WallpaperConfig,
     cropper::{AspectRatio, Cropper},
     detect_faces_iter, filename, filter_images, full_path, wallpaper_dir,
     wallpapers::{WallInfo, WallpapersCsv},
@@ -81,7 +82,11 @@ fn optimize_images(paths: &[PathBuf]) {
 }
 
 // returns the faces that need to be previewed for selection
-fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<PathBuf> {
+fn detect_faces(
+    paths: &[PathBuf],
+    wallpapers_csv: &mut WallpapersCsv,
+    resolutions: &[AspectRatio],
+) -> Vec<PathBuf> {
     if paths.is_empty() {
         return Vec::new();
     }
@@ -104,16 +109,10 @@ fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<Pa
             width,
             height,
             faces,
-            geometries: [
-                AspectRatio(1440, 2560), // vertical
-                AspectRatio(1, 1),       // square
-                AspectRatio(2256, 1504), // framework
-                AspectRatio(1920, 1080), // hd
-                AspectRatio(3440, 1440), // ultrawide
-            ]
-            .iter()
-            .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
-            .collect(),
+            geometries: resolutions
+                .iter()
+                .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
+                .collect(),
             wallust: String::new(),
         };
 
@@ -124,7 +123,7 @@ fn detect_faces(paths: &[PathBuf], wallpapers_csv: &mut WallpapersCsv) -> Vec<Pa
 
         wallpapers_csv.insert(fname.clone(), wall_info);
     }
-    wallpapers_csv.save();
+    wallpapers_csv.save(resolutions);
 
     to_preview
 }
@@ -142,6 +141,8 @@ fn get_output_path(img: &Path) -> Option<PathBuf> {
 
 fn main() {
     let args = WallpaperPipelineArgs::parse();
+    let config = WallpaperConfig::new();
+    let resolutions = config.sorted_resolutions();
 
     if args.version {
         println!("wallpaper-pipeline {}", env!("CARGO_PKG_VERSION"));
@@ -177,7 +178,7 @@ fn main() {
                 match wallpapers_csv.get(&filename(&out_path)) {
                     // re-preview if no / multiple faces detected and still using default crop
                     Some(info) => {
-                        if info.faces.len() != 1 && info.is_default_crops() {
+                        if info.faces.len() != 1 && info.is_default_crops(&resolutions) {
                             to_preview.push(out_path);
                         }
                     }
@@ -220,7 +221,7 @@ fn main() {
 
     optimize_images(&to_optimize);
 
-    to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv));
+    to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv, &resolutions));
 
     if !to_preview.is_empty() {
         let to_preview: Vec<_> = to_preview

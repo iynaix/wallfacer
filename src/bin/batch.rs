@@ -1,9 +1,10 @@
-use wallpaper_ui::wallpapers::WallpapersCsv;
+use wallpaper_ui::{config::WallpaperConfig, wallpapers::WallpapersCsv};
 
 fn main() {
+    let config = WallpaperConfig::new();
     let wallpapers_csv = WallpapersCsv::load();
 
-    wallpapers_csv.save();
+    wallpapers_csv.save(&config.sorted_resolutions());
 
     // let argstr = [
     //     "wallust",

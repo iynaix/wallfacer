@@ -26,17 +26,20 @@ impl std::convert::TryFrom<String> for Geometry {
     type Error = GeometryError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = s.split(['+'].as_ref()).collect();
-        assert!(parts.len() == 2, "Invalid geometry: {}", s);
+        let parts: Vec<&str> = s.split(|c| c == 'x' || c == '+').collect();
+        assert!(parts.len() == 4, "Geometry {s}: Invalid format");
 
         Ok(Self {
-            // width and height are computed from wall info and unknown at parse time
-            w: Default::default(),
-            h: Default::default(),
-            x: parts[0]
+            w: parts[0]
                 .parse()
                 .map_err(|_| GeometryError::InvalidCoordinate)?,
-            y: parts[1]
+            h: parts[1]
+                .parse()
+                .map_err(|_| GeometryError::InvalidCoordinate)?,
+            x: parts[2]
+                .parse()
+                .map_err(|_| GeometryError::InvalidCoordinate)?,
+            y: parts[3]
                 .parse()
                 .map_err(|_| GeometryError::InvalidCoordinate)?,
         })

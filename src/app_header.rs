@@ -5,12 +5,16 @@ use dioxus_free_icons::icons::{
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 use dioxus_free_icons::Icon;
-use wallpaper_ui::wallpapers::WallpapersCsv;
+use wallpaper_ui::{cropper::AspectRatio, wallpapers::WallpapersCsv};
 
 use crate::app_state::{PreviewMode, UiState, Wallpapers};
 
 #[component]
-pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
+pub fn SaveButton(
+    wallpapers: Signal<Wallpapers>,
+    ui: Signal<UiState>,
+    resolutions: Vec<AspectRatio>,
+) -> Element {
     let mut clicked = use_signal(|| false);
 
     use_future(move || async move {
@@ -37,7 +41,7 @@ pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Elemen
                 let info = wallpapers().current;
                 let mut wallpapers_csv = WallpapersCsv::load();
                 wallpapers_csv.insert(info.filename.clone(), info);
-                wallpapers_csv.save();
+                wallpapers_csv.save(&resolutions);
 
                 wallpapers.with_mut(|wallpapers| {
                     wallpapers.remove();
@@ -54,7 +58,11 @@ pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Elemen
 }
 
 #[component]
-pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
+pub fn AppHeader(
+    wallpapers: Signal<Wallpapers>,
+    ui: Signal<UiState>,
+    resolutions: Vec<AspectRatio>,
+) -> Element {
     let supports_wallust = use_signal(|| {
         std::process::Command::new("rustc")
             .stdout(std::process::Stdio::null())
@@ -135,7 +143,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         Icon { fill: "white", icon:  MdFaceRetouchingNatural }
                     }
 
-                    SaveButton { wallpapers, ui }
+                    SaveButton { wallpapers, ui, resolutions }
                 }
             }
         }

@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
+use wallpaper_ui::cropper::AspectRatio;
 
 use crate::{
     app_state::{UiState, Wallpapers},
@@ -12,12 +13,12 @@ pub fn RatioSelector(
     class: Option<String>,
     wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
+    resolutions: Vec<(String, AspectRatio)>,
 ) -> Element {
     let walls = wallpapers();
-    let ratios: Vec<_> = walls
-        .current
-        .sorted_geometries()
-        .filter(|(ratio, _)| {
+    let ratios: Vec<_> = resolutions
+        .into_iter()
+        .filter(|(_, ratio)| {
             // do not show resolution if aspect ratio of image is the same,
             // as there is only a single possible crop
             (f64::from(walls.current.width) / f64::from(walls.current.height)
@@ -25,11 +26,11 @@ pub fn RatioSelector(
             .abs()
                 > f64::EPSILON
         })
-        .map(|(ratio, _)| ratio.clone())
         .collect();
+
     let len = ratios.len();
 
-    let buttons = ratios.into_iter().enumerate().map(|(i, res)| {
+    let buttons = ratios.into_iter().enumerate().map(|(i, (res_name, res))| {
         let cls = if i == 0 {
             "rounded-l-md"
         } else if i == len - 1 {
@@ -45,7 +46,7 @@ pub fn RatioSelector(
             " *"
         };
 
-        let btn_text = format!("{}x{}{}", &res.0, &res.1, dirty_marker);
+        let btn_text = format!("{}{}", res_name, dirty_marker);
 
         rsx! {
             Button {
