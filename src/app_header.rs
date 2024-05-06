@@ -55,6 +55,12 @@ pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Elemen
 
 #[component]
 pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
+    let supports_wallust = use_signal(|| {
+        std::process::Command::new("rustc")
+            .stdout(std::process::Stdio::null())
+            .spawn()
+            .is_ok()
+    });
     let info = wallpapers().current;
 
     let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-crust focus-visible:outline-offset-0 cursor-pointer";
@@ -97,21 +103,22 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                     }
                 }
                 div { class: "gap-x-6 flex flex-1 justify-end",
-                    a {
-                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
-                        class: if ui().show_palette {
-                            "bg-indigo-600 hover:bg-indigo-500"
-                        } else {
-                            "bg-surface1 hover:bg-crust"
-                        },
-                        onclick: move |_| {
-                            ui.with_mut(|ui| {
-                                ui.show_palette = !ui.show_palette;
-                            });
-                        },
-                        Icon { fill: "white", icon:  MdPalette }
+                    if supports_wallust() {
+                        a {
+                            class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
+                            class: if ui().show_palette {
+                                "bg-indigo-600 hover:bg-indigo-500"
+                            } else {
+                                "bg-surface1 hover:bg-crust"
+                            },
+                            onclick: move |_| {
+                                ui.with_mut(|ui| {
+                                    ui.show_palette = !ui.show_palette;
+                                });
+                            },
+                            Icon { fill: "white", icon:  MdPalette }
+                        }
                     }
-
 
                     a {
                         class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
