@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{builder::PossibleValuesParser, Parser};
 
 // ------------------------- WALLPAPER UI -------------------------
 #[allow(clippy::struct_excessive_bools)]
@@ -12,31 +12,40 @@ pub struct WallpaperUIArgs {
 
     #[arg(
         long,
-        default_value = "false",
-        help = "only show wallpapers that still use the default crops"
+        default_value = None,
+        default_missing_value = "all",
+        num_args = 0..=1,
+        value_name = "RESOLUTIONS",
+        help = "only show wallpapers that use the default crops; either \"all\" or resolution(s) in the format \"1920x1080,1920x1200\""
     )]
-    pub only_unmodified: bool,
+    pub unmodified: Option<String>,
 
     #[arg(
         long,
-        default_value = "false",
-        help = "only show wallpapers that have no faces detected"
+        default_value = None,
+        default_missing_value = "all",
+        num_args = 0..=1,
+        value_name = "RESOLUTIONS",
+        help = "only show wallpapers that don't use the default crops; either \"all\" or resolution(s) in the format \"1920x1080,1920x1200\""
     )]
-    pub only_none: bool,
+    pub modified: Option<String>,
 
     #[arg(
         long,
-        default_value = "false",
-        help = "only show wallpapers that have a single face detected"
+        default_value = "all",
+        default_missing_value = "all",
+        value_parser = PossibleValuesParser::new([
+            "zero",
+            "none",
+            "one",
+            "single",
+            "many",
+            "multiple",
+            "all",
+        ]),
+        help = "only show wallpapers that have a palette"
     )]
-    pub only_single: bool,
-
-    #[arg(
-        long,
-        default_value = "false",
-        help = "only show wallpapers that have multiple faces detected"
-    )]
-    pub only_multiple: bool,
+    pub faces: String,
 
     #[arg(long, help = "filters wallpapers by filename (case-insensitive)")]
     pub filter: Option<String>,

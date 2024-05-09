@@ -42,9 +42,38 @@ pub struct Wallpapers {
 }
 
 impl Wallpapers {
+    /// parse an optional comma separated list of resolutions
+    fn resolution_arg(
+        resolution_arg: Option<&str>,
+        resolutions: &[AspectRatio],
+    ) -> Vec<AspectRatio> {
+        match resolution_arg {
+            None => Vec::new(),
+            Some("all") => resolutions.to_vec(),
+            Some(res_arg) => res_arg
+                .split(',')
+                .map(|s| {
+                    std::convert::TryInto::<AspectRatio>::try_into(s.trim())
+                        .unwrap_or_else(|()| panic!("Invalid resolution {s} provided."))
+                })
+                .collect(),
+        }
+    }
+
     pub fn from_args(wall_dir: &PathBuf) -> Self {
         let args = WallpaperUIArgs::parse();
         let resolutions = WallpaperConfig::new().sorted_resolutions();
+
+        let mut modified_filters = Self::resolution_arg(args.modified.as_deref(), &resolutions);
+        if !modified_filters.is_empty() {
+            modified_filters = resolutions
+                .iter()
+                .filter(|r| !modified_filters.contains(r))
+                .cloned()
+                .collect();
+        }
+
+        let unmodified_filters = Self::resolution_arg(args.unmodified.as_deref(), &resolutions);
 
         let mut all_files = Vec::new();
         if let Some(paths) = args.paths {
@@ -85,21 +114,22 @@ impl Wallpapers {
                     return false;
                 }
 
-                if args.only_unmodified && !info.is_default_crops(&resolutions) {
-                    return false;
+                // check if wallpaper uses default crop for a resolution / all resolutions
+                if !modified_filters.is_empty() {
+                    return info.is_default_crops(&modified_filters);
                 }
 
-                if args.only_single && info.faces.len() != 1 {
-                    return false;
+                if !unmodified_filters.is_empty() {
+                    return info.is_default_crops(&unmodified_filters);
                 }
 
-                if args.only_none && !info.faces.is_empty() {
-                    return false;
-                }
-
-                if args.only_multiple && info.faces.len() <= 1 {
-                    return false;
-                }
+                return match args.faces.as_str() {
+                    "all" => true,
+                    "zero" | "none" => info.faces.is_empty(),
+                    "one" | "single" => info.faces.len() == 1,
+                    "many" | "multiple" => info.faces.len() > 1,
+                    _ => panic!("Invalid faces : {}", args.faces),
+                };
             }
             true
         });
@@ -112,6 +142,8 @@ impl Wallpapers {
                 .unwrap_or_else(|_| panic!("could not get file mtime: {:?}", f))
         });
         all_files.reverse();
+
+        println!("Found {} wallpapers", all_files.len());
 
         let fname = filename(
             all_files
