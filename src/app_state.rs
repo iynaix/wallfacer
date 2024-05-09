@@ -5,7 +5,7 @@ use wallpaper_ui::{
     args::WallpaperUIArgs,
     config::WallpaperConfig,
     cropper::AspectRatio,
-    filename, filter_images, full_path,
+    filename, filter_images,
     geometry::Geometry,
     wallpapers::{WallInfo, WallpapersCsv},
 };
@@ -48,16 +48,13 @@ impl Wallpapers {
 
         let mut all_files = Vec::new();
         if let Some(paths) = args.paths {
-            paths
-                .iter()
-                .flat_map(|p| std::fs::canonicalize(full_path(p)))
-                .for_each(|p| {
-                    if p.is_file() {
-                        all_files.push(p);
-                    } else {
-                        all_files.extend(filter_images(&p));
-                    }
-                });
+            paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
+                if p.is_file() {
+                    all_files.push(p);
+                } else {
+                    all_files.extend(filter_images(&p));
+                }
+            });
         }
 
         if all_files.is_empty() {

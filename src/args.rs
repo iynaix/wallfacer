@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 
 // ------------------------- WALLPAPER UI -------------------------
@@ -40,7 +42,7 @@ pub struct WallpaperUIArgs {
     pub filter: Option<String>,
 
     // positional arguments for file paths
-    pub paths: Option<Vec<String>>,
+    pub paths: Option<Vec<PathBuf>>,
 }
 
 #[derive(Parser, Debug)]
@@ -48,4 +50,7 @@ pub struct WallpaperUIArgs {
 pub struct WallpaperPipelineArgs {
     #[arg(long, action, help = "print version information and exit")]
     pub version: bool,
+
+    // required positional argument for input directory
+    pub path: PathBuf,
 }

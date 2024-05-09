@@ -12,7 +12,7 @@ use wallpaper_ui::{
     args::WallpaperPipelineArgs,
     config::WallpaperConfig,
     cropper::{AspectRatio, Cropper},
-    detect_faces_iter, filename, filter_images, full_path,
+    detect_faces_iter, filename, filter_images,
     wallpapers::{WallInfo, WallpapersCsv},
     PathBufExt,
 };
@@ -156,7 +156,6 @@ fn main() {
         std::process::exit(0);
     }
 
-    let input_dir = full_path("~/Pictures/wallpapers_in");
     let wall_dir = &CONFIG.wallpapers_path;
     let mut wallpapers_csv = WallpapersCsv::load();
 
@@ -175,7 +174,7 @@ fn main() {
     }
 
     // get image dimensions of files within input_dir
-    for img in filter_images(&input_dir) {
+    for img in filter_images(&args.path) {
         let (width, height) = image::image_dimensions(&img)
             .unwrap_or_else(|_| panic!("could not get image dimensions for {img:?}"));
 
