@@ -28,12 +28,25 @@ pub struct Cropper {
     pub height: u32,
 }
 
+/// euclid's algorithm to find the greatest common divisor
+const fn gcd(mut a: u32, mut b: u32) -> u32 {
+    while b != 0 {
+        let tmp = b;
+        b = a % b;
+        a = tmp;
+    }
+    a
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AspectRatio(pub u32, pub u32);
+pub struct AspectRatio {
+    pub w: u32,
+    pub h: u32,
+}
 
 impl std::fmt::Display for AspectRatio {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}x{}", self.0, self.1)
+        write!(f, "{}x{}", self.w, self.h)
     }
 }
 
@@ -45,8 +58,8 @@ impl std::cmp::PartialOrd for AspectRatio {
 
 impl std::cmp::Ord for AspectRatio {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let self_ratio = f64::from(self.0) / f64::from(self.1);
-        let other_ratio = f64::from(other.0) / f64::from(other.1);
+        let self_ratio = f64::from(self.w) / f64::from(self.h);
+        let other_ratio = f64::from(other.w) / f64::from(other.h);
         self_ratio
             .partial_cmp(&other_ratio)
             .unwrap_or(std::cmp::Ordering::Equal)
@@ -60,10 +73,10 @@ impl std::convert::TryFrom<&str> for AspectRatio {
         let parts: Vec<&str> = s.split('x').collect();
         assert!(parts.len() == 2, "Invalid aspect ratio: {}", s);
 
-        Ok(Self(
-            parts[0].parse().map_err(|_| ())?,
-            parts[1].parse().map_err(|_| ())?,
-        ))
+        let width = parts[0].parse().map_err(|_| ())?;
+        let height = parts[1].parse().map_err(|_| ())?;
+
+        Ok(Self::new(width, height))
     }
 }
 
@@ -73,6 +86,16 @@ impl Serialize for AspectRatio {
         S: serde::ser::Serializer,
     {
         serializer.serialize_str(&format!("{}", self))
+    }
+}
+
+impl AspectRatio {
+    pub const fn new(width: u32, height: u32) -> Self {
+        let divisor = gcd(width, height);
+        Self {
+            w: width / divisor,
+            h: height / divisor,
+        }
     }
 }
 
@@ -96,7 +119,10 @@ impl Cropper {
 
     pub fn crop_rect(&self, aspect_ratio: &AspectRatio) -> (u32, u32, Direction) {
         use std::cmp::min;
-        let AspectRatio(target_w, target_h) = aspect_ratio;
+        let AspectRatio {
+            w: target_w,
+            h: target_h,
+        } = aspect_ratio;
 
         // Calculate width and height that can be cropped while maintaining aspect ratio
         let crop_w = min(self.width, self.height * target_w / target_h);

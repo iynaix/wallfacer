@@ -22,7 +22,7 @@ pub fn RatioSelector(
             // do not show resolution if aspect ratio of image is the same,
             // as there is only a single possible crop
             (f64::from(walls.current.width) / f64::from(walls.current.height)
-                - f64::from(ratio.0) / f64::from(ratio.1))
+                - f64::from(ratio.w) / f64::from(ratio.h))
             .abs()
                 > f64::EPSILON
         })

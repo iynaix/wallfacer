@@ -19,7 +19,7 @@ impl Default for WallpaperConfig {
         Self {
             wallpapers_path: wallpapers_path.clone(),
             csv_path: wallpapers_path.join("wallpapers.csv"),
-            resolutions: vec![("HD".into(), AspectRatio(1920, 1080))],
+            resolutions: vec![("HD".into(), AspectRatio::new(1920, 1080))],
         }
     }
 }
