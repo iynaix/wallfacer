@@ -76,7 +76,7 @@
               GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
               # FIXME: fix lag on wayland?
               # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
-              # WEBKIT_DISABLE_COMPOSITING_MODE = 1;
+              WEBKIT_DISABLE_COMPOSITING_MODE = 1;
               # FIXME: keyboard shortcuts do not seem to work without this option
               # GDK_BACKEND = "x11";
             };
@@ -96,18 +96,30 @@
             };
           };
 
-          packages = rec {
-            default = pkgs.callPackage ./nix/wallpaper-ui {
-              inherit realcugan-ncnn-vulkan anime-face-detector;
+          packages =
+            let
               tailwindcss = tailwindcss-with-catppuccin;
               version =
                 if self ? "shortRev" then
                   self.shortRev
                 else
                   nixpkgs.lib.replaceStrings [ "-dirty" ] [ "" ] self.dirtyShortRev;
+            in
+            rec {
+              default = pkgs.callPackage ./nix/wallpaper-ui {
+                inherit
+                  realcugan-ncnn-vulkan
+                  anime-face-detector
+                  tailwindcss
+                  version
+                  ;
+              };
+              wallpaper-ui = default;
+              with-cuda = pkgs.callPackage ./nix/wallpaper-ui-with-cuda {
+                inherit realcugan-ncnn-vulkan tailwindcss version;
+                anime-face-detector = inputs.anime-face-detector.packages.${system}.with-cuda;
+              };
             };
-            wallpaper-ui = default;
-          };
         };
     };
 }
