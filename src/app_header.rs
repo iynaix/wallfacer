@@ -5,7 +5,7 @@ use dioxus_free_icons::icons::{
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 use dioxus_free_icons::Icon;
-use wallpaper_ui::{cropper::AspectRatio, wallpapers::WallpapersCsv};
+use wallpaper_ui::{aspect_ratio::AspectRatio, wallpapers::WallpapersCsv};
 
 use crate::app_state::{PreviewMode, UiState, Wallpapers};
 

@@ -7,6 +7,7 @@ use std::{
 use wallpapers::Face;
 
 pub mod args;
+pub mod aspect_ratio;
 pub mod config;
 pub mod cropper;
 pub mod geometry;

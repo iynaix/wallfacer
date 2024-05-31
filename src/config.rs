@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use ini::Ini;
 use itertools::Itertools;
 
-use crate::{cropper::AspectRatio, full_path};
+use crate::{aspect_ratio::AspectRatio, full_path};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WallpaperConfig {
@@ -39,7 +39,7 @@ impl WallpaperConfig {
                             (
                                 k.to_string(),
                                 std::convert::TryInto::<AspectRatio>::try_into(v).unwrap_or_else(
-                                    |()| panic!("could not convert aspect ratio {v} into string"),
+                                    |()| panic!("could not convert aspect ratio {v} from string"),
                                 ),
                             )
                         })

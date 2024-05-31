@@ -6,8 +6,9 @@ use serde::{
 use std::collections::HashMap;
 
 use crate::{
+    aspect_ratio::AspectRatio,
     config::WallpaperConfig,
-    cropper::{AspectRatio, Cropper, Direction},
+    cropper::{Cropper, Direction},
     geometry::Geometry,
 };
 
@@ -215,7 +216,6 @@ impl WallInfo {
 
 pub struct WallpapersCsv {
     wallpapers: IndexMap<String, WallInfo>,
-    // csv: PathBuf,
     config: WallpaperConfig,
 }
 
@@ -278,7 +278,6 @@ impl WallpapersCsv {
         wtr.write_record(self.header(ratios))
             .expect("could not write csv header");
 
-        let resolutions = self.config.sorted_resolutions();
         for wall in self.wallpapers.values() {
             let wall_path = self.config.wallpapers_path.join(&wall.filename);
             if wall_path.exists() {
@@ -290,7 +289,7 @@ impl WallpapersCsv {
                     height.to_string(),
                     serde_json::to_string(&wall.faces).expect("could not serialize faces"),
                 ];
-                for resolution in &resolutions {
+                for resolution in ratios {
                     record.push(wall.get_geometry(resolution).to_string());
                 }
                 record.push(wall.wallust.to_string());

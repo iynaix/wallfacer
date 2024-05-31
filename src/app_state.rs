@@ -3,8 +3,8 @@ use std::path::PathBuf;
 
 use wallpaper_ui::{
     args::WallpaperUIArgs,
+    aspect_ratio::AspectRatio,
     config::WallpaperConfig,
-    cropper::AspectRatio,
     filename, filter_images,
     geometry::Geometry,
     wallpapers::{WallInfo, WallpapersCsv},

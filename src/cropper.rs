@@ -1,8 +1,7 @@
 use itertools::Itertools;
-use serde::Serialize;
 use std::collections::HashMap;
 
-use crate::{geometry::Geometry, wallpapers::Face};
+use crate::{aspect_ratio::AspectRatio, geometry::Geometry, wallpapers::Face};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
@@ -26,77 +25,6 @@ pub struct Cropper {
     pub faces: Vec<Face>,
     pub width: u32,
     pub height: u32,
-}
-
-/// euclid's algorithm to find the greatest common divisor
-const fn gcd(mut a: u32, mut b: u32) -> u32 {
-    while b != 0 {
-        let tmp = b;
-        b = a % b;
-        a = tmp;
-    }
-    a
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AspectRatio {
-    pub w: u32,
-    pub h: u32,
-}
-
-impl std::fmt::Display for AspectRatio {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}x{}", self.w, self.h)
-    }
-}
-
-impl std::cmp::PartialOrd for AspectRatio {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl std::cmp::Ord for AspectRatio {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let self_ratio = f64::from(self.w) / f64::from(self.h);
-        let other_ratio = f64::from(other.w) / f64::from(other.h);
-        self_ratio
-            .partial_cmp(&other_ratio)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    }
-}
-
-impl std::convert::TryFrom<&str> for AspectRatio {
-    type Error = ();
-
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = s.split('x').collect();
-        assert!(parts.len() == 2, "Invalid aspect ratio: {}", s);
-
-        let width = parts[0].parse().map_err(|_| ())?;
-        let height = parts[1].parse().map_err(|_| ())?;
-
-        Ok(Self::new(width, height))
-    }
-}
-
-impl Serialize for AspectRatio {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        serializer.serialize_str(&format!("{}", self))
-    }
-}
-
-impl AspectRatio {
-    pub const fn new(width: u32, height: u32) -> Self {
-        let divisor = gcd(width, height);
-        Self {
-            w: width / divisor,
-            h: height / divisor,
-        }
-    }
 }
 
 fn sort_faces_by_direction(faces: Vec<Face>, direction: Direction) -> Vec<Face> {
@@ -146,7 +74,7 @@ impl Cropper {
         )
     }
 
-    fn clamp(
+    pub fn clamp(
         &self,
         val: f64,
         direction: Direction,

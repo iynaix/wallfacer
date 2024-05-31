@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
-use wallpaper_ui::cropper::AspectRatio;
+use wallpaper_ui::aspect_ratio::AspectRatio;
 
 use crate::{
     app_state::{UiState, Wallpapers},
@@ -21,9 +21,8 @@ pub fn RatioSelector(
         .filter(|(_, ratio)| {
             // do not show resolution if aspect ratio of image is the same,
             // as there is only a single possible crop
-            (f64::from(walls.current.width) / f64::from(walls.current.height)
-                - f64::from(ratio.w) / f64::from(ratio.h))
-            .abs()
+            (f64::from(walls.current.width) / f64::from(walls.current.height) - f64::from(ratio))
+                .abs()
                 > f64::EPSILON
         })
         .collect();

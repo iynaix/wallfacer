@@ -10,8 +10,9 @@ use std::{
 
 use wallpaper_ui::{
     args::WallpaperPipelineArgs,
+    aspect_ratio::AspectRatio,
     config::WallpaperConfig,
-    cropper::{AspectRatio, Cropper},
+    cropper::Cropper,
     detect_faces_iter, filename, filter_images,
     wallpapers::{WallInfo, WallpapersCsv},
     PathBufExt,

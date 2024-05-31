@@ -22,7 +22,7 @@ impl std::fmt::Display for Geometry {
     }
 }
 
-impl std::convert::TryFrom<String> for Geometry {
+impl TryFrom<String> for Geometry {
     type Error = GeometryError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
