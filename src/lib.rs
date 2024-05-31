@@ -6,8 +6,8 @@ use std::{
 };
 use wallpapers::Face;
 
-pub mod args;
 pub mod aspect_ratio;
+pub mod cli;
 pub mod config;
 pub mod cropper;
 pub mod geometry;
@@ -21,10 +21,6 @@ pub fn full_path(p: &str) -> PathBuf {
         None => PathBuf::from(p),
     }
 }
-
-// pub fn wallpaper_dir() -> PathBuf {
-//     full_path("~/Pictures/Wallpapers")
-// }
 
 pub fn filename<P>(path: P) -> String
 where
@@ -124,4 +120,34 @@ pub fn detect_faces_iter(paths: &[PathBuf]) -> impl Iterator<Item = (&PathBuf, V
 
         (path, faces)
     })
+}
+
+pub fn run_wallpaper_ui<I, S>(args: I)
+where
+    I: IntoIterator<Item = S> + std::fmt::Debug + Clone,
+    S: AsRef<std::ffi::OsStr>,
+{
+    if cfg!(debug_assertions) {
+        Command::new("cargo")
+            .args(["run", "--bin", "wallpaper-ui", "--"])
+            .args(args)
+            .spawn()
+            .expect("could not spawn wallpaper-ui")
+            .wait()
+            .expect("could not wait for wallpaper-ui");
+    } else {
+        Command::new("wallpaper-ui")
+            .args(args.clone())
+            .spawn()
+            .unwrap_or_else(|_| {
+                // try running it via cargo instead
+                Command::new("cargo")
+                    .args(["run", "--release", "--bin", "wallpaper-ui", "--"])
+                    .args(args)
+                    .spawn()
+                    .expect("could not spawn wallpaper-ui")
+            })
+            .wait()
+            .expect("could not wait for wallpaper-ui");
+    }
 }

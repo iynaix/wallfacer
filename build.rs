@@ -4,7 +4,7 @@ use clap_complete::{
     shells::{Bash, Fish, Zsh},
 };
 
-include!("src/args.rs");
+include!("src/cli.rs");
 
 pub fn generate_completions(mut cli: Command) -> Result<(), std::io::Error> {
     let cmd_name = cli.get_name().to_string();

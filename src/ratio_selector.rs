@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
-use wallpaper_ui::aspect_ratio::AspectRatio;
 
 use crate::{
     app_state::{UiState, Wallpapers},
@@ -13,10 +12,10 @@ pub fn RatioSelector(
     class: Option<String>,
     wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
-    resolutions: Vec<(String, AspectRatio)>,
 ) -> Element {
     let walls = wallpapers();
-    let ratios: Vec<_> = resolutions
+    let ratios: Vec<_> = walls
+        .resolutions
         .into_iter()
         .filter(|(_, ratio)| {
             // do not show resolution if aspect ratio of image is the same,

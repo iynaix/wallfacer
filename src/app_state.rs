@@ -2,8 +2,8 @@ use clap::Parser;
 use std::path::PathBuf;
 
 use wallpaper_ui::{
-    args::WallpaperUIArgs,
     aspect_ratio::AspectRatio,
+    cli::WallpaperUIArgs,
     config::WallpaperConfig,
     filename, filter_images,
     geometry::Geometry,
@@ -39,6 +39,7 @@ pub struct Wallpapers {
     pub current: WallInfo,
     pub index: usize,
     pub ratio: AspectRatio,
+    pub resolutions: Vec<(String, AspectRatio)>,
 }
 
 impl Wallpapers {
@@ -60,9 +61,36 @@ impl Wallpapers {
         }
     }
 
+    /// adds the new resolution if available and the default resolution
+    fn resolutions_from_args(
+        new_resolution: &Option<Vec<String>>,
+    ) -> (Vec<(String, AspectRatio)>, AspectRatio) {
+        let mut resolutions = WallpaperConfig::new().resolutions;
+
+        match new_resolution {
+            None => {
+                let new_res = resolutions[0].1.clone();
+                (resolutions, new_res)
+            }
+            Some(new_resolution) => {
+                let res = &new_resolution[1];
+                let res = std::convert::TryInto::<AspectRatio>::try_into(res.as_str())
+                    .unwrap_or_else(|()| {
+                        panic!("could not convert aspect ratio {res} into string")
+                    });
+
+                resolutions.push((new_resolution[0].clone(), res.clone()));
+                resolutions.sort_by_key(|(_, r)| r.clone());
+                (resolutions, res)
+            }
+        }
+    }
+
     pub fn from_args(wall_dir: &PathBuf) -> Self {
         let args = WallpaperUIArgs::parse();
-        let resolutions = WallpaperConfig::new().sorted_resolutions();
+        let (resolution_pairs, default_resolution) =
+            Self::resolutions_from_args(&args.new_resolution);
+        let resolutions: Vec<_> = resolution_pairs.iter().map(|(_, r)| r.clone()).collect();
 
         let mut modified_filters = Self::resolution_arg(args.modified.as_deref(), &resolutions);
         if !modified_filters.is_empty() {
@@ -159,7 +187,8 @@ impl Wallpapers {
             files: all_files,
             source: loaded.clone(),
             current: loaded.clone(),
-            ratio: resolutions[0].clone(),
+            ratio: default_resolution,
+            resolutions: resolution_pairs,
         }
     }
 

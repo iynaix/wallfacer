@@ -9,11 +9,11 @@ use std::{
 };
 
 use wallpaper_ui::{
-    args::WallpaperPipelineArgs,
     aspect_ratio::AspectRatio,
+    cli::WallpaperPipelineArgs,
     config::WallpaperConfig,
     cropper::Cropper,
-    detect_faces_iter, filename, filter_images,
+    detect_faces_iter, filename, filter_images, run_wallpaper_ui,
     wallpapers::{WallInfo, WallpapersCsv},
     PathBufExt,
 };
@@ -239,28 +239,6 @@ fn main() {
             })
             .collect();
 
-        if cfg!(debug_assertions) {
-            Command::new("cargo")
-                .args(["run", "--bin", "wallpaper-ui", "--"])
-                .args(to_preview)
-                .spawn()
-                .expect("could not spawn wallpaper-ui")
-                .wait()
-                .expect("could not wait for wallpaper-ui");
-        } else {
-            Command::new("wallpaper-ui")
-                .args(&to_preview)
-                .spawn()
-                .unwrap_or_else(|_| {
-                    // try running it via cargo instead
-                    Command::new("cargo")
-                        .args(["run", "--release", "--bin", "wallpaper-ui", "--"])
-                        .args(to_preview)
-                        .spawn()
-                        .expect("could not spawn wallpaper-ui")
-                })
-                .wait()
-                .expect("could not wait for wallpaper-ui");
-        }
+        run_wallpaper_ui(&to_preview);
     }
 }

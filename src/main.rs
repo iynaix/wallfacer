@@ -7,9 +7,9 @@ use wallpaper_ui::config::WallpaperConfig;
 pub mod align_selector;
 pub mod app_header;
 pub mod app_state;
-pub mod args;
 pub mod button;
 pub mod candidates;
+pub mod cli;
 pub mod drag_overlay;
 pub mod dropdown;
 pub mod filelist;
@@ -30,7 +30,7 @@ use crate::{
 };
 
 fn main() {
-    let args = args::WallpaperUIArgs::parse();
+    let args = cli::WallpaperUIArgs::parse();
     if args.version {
         println!("wallpaper-ui {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
@@ -85,7 +85,7 @@ fn App() -> Element {
     rsx! {
         main {
             class: "dark flex flex-col h-full bg-base overflow-hidden",
-            AppHeader { wallpapers, ui, resolutions: config.sorted_resolutions() }
+            AppHeader { wallpapers, ui }
 
             div {
                 class: "flex p-4 gap-4",
@@ -102,7 +102,7 @@ fn App() -> Element {
                         // Toolbar
                         div {
                             class:"flex flex-row justify-between",
-                            RatioSelector { wallpapers, ui, resolutions: config.resolutions },
+                            RatioSelector { wallpapers, ui },
 
                             div{
                                 class: "flex justify-end",
