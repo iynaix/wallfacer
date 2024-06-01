@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 
 use crate::{
     app_state::{UiState, Wallpapers},
-    button::Button,
+    components::button::Button,
 };
 
 #[component]

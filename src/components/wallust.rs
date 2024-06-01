@@ -5,9 +5,11 @@ use wallpaper_ui::config::WallpaperConfig;
 
 use crate::{
     app_state::Wallpapers,
-    button::Button,
-    dropdown::{Dropdown, DropdownOptions},
-    slider::Slider,
+    components::{
+        button::Button,
+        dropdown::{Dropdown, DropdownOptions},
+        slider::Slider,
+    },
 };
 
 use wallust::{

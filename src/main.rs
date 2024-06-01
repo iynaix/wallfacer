@@ -4,29 +4,16 @@ use dioxus::desktop::Config;
 use dioxus::prelude::*;
 use wallpaper_ui::config::WallpaperConfig;
 
-pub mod align_selector;
-pub mod app_header;
 pub mod app_state;
-pub mod button;
-pub mod candidates;
 pub mod cli;
-pub mod drag_overlay;
-pub mod dropdown;
-pub mod filelist;
-pub mod preview;
-pub mod ratio_selector;
-pub mod slider;
-pub mod wallust;
+pub mod components;
 
 use crate::{
-    align_selector::AlignSelector,
-    app_header::AppHeader,
     app_state::{UiState, Wallpapers},
-    candidates::Candidates,
-    filelist::FileList,
-    preview::Previewer,
-    ratio_selector::RatioSelector,
-    wallust::Wallust,
+    components::{
+        align_selector::AlignSelector, app_header::AppHeader, candidates::Candidates,
+        filelist::FileList, preview::Previewer, ratio_selector::RatioSelector, wallust::Wallust,
+    },
 };
 
 fn main() {

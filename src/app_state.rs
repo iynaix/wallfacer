@@ -171,8 +171,6 @@ impl Wallpapers {
         });
         all_files.reverse();
 
-        println!("Found {} wallpapers", all_files.len());
-
         let fname = filename(
             all_files
                 .first()

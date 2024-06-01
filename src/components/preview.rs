@@ -6,7 +6,7 @@ use wallpaper_ui::{cropper::Direction, wallpapers::Face};
 
 use crate::{
     app_state::{PreviewMode, UiState, Wallpapers},
-    drag_overlay::DragOverlay,
+    components::drag_overlay::DragOverlay,
 };
 
 #[component]
