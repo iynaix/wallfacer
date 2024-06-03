@@ -9,16 +9,23 @@ use crate::{aspect_ratio::AspectRatio, full_path};
 pub struct WallpaperConfig {
     pub wallpapers_path: PathBuf,
     pub csv_path: PathBuf,
+    pub min_width: u32,
+    pub min_height: u32,
     pub resolutions: Vec<(String, AspectRatio)>,
 }
 
 impl Default for WallpaperConfig {
     fn default() -> Self {
         let wallpapers_path = full_path("~/Pictures/Wallpapers");
+        let config_dir = dirs::config_dir()
+            .expect("could not get xdg config directory")
+            .join("wallpaper-ui");
 
         Self {
-            wallpapers_path: wallpapers_path.clone(),
-            csv_path: wallpapers_path.join("wallpapers.csv"),
+            wallpapers_path,
+            csv_path: config_dir.join("wallpapers.csv"),
+            min_width: 1920,
+            min_height: 1080,
             resolutions: vec![("HD".into(), AspectRatio::new(1920, 1080))],
         }
     }
@@ -48,15 +55,31 @@ impl WallpaperConfig {
                 },
             );
 
+            let default_cfg = Self::default();
+
             Self {
                 wallpapers_path: conf
                     .general_section()
                     .get("wallpapers_path")
-                    .map_or_else(|| Self::default().wallpapers_path, full_path),
+                    .map_or_else(|| default_cfg.wallpapers_path, full_path),
                 csv_path: conf
                     .general_section()
                     .get("csv_path")
-                    .map_or_else(|| Self::default().csv_path, full_path),
+                    .map_or_else(|| default_cfg.csv_path, full_path),
+                min_width: conf.general_section().get("min_width").map_or_else(
+                    || default_cfg.min_width,
+                    |v| {
+                        v.parse()
+                            .unwrap_or_else(|_| panic!("invalid min_width {v} provided."))
+                    },
+                ),
+                min_height: conf.general_section().get("min_width").map_or_else(
+                    || default_cfg.min_width,
+                    |v| {
+                        v.parse()
+                            .unwrap_or_else(|_| panic!("invalid min_width {v} provided."))
+                    },
+                ),
                 resolutions,
             }
         } else {

@@ -20,7 +20,7 @@ pub fn generate_completions(mut cli: Command) -> Result<(), std::io::Error> {
 
 fn main() -> Result<(), std::io::Error> {
     generate_completions(WallpaperUIArgs::command())?;
-    generate_completions(WallpaperPipelineArgs::command())?;
+    generate_completions(WallpapersAddArgs::command())?;
 
     // override with the version passed in from nix
     // https://github.com/rust-lang/cargo/issues/6583#issuecomment-1259871885

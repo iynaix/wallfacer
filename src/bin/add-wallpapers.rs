@@ -10,7 +10,7 @@ use std::{
 
 use wallpaper_ui::{
     aspect_ratio::AspectRatio,
-    cli::WallpaperPipelineArgs,
+    cli::WallpapersAddArgs,
     config::WallpaperConfig,
     cropper::Cropper,
     detect_faces_iter, filename, filter_images, run_wallpaper_ui,
@@ -21,9 +21,6 @@ use wallpaper_ui::{
 lazy_static! {
     static ref CONFIG: WallpaperConfig = WallpaperConfig::new();
 }
-
-const TARGET_WIDTH: u32 = 3440; // ultrawide width
-const TARGET_HEIGHT: u32 = 1504; // framework height
 
 fn upscale_images(to_upscale: &[(PathBuf, u32)]) {
     to_upscale.par_iter().for_each(|(src, scale_factor)| {
@@ -149,13 +146,16 @@ fn get_output_path(img: &Path) -> Option<PathBuf> {
 }
 
 fn main() {
-    let args = WallpaperPipelineArgs::parse();
+    let args = WallpapersAddArgs::parse();
     let resolutions = CONFIG.sorted_resolutions();
 
     if args.version {
-        println!("wallpaper-pipeline {}", env!("CARGO_PKG_VERSION"));
+        println!("wallpapers-add {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
     }
+
+    let min_width: u32 = args.min_width.unwrap_or_else(|| CONFIG.min_width);
+    let min_height: u32 = args.min_height.unwrap_or_else(|| CONFIG.min_height);
 
     let wall_dir = &CONFIG.wallpapers_path;
     let mut wallpapers_csv = WallpapersCsv::load();
@@ -198,9 +198,7 @@ fn main() {
             // no output file found, perform normal processing
             None => {
                 for scale_factor in 1..=4 {
-                    if width * scale_factor >= TARGET_WIDTH
-                        && height * scale_factor >= TARGET_HEIGHT
-                    {
+                    if width * scale_factor >= min_width && height * scale_factor >= min_height {
                         if scale_factor > 1 {
                             let out_path = img.with_extension("png").with_directory(wall_dir);
                             to_optimize.push(out_path.clone());

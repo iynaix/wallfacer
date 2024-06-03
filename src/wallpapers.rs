@@ -223,19 +223,28 @@ impl WallpapersCsv {
     pub fn load() -> Self {
         let config = WallpaperConfig::new();
 
-        let reader = std::io::BufReader::new(
-            std::fs::File::open(&config.csv_path).expect("could not open wallpapers.csv"),
-        );
-
-        let mut rdr = csv::Reader::from_reader(reader);
-
+        let csv_file = std::fs::File::open(&config.csv_path);
         Self {
             config,
-            wallpapers: rdr
-                .deserialize::<WallInfo>()
-                .flatten()
-                .map(|wall_info| (wall_info.filename.to_string(), wall_info))
-                .collect(),
+            wallpapers: csv_file.map_or_else(
+                // no csv file, probably first run
+                |_| {
+                    // TODO: use native-dialog to show message to user?
+                    eprintln!(
+                        "wallpapers.csv not found! Have you run \"wallpapers-add\" to create it?"
+                    );
+                    std::process::exit(1);
+                },
+                |csv_file| {
+                    let mut reader = csv::Reader::from_reader(std::io::BufReader::new(csv_file));
+
+                    reader
+                        .deserialize::<WallInfo>()
+                        .flatten()
+                        .map(|wall_info| (wall_info.filename.to_string(), wall_info))
+                        .collect()
+                },
+            ),
         }
     }
 

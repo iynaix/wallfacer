@@ -66,9 +66,25 @@ pub struct WallpaperUIArgs {
 
 #[derive(Parser, Debug)]
 #[command(name = "wallpaper-ui", about = "Set wallpaper")]
-pub struct WallpaperPipelineArgs {
+pub struct WallpapersAddArgs {
     #[arg(long, action, help = "print version information and exit")]
     pub version: bool,
+
+    #[arg(
+        long,
+        action,
+        value_name = "MIN_WIDTH",
+        help = "minimum width for wallpapers to be resized, defaults to 1920 if not provided in config.ini"
+    )]
+    pub min_width: Option<u32>,
+
+    #[arg(
+        long,
+        action,
+        value_name = "MIN_HEIGHT",
+        help = "minimum height for wallpapers to be resized, defaults to 1080 if not provided in config.ini"
+    )]
+    pub min_height: Option<u32>,
 
     // required positional argument for input directory
     pub path: PathBuf,
