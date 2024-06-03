@@ -1,5 +1,4 @@
 use clap::Parser;
-use ordered_float::OrderedFloat;
 use wallpaper_ui::{
     aspect_ratio::AspectRatio,
     cli::AddResolutionArgs,
@@ -49,17 +48,17 @@ fn main() {
             )
         });
 
-    let config = WallpaperConfig::new();
-    let mut config_ratios = config.sorted_resolutions();
-    let closest_res = config_ratios.iter().min_by_key(|res| {
-        let diff = OrderedFloat((f64::from(*res) - f64::from(&new_res)).abs());
-        // ignore if aspect ratio already exists in config
-        if diff == 0.0 {
-            f64::INFINITY.into()
-        } else {
-            diff
-        }
-    });
+    let mut config = WallpaperConfig::new();
+    let closest_res = config.closest_resolution(&new_res);
+
+    // save the updated config
+    if !config.resolutions.iter().any(|(_, res)| res == &new_res) {
+        config.add_resolution(&args.name, new_res.clone());
+        config.save().unwrap_or_else(|_| {
+            eprintln!("Could not save config to {:?}!", config.csv_path);
+            std::process::exit(1);
+        });
+    }
 
     let mut to_process: Vec<String> = Vec::new();
     let mut wallpapers_csv = WallpapersCsv::load();
@@ -100,11 +99,9 @@ fn main() {
     for updated_info in updated_infos {
         wallpapers_csv.insert(updated_info.filename.clone(), updated_info);
     }
-    // add the new resolution
-    config_ratios.push(new_res.clone());
-    config_ratios.sort();
 
-    wallpapers_csv.save(&config_ratios);
+    // update the csv
+    wallpapers_csv.save(&config.sorted_resolutions());
 
     // open in wallpaper ui
     to_process.sort();
@@ -123,7 +120,5 @@ fn main() {
         .collect();
 
     // process the images in wallpaper ui
-    let mut ui_args = vec!["--new-resolution".into(), args.name, args.resolution];
-    ui_args.extend(images);
-    run_wallpaper_ui(ui_args);
+    run_wallpaper_ui(images);
 }

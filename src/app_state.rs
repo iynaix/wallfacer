@@ -61,35 +61,9 @@ impl Wallpapers {
         }
     }
 
-    /// adds the new resolution if available and the default resolution
-    fn resolutions_from_args(
-        new_resolution: &Option<Vec<String>>,
-    ) -> (Vec<(String, AspectRatio)>, AspectRatio) {
-        let mut resolutions = WallpaperConfig::new().resolutions;
-
-        match new_resolution {
-            None => {
-                let new_res = resolutions[0].1.clone();
-                (resolutions, new_res)
-            }
-            Some(new_resolution) => {
-                let res = &new_resolution[1];
-                let res = std::convert::TryInto::<AspectRatio>::try_into(res.as_str())
-                    .unwrap_or_else(|()| {
-                        panic!("could not convert aspect ratio {res} into string")
-                    });
-
-                resolutions.push((new_resolution[0].clone(), res.clone()));
-                resolutions.sort_by_key(|(_, r)| r.clone());
-                (resolutions, res)
-            }
-        }
-    }
-
     pub fn from_args(wall_dir: &PathBuf) -> Self {
         let args = WallpaperUIArgs::parse();
-        let (resolution_pairs, default_resolution) =
-            Self::resolutions_from_args(&args.new_resolution);
+        let resolution_pairs = WallpaperConfig::new().resolutions;
         let resolutions: Vec<_> = resolution_pairs.iter().map(|(_, r)| r.clone()).collect();
 
         let mut modified_filters = Self::resolution_arg(args.modified.as_deref(), &resolutions);
@@ -185,7 +159,7 @@ impl Wallpapers {
             files: all_files,
             source: loaded.clone(),
             current: loaded.clone(),
-            ratio: default_resolution,
+            ratio: resolutions[0].clone(),
             resolutions: resolution_pairs,
         }
     }

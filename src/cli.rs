@@ -47,16 +47,6 @@ pub struct WallpaperUIArgs {
     )]
     pub faces: String,
 
-    #[arg(
-        long,
-        default_value = None,
-        default_missing_value = "all",
-        num_args = 2,
-        value_names = ["NAME", "RESOLUTION"],
-        help = "adds a new resolution to be used; with first argument resolution name and second argument being the resolution in the format \"1920x1080\""
-    )]
-    pub new_resolution: Option<Vec<String>>,
-
     #[arg(long, help = "filters wallpapers by filename (case-insensitive)")]
     pub filter: Option<String>,
 

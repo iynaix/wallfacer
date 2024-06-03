@@ -56,9 +56,10 @@ pub fn Previewer(
     let overlay_cls = "absolute bg-black bg-opacity-60 w-full h-full";
 
     // preview geometry takes precedence
-    let geom = match ui.preview_mode {
-        PreviewMode::Candidate(Some(cand_geom)) => cand_geom,
-        _ => wallpapers().get_geometry(),
+    let geom = if let PreviewMode::Candidate(Some(cand_geom)) = ui.preview_mode {
+        cand_geom
+    } else {
+        wallpapers().get_geometry()
     };
 
     let (direction, start_ratio, end_ratio) = info.overlay_transforms(&geom);

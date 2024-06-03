@@ -14,12 +14,14 @@ pub mod geometry;
 pub mod wallpapers;
 
 pub fn full_path(p: &str) -> PathBuf {
-    match p.strip_prefix("~/") {
-        Some(p) => dirs::home_dir()
-            .expect("could not get home directory")
-            .join(p),
-        None => PathBuf::from(p),
-    }
+    p.strip_prefix("~/").map_or_else(
+        || PathBuf::from(p),
+        |p| {
+            dirs::home_dir()
+                .expect("could not get home directory")
+                .join(p)
+        },
+    )
 }
 
 pub fn filename<P>(path: P) -> String

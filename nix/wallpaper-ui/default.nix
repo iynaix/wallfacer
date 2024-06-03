@@ -86,7 +86,7 @@ rustPlatform.buildRustPackage {
 
   postFixup = ''
     # add own path so wallpaper-pipeline can run wallpaper-ui
-    wrapProgram $out/bin/wallpaper-pipeline \
+    wrapProgram $out/bin/add-wallpaper \
       --prefix PATH : "$out/bin" \
       --prefix PATH : "${
         lib.makeBinPath [
@@ -99,8 +99,7 @@ rustPlatform.buildRustPackage {
 
     # FIXME: GDK_BACKEND=x11 is required for keyboard shortcuts to work?
     wrapProgram $out/bin/wallpaper-ui \
-      --set WEBKIT_DISABLE_COMPOSITING_MODE 1 \
-      --set GDK_BACKEND x11
+      --set WEBKIT_DISABLE_COMPOSITING_MODE 1
   '';
 
   meta = with lib; {

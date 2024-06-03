@@ -24,12 +24,12 @@ lazy_static! {
 
 fn upscale_images(to_upscale: &[(PathBuf, u32)]) {
     to_upscale.par_iter().for_each(|(src, scale_factor)| {
-        let fname = filename(src);
-        let mut dest = CONFIG.wallpapers_path.join(&fname);
         // always output to png to avoid lossy compression
-        dest.set_extension("png");
+        let dest = src
+            .with_directory(&CONFIG.wallpapers_path)
+            .with_extension("png");
 
-        println!("Upscaling {}...", &fname);
+        println!("Upscaling {}...", &filename(src));
 
         Command::new("realcugan-ncnn-vulkan")
             .arg("-i")
@@ -123,7 +123,7 @@ fn detect_faces(
 
         // preview both multiple faces and no faces
         if wall_info.faces.len() != 1 {
-            to_preview.push(CONFIG.wallpapers_path.join(&fname));
+            to_preview.push(path.with_directory(&CONFIG.wallpapers_path));
         }
 
         wallpapers_csv.insert(fname.clone(), wall_info);
@@ -179,38 +179,41 @@ fn main() {
         let (width, height) = image::image_dimensions(&img)
             .unwrap_or_else(|_| panic!("could not get image dimensions for {img:?}"));
 
-        match get_output_path(&img) {
-            Some(out_path) => {
-                // check if corresponding WallInfo exists
-                match wallpapers_csv.get(&filename(&out_path)) {
-                    // re-preview if no / multiple faces detected and still using default crop
-                    Some(info) => {
-                        if info.faces.len() != 1 && info.is_default_crops(&resolutions) {
-                            to_preview.push(out_path);
-                        }
-                    }
-                    // no WallInfo, redetect faces to write to csv
-                    None => {
-                        to_detect.push(out_path);
-                    }
+        if let Some(out_path) = get_output_path(&img) {
+            // check if corresponding WallInfo exists
+            if let Some(info) = wallpapers_csv.get(&filename(&out_path)) {
+                // re-preview if no / multiple faces detected and still using default crop
+                if info.faces.len() != 1 && info.is_default_crops(&resolutions) {
+                    to_preview.push(out_path);
                 }
+            // no WallInfo, redetect faces to write to csv
+            } else {
+                to_detect.push(out_path);
             }
-            // no output file found, perform normal processing
-            None => {
-                for scale_factor in 1..=4 {
-                    if width * scale_factor >= min_width && height * scale_factor >= min_height {
-                        if scale_factor > 1 {
-                            let out_path = img.with_extension("png").with_directory(wall_dir);
-                            to_optimize.push(out_path.clone());
-                            to_upscale.push((img, scale_factor));
-                            to_detect.push(out_path);
-                        } else {
-                            to_copy.push(img.clone());
-                            to_optimize.push(img.with_directory(wall_dir));
-                            to_detect.push(img);
-                        }
-                        break;
+        }
+        // no output file found, perform normal processing
+        else {
+            if width * 4 < min_width || height * 4 < min_height {
+                eprintln!(
+                    "{:?} is too small to be upscaled to {min_width}x{min_height}",
+                    &img
+                );
+                continue;
+            }
+
+            for scale_factor in 1..=4 {
+                if width * scale_factor >= min_width && height * scale_factor >= min_height {
+                    if scale_factor > 1 {
+                        let out_path = img.with_extension("png").with_directory(wall_dir);
+                        to_optimize.push(out_path.clone());
+                        to_upscale.push((img, scale_factor));
+                        to_detect.push(out_path);
+                    } else {
+                        to_copy.push(img.clone());
+                        to_optimize.push(img.with_directory(wall_dir));
+                        to_detect.push(img);
                     }
+                    break;
                 }
             }
         }
