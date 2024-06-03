@@ -70,8 +70,18 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
         header { class: "bg-surface0",
             nav {
                 "aria-label": "Global",
-                class: "mx-auto flex max-w-full items-center justify-between py-6 px-4",
-                div { class: "flex gap-x-3 items-center",
+                class: "mx-auto flex max-w-full items-center py-6 px-4",
+
+                // left
+                div {
+                    class: "flex-1 justify-start ml-2",
+                    a { class: "text-base font-semibold leading-6 text-white",
+                        "{wallpapers().index + 1} / {wallpapers().files.len()}"
+                    }
+                }
+
+                // center
+                div { class: "flex flex-1 gap-x-3 items-center justify-center",
                     a { class: pagination_cls,
                         onclick: move |_| {
                             wallpapers.with_mut(|wallpapers| {
@@ -103,6 +113,8 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
                     }
                 }
+
+                // right
                 div { class: "gap-x-6 flex flex-1 justify-end",
                     if supports_wallust() {
                         a {
