@@ -158,7 +158,13 @@ fn main() {
     let min_height: u32 = args.min_height.unwrap_or_else(|| CONFIG.min_height);
 
     let wall_dir = &CONFIG.wallpapers_path;
-    let mut wallpapers_csv = WallpapersCsv::load();
+    if args.path == *wall_dir {
+        eprintln!("Input directory cannot be the same as the wallpapers directory.");
+        std::process::exit(1);
+    }
+
+    // create the csv if it doesn't exist
+    let mut wallpapers_csv = WallpapersCsv::open().unwrap_or_default();
 
     let mut to_copy = Vec::new();
     let mut to_upscale = Vec::new();

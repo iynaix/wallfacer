@@ -75,11 +75,11 @@ impl WallpaperConfig {
                             .unwrap_or_else(|_| panic!("invalid min_width {v} provided."))
                     },
                 ),
-                min_height: conf.general_section().get("min_width").map_or_else(
-                    || default_cfg.min_width,
+                min_height: conf.general_section().get("min_height").map_or_else(
+                    || default_cfg.min_height,
                     |v| {
                         v.parse()
-                            .unwrap_or_else(|_| panic!("invalid min_width {v} provided."))
+                            .unwrap_or_else(|_| panic!("invalid min_height {v} provided."))
                     },
                 ),
                 resolutions,

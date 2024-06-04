@@ -220,32 +220,28 @@ pub struct WallpapersCsv {
 }
 
 impl WallpapersCsv {
-    pub fn load() -> Self {
+    pub fn open() -> Result<Self, std::io::Error> {
         let config = WallpaperConfig::new();
 
-        let csv_file = std::fs::File::open(&config.csv_path);
-        Self {
-            config,
-            wallpapers: csv_file.map_or_else(
-                // no csv file, probably first run
-                |_| {
-                    // TODO: use native-dialog to show message to user?
-                    eprintln!(
-                        "wallpapers.csv not found! Have you run \"wallpapers-add\" to create it?"
-                    );
-                    std::process::exit(1);
-                },
-                |csv_file| {
-                    let mut reader = csv::Reader::from_reader(std::io::BufReader::new(csv_file));
+        std::fs::File::open(&config.csv_path).map(|csv_file| {
+            let mut reader = csv::Reader::from_reader(std::io::BufReader::new(csv_file));
 
-                    reader
-                        .deserialize::<WallInfo>()
-                        .flatten()
-                        .map(|wall_info| (wall_info.filename.to_string(), wall_info))
-                        .collect()
-                },
-            ),
-        }
+            Self {
+                config,
+                wallpapers: reader
+                    .deserialize::<WallInfo>()
+                    .flatten()
+                    .map(|wall_info| (wall_info.filename.to_string(), wall_info))
+                    .collect(),
+            }
+        })
+    }
+
+    pub fn load() -> Self {
+        Self::open().unwrap_or_else(|_| {
+            eprintln!("wallpapers.csv not found! Have you run \"wallpapers-add\" to create it?");
+            std::process::exit(1);
+        })
     }
 
     pub fn get(&self, filename: &str) -> Option<&WallInfo> {
@@ -314,7 +310,10 @@ impl WallpapersCsv {
 
 impl Default for WallpapersCsv {
     fn default() -> Self {
-        Self::load()
+        Self {
+            wallpapers: IndexMap::new(),
+            config: WallpaperConfig::new(),
+        }
     }
 }
 
