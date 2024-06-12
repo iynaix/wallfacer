@@ -53,7 +53,10 @@ fn main() {
 fn App() -> Element {
     let config = WallpaperConfig::new();
     let wallpapers = use_signal(|| Wallpapers::from_args(&config.wallpapers_path));
-    let ui = use_signal(UiState::default);
+    let ui = use_signal(|| UiState {
+        show_faces: config.show_faces,
+        ..UiState::default()
+    });
     let has_files = !wallpapers().files.is_empty();
 
     if !has_files {

@@ -12,6 +12,7 @@ pub struct WallpaperConfig {
     pub csv_path: PathBuf,
     pub min_width: u32,
     pub min_height: u32,
+    pub show_faces: bool,
     pub resolutions: Vec<(String, AspectRatio)>,
 }
 
@@ -27,6 +28,7 @@ impl Default for WallpaperConfig {
             csv_path: config_dir.join("wallpapers.csv"),
             min_width: 1920,
             min_height: 1080,
+            show_faces: false,
             resolutions: vec![("HD".into(), AspectRatio::new(1920, 1080))],
         }
     }
@@ -58,28 +60,34 @@ impl WallpaperConfig {
             );
 
             let default_cfg = Self::default();
+            let general = conf.general_section();
 
             Self {
-                wallpapers_path: conf
-                    .general_section()
+                wallpapers_path: general
                     .get("wallpapers_path")
                     .map_or_else(|| default_cfg.wallpapers_path, full_path),
-                csv_path: conf
-                    .general_section()
+                csv_path: general
                     .get("csv_path")
                     .map_or_else(|| default_cfg.csv_path, full_path),
-                min_width: conf.general_section().get("min_width").map_or_else(
+                min_width: general.get("min_width").map_or_else(
                     || default_cfg.min_width,
                     |v| {
                         v.parse()
                             .unwrap_or_else(|_| panic!("invalid min_width {v} provided."))
                     },
                 ),
-                min_height: conf.general_section().get("min_height").map_or_else(
+                min_height: general.get("min_height").map_or_else(
                     || default_cfg.min_height,
                     |v| {
                         v.parse()
                             .unwrap_or_else(|_| panic!("invalid min_height {v} provided."))
+                    },
+                ),
+                show_faces: general.get("show_faces").map_or_else(
+                    || default_cfg.show_faces,
+                    |v| {
+                        v.parse()
+                            .unwrap_or_else(|_| panic!("invalid show_faces {v} provided."))
                     },
                 ),
                 resolutions,
@@ -122,7 +130,8 @@ impl WallpaperConfig {
             .set("wallpapers_path", self.wallpapers_path.to_string_lossy())
             .set("csv_path", self.csv_path.to_string_lossy())
             .set("min_width", &self.min_width.to_string())
-            .set("min_height", &self.min_height.to_string());
+            .set("min_height", &self.min_height.to_string())
+            .set("show_faces", &self.show_faces.to_string());
 
         for (k, v) in &self.resolutions {
             conf.with_section(Some("resolutions"))

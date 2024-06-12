@@ -47,6 +47,7 @@
               [
                 oxipng
                 jpegoptim
+                libwebp
                 realcugan-ncnn-vulkan
                 anime-face-detector
               ]

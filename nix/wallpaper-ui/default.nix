@@ -21,6 +21,7 @@
   anime-face-detector,
   oxipng,
   jpegoptim,
+  libwebp,
   installShellFiles,
   makeWrapper,
 }:
@@ -92,6 +93,7 @@ rustPlatform.buildRustPackage {
         lib.makeBinPath [
           realcugan-ncnn-vulkan
           anime-face-detector
+          libwebp
           oxipng
           jpegoptim
         ]
