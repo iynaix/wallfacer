@@ -2,6 +2,7 @@
 use std::path::PathBuf;
 
 use dioxus::prelude::*;
+use dioxus_sdk::utils::window::{use_window_size, WindowSize};
 use wallpaper_ui::{cropper::Direction, wallpapers::Face};
 
 use crate::{
@@ -35,6 +36,32 @@ fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
     }
 }
 
+fn get_final_dimensions(
+    top_left: (f64, f64),
+    window_size: WindowSize,
+    img: (f64, f64),
+) -> (f64, f64) {
+    let margin: f64 = 16.0;
+    let win_w = f64::from(window_size.width);
+    let win_h = f64::from(window_size.height);
+
+    let max_w = margin.mul_add(-2.0, win_w);
+    let max_h = win_h - margin - top_left.1;
+
+    // fit the image within the max_width and height
+    let (img_w, img_h) = img;
+
+    let mut final_w = max_w;
+    let mut final_h = max_w / img_w * img_h;
+
+    if final_h > max_h {
+        final_h = max_h;
+        final_w = max_h / img_h * img_w;
+    }
+
+    (final_w, final_h)
+}
+
 #[component]
 pub fn Previewer(
     wallpapers: Signal<Wallpapers>,
@@ -45,6 +72,7 @@ pub fn Previewer(
     let mut final_dimensions = use_signal(|| (0.0, 0.0));
     let info = wallpapers().current;
     let ui = ui();
+    let window_size = use_window_size();
 
     let path = wallpapers_path.join(&info.filename);
     let path = path
@@ -78,15 +106,15 @@ pub fn Previewer(
 
     rsx! {
         div {
-            class: "relative",
+            class: "relative m-auto",
+            style: "width: {final_dimensions().0}px; height: {final_dimensions().1}px;",
             img {
                 src: path,
                 // store the final rendered width and height of the image
                 onmounted: move |evt| {
                     async move {
                         let coords = evt.get_client_rect().await.expect("could not get client rect");
-                        let elem_width = coords.width() - 16.0;
-                        final_dimensions.set((elem_width, (elem_width / img_w * img_h).floor()));
+                        final_dimensions.set(get_final_dimensions(coords.min().to_tuple(), window_size(), (img_w, img_h)));
                     }
                 },
             }

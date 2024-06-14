@@ -87,7 +87,7 @@ fn App() -> Element {
                 } else {
                     // main content
                     div {
-                        class: "flex flex-col gap-4 h-full",
+                        class: "flex flex-col gap-4 w-full h-full",
 
                         // Toolbar
                         div {
