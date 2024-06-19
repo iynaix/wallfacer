@@ -2,6 +2,7 @@
 extern crate lazy_static;
 
 use clap::Parser;
+use core::panic;
 use rayon::prelude::*;
 use std::{
     path::{Path, PathBuf},
@@ -22,12 +23,13 @@ lazy_static! {
     static ref CONFIG: WallpaperConfig = WallpaperConfig::new();
 }
 
-fn upscale_images(to_upscale: &[(PathBuf, u32)]) {
+fn upscale_images(to_upscale: &[(PathBuf, u32)], format: &Option<String>) {
     to_upscale.par_iter().for_each(|(src, scale_factor)| {
-        // always output to png to avoid lossy compression
-        let dest = src
-            .with_directory(&CONFIG.wallpapers_path)
-            .with_extension("png");
+        let mut dest = src.with_directory(&CONFIG.wallpapers_path);
+
+        if let Some(ext) = &format {
+            dest = dest.with_extension(ext);
+        }
 
         println!("Upscaling {}...", &filename(src));
 
@@ -47,20 +49,31 @@ fn upscale_images(to_upscale: &[(PathBuf, u32)]) {
     });
 }
 
-fn optimize_images(paths: &[PathBuf]) {
-    let (pngs, jpgs): (Vec<_>, Vec<_>) = paths.iter().partition(|path| {
-        path.extension()
-            .map_or(false, |ext| ext.eq_ignore_ascii_case("png"))
-    });
+fn optimize_webp(infile: &PathBuf, outfile: &PathBuf) {
+    Command::new("cwebp")
+        .args(["-q", "100", "-m", "6", "-mt", "-af"])
+        .arg(infile)
+        .arg("-o")
+        .arg(outfile)
+        // silence output
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("could not spawn cwebp")
+        .wait()
+        .expect("could not wait for cwebp");
+}
 
-    // jpegoptim for jpegs
-    for jpg in &jpgs {
-        println!("Optimizing {}...", filename(jpg));
-    }
-
+fn optimize_jpg(infile: &PathBuf, outfile: &Path) {
     Command::new("jpegoptim")
         .arg("--strip-all")
-        .args(jpgs)
+        .arg(infile)
+        .arg("--dest")
+        .arg(
+            outfile
+                .parent()
+                .unwrap_or_else(|| panic!("could not get parent directory for {infile:?}")),
+        )
         // silence output
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -68,15 +81,14 @@ fn optimize_images(paths: &[PathBuf]) {
         .expect("could not spawn jpegoptim")
         .wait()
         .expect("could not wait for jpegoptim");
+}
 
-    // oxipng for pngs
-    for png in &pngs {
-        println!("Optimizing {}...", filename(png));
-    }
-
+fn optimize_png(infile: &PathBuf, outfile: &PathBuf) {
     Command::new("oxipng")
         .args(["--opt", "max"])
-        .args(pngs)
+        .arg(infile)
+        .arg("--out")
+        .arg(outfile)
         // silence output
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -84,6 +96,27 @@ fn optimize_images(paths: &[PathBuf]) {
         .expect("could not spawn oxipng")
         .wait()
         .expect("could not wait for oxipng");
+}
+
+fn optimize_images(paths: &[PathBuf], format: &Option<String>) {
+    let wall_dir = &CONFIG.wallpapers_path;
+    for img in paths {
+        println!("Optimizing {}...", filename(img));
+
+        let out_img = format
+            .as_ref()
+            .map_or_else(|| img.clone(), |format| img.with_extension(format))
+            .with_directory(wall_dir);
+
+        if let Some(ext) = out_img.extension() {
+            match ext.to_str().expect("could not convert extension to str") {
+                "jpg" | "jpeg" => optimize_jpg(img, &out_img),
+                "png" => optimize_png(img, &out_img),
+                "webp" => optimize_webp(img, &out_img),
+                _ => panic!("unsupported image format: {ext:?}"),
+            }
+        };
+    }
 }
 
 // returns the faces that need to be previewed for selection
@@ -133,18 +166,6 @@ fn detect_faces(
     to_preview
 }
 
-fn get_output_path(img: &Path) -> Option<PathBuf> {
-    for ext in &["png", "jpg", "jpeg"] {
-        let output_path = img
-            .with_extension(ext)
-            .with_directory(&CONFIG.wallpapers_path);
-        if output_path.exists() {
-            return Some(output_path);
-        }
-    }
-    None
-}
-
 fn main() {
     let args = WallpapersAddArgs::parse();
     let resolutions = CONFIG.sorted_resolutions();
@@ -166,7 +187,6 @@ fn main() {
     // create the csv if it doesn't exist
     let mut wallpapers_csv = WallpapersCsv::open().unwrap_or_default();
 
-    let mut to_copy = Vec::new();
     let mut to_upscale = Vec::new();
     let mut to_optimize = Vec::new();
     let mut to_detect = Vec::new();
@@ -185,7 +205,13 @@ fn main() {
         let (width, height) = image::image_dimensions(&img)
             .unwrap_or_else(|_| panic!("could not get image dimensions for {img:?}"));
 
-        if let Some(out_path) = get_output_path(&img) {
+        let out_path = args
+            .format
+            .as_ref()
+            .map_or_else(|| img.clone(), |ext| img.with_extension(ext))
+            .with_directory(wall_dir);
+
+        if out_path.exists() {
             // check if corresponding WallInfo exists
             if let Some(info) = wallpapers_csv.get(&filename(&out_path)) {
                 // re-preview if no / multiple faces detected and still using default crop
@@ -196,9 +222,7 @@ fn main() {
             } else {
                 to_detect.push(out_path);
             }
-        }
-        // no output file found, perform normal processing
-        else {
+        } else {
             if width * 4 < min_width || height * 4 < min_height {
                 eprintln!(
                     "{:?} is too small to be upscaled to {min_width}x{min_height}",
@@ -210,42 +234,25 @@ fn main() {
             for scale_factor in 1..=4 {
                 if width * scale_factor >= min_width && height * scale_factor >= min_height {
                     if scale_factor > 1 {
-                        let out_path = img.with_extension("png").with_directory(wall_dir);
-                        to_optimize.push(out_path.clone());
                         to_upscale.push((img, scale_factor));
-                        to_detect.push(out_path);
+                        to_optimize.push(out_path.clone());
                     } else {
-                        to_copy.push(img.clone());
-                        to_optimize.push(img.with_directory(wall_dir));
-                        to_detect.push(img);
+                        to_optimize.push(img.clone());
                     }
+                    to_detect.push(out_path);
                     break;
                 }
             }
         }
     }
 
-    // copy images that don't need to be upscaled
-    for img in &to_copy {
-        std::fs::copy(img, img.with_directory(wall_dir))
-            .unwrap_or_else(|_| panic!("could not copy {img:?}"));
-    }
+    upscale_images(&to_upscale, &args.format);
 
-    upscale_images(&to_upscale);
-
-    optimize_images(&to_optimize);
+    optimize_images(&to_optimize, &args.format);
 
     to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv, &resolutions));
 
     if !to_preview.is_empty() {
-        let to_preview: Vec<_> = to_preview
-            .iter()
-            .map(|img| {
-                get_output_path(img)
-                    .unwrap_or_else(|| panic!("could not get output path of {img:?} to preview"))
-            })
-            .collect();
-
         run_wallpaper_ui(&to_preview);
     }
 }

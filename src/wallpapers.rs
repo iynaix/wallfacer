@@ -303,6 +303,8 @@ impl WallpapersCsv {
                     eprintln!("{:?}", e);
                     panic!("could not write row: {:?}", &wall);
                 });
+            } else {
+                println!("Removed wallpaper: {}", wall.filename);
             }
         }
     }

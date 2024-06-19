@@ -5,7 +5,10 @@ use clap::{builder::PossibleValuesParser, Parser};
 // ------------------------- WALLPAPER UI -------------------------
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Parser, Debug)]
-#[command(name = "wallpaper-ui", about = "Set wallpaper")]
+#[command(
+    name = "wallpaper-ui",
+    about = "Allows the selection of a cropping area for multiple monitor resolutions"
+)]
 pub struct WallpaperUIArgs {
     #[arg(long, action, help = "print version information and exit")]
     pub version: bool,
@@ -55,7 +58,10 @@ pub struct WallpaperUIArgs {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "wallpaper-ui", about = "Set wallpaper")]
+#[command(
+    name = "add-wallpapers",
+    about = "Adds wallpapers, and performs the face detection"
+)]
 pub struct WallpapersAddArgs {
     #[arg(long, action, help = "print version information and exit")]
     pub version: bool,
@@ -75,6 +81,15 @@ pub struct WallpapersAddArgs {
         help = "minimum height for wallpapers to be resized, defaults to 1080 if not provided in config.ini"
     )]
     pub min_height: Option<u32>,
+
+    #[arg(
+        long,
+        action,
+        value_name = "FORMAT",
+        value_parser = PossibleValuesParser::new(["jpg", "png", "webp"]),
+        help = "optional format to convert the images to"
+    )]
+    pub format: Option<String>,
 
     // required positional argument for input directory
     pub path: PathBuf,
