@@ -248,6 +248,38 @@ impl WallpapersCsv {
         self.wallpapers.get(filename)
     }
 
+    pub fn find_duplicates(&self) {
+        let mut groups: HashMap<_, Vec<_>> = HashMap::new();
+
+        // check for duplicates using the faces array
+        for wall_info in self.wallpapers.values().filter(|w| !w.faces.is_empty()) {
+            groups
+                .entry(format!(
+                    "{}|{}|{:?}",
+                    &wall_info.width, &wall_info.height, &wall_info.faces
+                ))
+                .or_default()
+                .push(wall_info);
+        }
+
+        let duplicates: Vec<_> = groups
+            .into_iter()
+            .filter_map(|(_, v)| if v.len() > 1 { Some(v) } else { None })
+            .collect();
+
+        if !duplicates.is_empty() {
+            for infos in duplicates {
+                eprintln!("Duplicate faces:");
+                for info in infos {
+                    eprintln!("  {:?}", info.filename);
+                }
+                eprintln!();
+            }
+
+            std::process::exit(1);
+        }
+    }
+
     pub fn iter(&self) -> WallpapersIter {
         WallpapersIter {
             iter: self.wallpapers.iter(),

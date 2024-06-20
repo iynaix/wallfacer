@@ -187,6 +187,9 @@ fn main() {
     // create the csv if it doesn't exist
     let mut wallpapers_csv = WallpapersCsv::open().unwrap_or_default();
 
+    // do a check for duplicates
+    wallpapers_csv.find_duplicates();
+
     let mut to_upscale = Vec::new();
     let mut to_optimize = Vec::new();
     let mut to_detect = Vec::new();
