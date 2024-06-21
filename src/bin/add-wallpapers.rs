@@ -25,7 +25,8 @@ lazy_static! {
 
 fn upscale_images(to_upscale: &[(PathBuf, u32)], format: &Option<String>) {
     to_upscale.par_iter().for_each(|(src, scale_factor)| {
-        let mut dest = src.with_directory(&CONFIG.wallpapers_path);
+        // let mut dest = src.with_directory(&CONFIG.wallpapers_path);
+        let mut dest = src.with_directory("/tmp");
 
         if let Some(ext) = &format {
             dest = dest.with_extension(ext);
@@ -41,7 +42,7 @@ fn upscale_images(to_upscale: &[(PathBuf, u32)], format: &Option<String>) {
             .arg("-o")
             .arg(dest)
             // silence output
-            .stderr(std::process::Stdio::null())
+            .stderr(Stdio::null())
             .spawn()
             .expect("could not spawn realcugan-ncnn-vulkan")
             .wait()
@@ -166,6 +167,13 @@ fn detect_faces(
     to_preview
 }
 
+/// waits for the images to be written to disk
+fn wait_for_images(paths: &[PathBuf]) {
+    while !paths.iter().all(|path| path.exists()) {
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+}
+
 fn main() {
     let args = WallpapersAddArgs::parse();
     let resolutions = CONFIG.sorted_resolutions();
@@ -238,7 +246,7 @@ fn main() {
                 if width * scale_factor >= min_width && height * scale_factor >= min_height {
                     if scale_factor > 1 {
                         to_upscale.push((img, scale_factor));
-                        to_optimize.push(out_path.clone());
+                        to_optimize.push(out_path.with_directory("/tmp"));
                     } else {
                         to_optimize.push(img.clone());
                     }
@@ -250,8 +258,10 @@ fn main() {
     }
 
     upscale_images(&to_upscale, &args.format);
+    wait_for_images(&to_optimize);
 
     optimize_images(&to_optimize, &args.format);
+    wait_for_images(&to_detect);
 
     to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv, &resolutions));
 
