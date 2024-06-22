@@ -1275,7 +1275,7 @@ dependencies = [
 [[package]]
 name = "dioxus-sdk"
 version = "0.5.0"
-source = "git+https://github.com/DioxusLabs/sdk.git#d49812fbc9d4506bd3b1ec994f45ef4447f34c79"
+source = "git+https://github.com/DioxusLabs/sdk.git?branch=master#fa662f734cc2d0f59ca85da0072c067b3a46df3e"
 dependencies = [
  "cfg-if",
  "dioxus",

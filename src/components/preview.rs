@@ -36,19 +36,25 @@ fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
     }
 }
 
-fn get_final_dimensions(
-    top_left: (f64, f64),
-    window_size: WindowSize,
+/// fit the image within the max preview area
+fn get_preview_size(
+    min_y: f64,
+    win_size: WindowSize,
     img: (f64, f64),
+    has_candidates: bool,
 ) -> (f64, f64) {
     let margin: f64 = 16.0;
-    let win_w = f64::from(window_size.width);
-    let win_h = f64::from(window_size.height);
+    let candidate_btns: f64 = 36.0;
 
-    let max_w = margin.mul_add(-2.0, win_w);
-    let max_h = win_h - margin - top_left.1;
+    let max_w = margin.mul_add(-2.0, f64::from(win_size.width));
+    // handle extra space for candidate buttons
+    let reserved_height = if has_candidates {
+        candidate_btns + margin
+    } else {
+        0.0
+    };
+    let max_h = f64::from(win_size.height) - min_y - margin - reserved_height;
 
-    // fit the image within the max_width and height
     let (img_w, img_h) = img;
 
     let mut final_w = max_w;
@@ -68,11 +74,10 @@ pub fn Previewer(
     ui: Signal<UiState>,
     wallpapers_path: PathBuf,
 ) -> Element {
-    // store the final rendered width and height of the image
-    let mut final_dimensions = use_signal(|| (0.0, 0.0));
+    // store y coordinate of the previewer
+    let mut preview_y = use_signal(|| 0.0);
     let info = wallpapers().current;
     let ui = ui();
-    let window_size = use_window_size();
 
     let path = wallpapers_path.join(&info.filename);
     let path = path
@@ -104,17 +109,26 @@ pub fn Previewer(
         Direction::Y => "origin-bottom bottom-0 left-0",
     };
 
+    // get preview size of the image
+    let (preview_w, preview_h) = get_preview_size(
+        preview_y(),
+        use_window_size()(),
+        (img_w, img_h),
+        wallpapers().crop_candidates().len() > 1,
+    );
+
     rsx! {
         div {
             class: "relative m-auto",
-            style: "width: {final_dimensions().0}px; height: {final_dimensions().1}px;",
+            style: "width: {preview_w}px; height: {preview_h}px;",
             img {
                 src: path,
                 // store the final rendered width and height of the image
                 onmounted: move |evt| {
                     async move {
                         let coords = evt.get_client_rect().await.expect("could not get client rect");
-                        final_dimensions.set(get_final_dimensions(coords.min().to_tuple(), window_size(), (img_w, img_h)));
+                        // store the y coordinate of the previewer, the rest can be calculated from there
+                        preview_y.set(coords.min_y());
                     }
                 },
             }
@@ -135,7 +149,7 @@ pub fn Previewer(
 
             if is_manual {
                 DragOverlay {
-                    dimensions: final_dimensions(),
+                    dimensions: (preview_w, preview_h),
                     image_dimensions: (img_w, img_h),
                     overlay_ratios: (start_ratio, 1.0 - end_ratio),
                     direction,
