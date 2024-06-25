@@ -1,8 +1,7 @@
 use serde::Deserialize;
 use std::{
-    io::BufRead,
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Command,
 };
 use wallpapers::Face;
 
@@ -79,7 +78,7 @@ where
 }
 
 #[derive(Debug, Deserialize)]
-struct FaceJson {
+pub struct FaceJson {
     pub xmin: u32,
     pub xmax: u32,
     pub ymin: u32,
@@ -95,33 +94,6 @@ impl FaceJson {
             ymax: self.ymax,
         }
     }
-}
-
-/// reads anime-face-detector's stdout one line at a time, yielding (filename, faces) pairs
-pub fn detect_faces_iter(paths: &[PathBuf]) -> impl Iterator<Item = (&PathBuf, Vec<Face>)> + '_ {
-    let mut child = Command::new("anime-face-detector")
-        .args(paths)
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("failed to spawn anime-face-detector");
-
-    let reader = std::io::BufReader::new(
-        child
-            .stdout
-            .take()
-            .expect("failed to get stdout of anime-face-detector"),
-    );
-
-    std::iter::zip(paths, reader.lines().map_while(Result::ok)).map(|(path, line)| {
-        let faces: Vec<FaceJson> =
-            serde_json::from_str(&line).expect("could not deserialize faces");
-        let faces: Vec<_> = faces
-            .into_iter()
-            .map(|f: FaceJson| FaceJson::to_face(&f))
-            .collect();
-
-        (path, faces)
-    })
 }
 
 pub fn run_wallpaper_ui<I, S>(args: I)

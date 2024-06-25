@@ -14,9 +14,9 @@ use wallpaper_ui::{
     cli::WallpapersAddArgs,
     config::WallpaperConfig,
     cropper::Cropper,
-    detect_faces_iter, filename, filter_images, run_wallpaper_ui,
+    filename, filter_images, run_wallpaper_ui,
     wallpapers::{WallInfo, WallpapersCsv},
-    PathBufExt,
+    FaceJson, PathBufExt,
 };
 
 lazy_static! {
@@ -121,23 +121,47 @@ fn optimize_images(paths: &[PathBuf], format: &Option<String>) {
 }
 
 // returns the faces that need to be previewed for selection
-fn detect_faces(
+async fn detect_faces(
     paths: &[PathBuf],
     wallpapers_csv: &mut WallpapersCsv,
     resolutions: &[AspectRatio],
 ) -> Vec<PathBuf> {
+    use tokio::io::{AsyncBufReadExt, BufReader};
+    use tokio::process::Command;
+
     if paths.is_empty() {
         return Vec::new();
     }
 
-    for path in paths {
-        println!("Detecting faces in {}...", filename(path));
-    }
-
     let mut to_preview = Vec::new();
 
-    for (path, faces) in detect_faces_iter(paths) {
+    let mut child = Command::new("anime-face-detector")
+        .args(paths)
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("failed to spawn anime-face-detector");
+
+    let reader = BufReader::new(
+        child
+            .stdout
+            .take()
+            .expect("failed to read stdout of anime-face-detector"),
+    );
+    let mut lines = reader.lines();
+    let mut paths_iter = paths.iter();
+
+    // read each line of anime-face-detector's output async
+    while let (Some(path), Ok(Some(line))) = (paths_iter.next(), lines.next_line().await) {
         let fname = filename(path);
+        println!("Detecting faces in {fname}...");
+
+        let faces: Vec<FaceJson> =
+            serde_json::from_str(&line).expect("could not deserialize faces");
+        let faces: Vec<_> = faces
+            .into_iter()
+            .map(|f: FaceJson| FaceJson::to_face(&f))
+            .collect();
+
         let (width, height) = image::image_dimensions(path)
             .unwrap_or_else(|_| panic!("could not get image dimensions: {fname:?}"));
         let cropper = Cropper::new(&faces, width, height);
@@ -160,10 +184,10 @@ fn detect_faces(
             to_preview.push(path.with_directory(&CONFIG.wallpapers_path));
         }
 
-        wallpapers_csv.insert(fname.clone(), wall_info);
+        wallpapers_csv.insert(fname, wall_info);
     }
-    wallpapers_csv.save(resolutions);
 
+    wallpapers_csv.save(resolutions);
     to_preview
 }
 
@@ -174,7 +198,8 @@ fn wait_for_images(paths: &[PathBuf]) {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = WallpapersAddArgs::parse();
     let resolutions = CONFIG.sorted_resolutions();
 
@@ -263,7 +288,7 @@ fn main() {
     optimize_images(&to_optimize, &args.format);
     wait_for_images(&to_detect);
 
-    to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv, &resolutions));
+    to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv, &resolutions).await);
 
     if !to_preview.is_empty() {
         run_wallpaper_ui(&to_preview);
