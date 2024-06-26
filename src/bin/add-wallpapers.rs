@@ -3,7 +3,6 @@ extern crate lazy_static;
 
 use clap::Parser;
 use core::panic;
-use rayon::prelude::*;
 use std::{
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -24,7 +23,7 @@ lazy_static! {
 }
 
 fn upscale_images(to_upscale: &[(PathBuf, u32)], format: &Option<String>) {
-    to_upscale.par_iter().for_each(|(src, scale_factor)| {
+    for (src, scale_factor) in to_upscale {
         // let mut dest = src.with_directory(&CONFIG.wallpapers_path);
         let mut dest = src.with_directory("/tmp");
 
@@ -47,7 +46,7 @@ fn upscale_images(to_upscale: &[(PathBuf, u32)], format: &Option<String>) {
             .expect("could not spawn realcugan-ncnn-vulkan")
             .wait()
             .expect("could not wait for realcugan-ncnn-vulkan");
-    });
+    }
 }
 
 fn optimize_webp(infile: &PathBuf, outfile: &PathBuf) {

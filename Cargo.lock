@@ -4780,7 +4780,6 @@ dependencies = [
  "itertools",
  "lazy_static",
  "ordered-float 4.2.0",
- "rayon",
  "rust-ini",
  "serde",
  "serde_json",
