@@ -92,7 +92,8 @@ pub struct WallpapersAddArgs {
     pub format: Option<String>,
 
     // required positional argument for input directory
-    pub path: PathBuf,
+    // positional arguments for file paths
+    pub paths: Option<Vec<PathBuf>>,
 }
 
 #[derive(Parser, Debug)]

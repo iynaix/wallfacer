@@ -7,6 +7,7 @@ use wallpaper_ui::{
     config::WallpaperConfig,
     filename, filter_images,
     geometry::Geometry,
+    is_image,
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
@@ -81,7 +82,9 @@ impl Wallpapers {
         if let Some(paths) = args.paths {
             paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
                 if p.is_file() {
-                    all_files.push(p);
+                    if let Some(p) = is_image(&p) {
+                        all_files.push(p);
+                    }
                 } else {
                     all_files.extend(filter_images(&p));
                 }

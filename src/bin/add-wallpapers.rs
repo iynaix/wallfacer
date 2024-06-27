@@ -13,7 +13,7 @@ use wallpaper_ui::{
     cli::WallpapersAddArgs,
     config::WallpaperConfig,
     cropper::Cropper,
-    filename, filter_images, run_wallpaper_ui,
+    filename, filter_images, is_image, run_wallpaper_ui,
     wallpapers::{WallInfo, WallpapersCsv},
     FaceJson, PathBufExt,
 };
@@ -211,8 +211,24 @@ async fn main() {
     let min_height: u32 = args.min_height.unwrap_or_else(|| CONFIG.min_height);
 
     let wall_dir = &CONFIG.wallpapers_path;
-    if args.path == *wall_dir {
-        eprintln!("Input directory cannot be the same as the wallpapers directory.");
+    let mut all_files = Vec::new();
+    if let Some(paths) = args.paths {
+        paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
+            if p.is_file() {
+                if let Some(p) = is_image(&p) {
+                    all_files.push(p);
+                }
+            } else {
+                if p == *wall_dir {
+                    eprintln!("Input directory cannot be the same as the wallpapers directory.");
+                    std::process::exit(1);
+                }
+                all_files.extend(filter_images(&p));
+            }
+        });
+    }
+    if all_files.is_empty() {
+        eprintln!("No files found in input paths.");
         std::process::exit(1);
     }
 
@@ -236,7 +252,7 @@ async fn main() {
     }
 
     // get image dimensions of files within input_dir
-    for img in filter_images(&args.path) {
+    for img in all_files {
         let (width, height) = image::image_dimensions(&img)
             .unwrap_or_else(|_| panic!("could not get image dimensions for {img:?}"));
 

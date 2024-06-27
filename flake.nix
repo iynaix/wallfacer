@@ -18,9 +18,9 @@
 
       perSystem =
         {
-          config,
-          self',
-          inputs',
+          # config,
+          # self',
+          # inputs',
           pkgs,
           system,
           ...
@@ -77,7 +77,7 @@
               GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
               # FIXME: fix lag on wayland?
               # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
-              WEBKIT_DISABLE_COMPOSITING_MODE = 1;
+              # WEBKIT_DISABLE_COMPOSITING_MODE = 1;
               # FIXME: keyboard shortcuts do not seem to work without this option
               # GDK_BACKEND = "x11";
             };

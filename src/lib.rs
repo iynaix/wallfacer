@@ -54,6 +54,23 @@ impl PathBufExt for PathBuf {
     }
 }
 
+pub fn is_image<P>(path: P) -> Option<PathBuf>
+where
+    P: AsRef<Path>,
+{
+    let p = path.as_ref();
+    if p.is_file() {
+        if let Some(ext) = p.extension() {
+            match ext.to_str() {
+                Some("jpg" | "jpeg" | "png" | "webp") => return Some(p.to_path_buf()),
+                _ => return None,
+            }
+        }
+    }
+
+    None
+}
+
 pub fn filter_images<P>(dir: P) -> impl Iterator<Item = PathBuf>
 where
     P: AsRef<Path> + std::fmt::Debug,
@@ -62,19 +79,7 @@ where
         .read_dir()
         .unwrap_or_else(|_| panic!("could not read {:?}", &dir))
         .flatten()
-        .filter_map(|entry| {
-            let path = entry.path();
-            if path.is_file() {
-                if let Some(ext) = path.extension() {
-                    match ext.to_str() {
-                        Some("jpg" | "jpeg" | "png" | "webp") => return Some(path),
-                        _ => return None,
-                    }
-                }
-            }
-
-            None
-        })
+        .filter_map(|entry| is_image(entry.path()))
 }
 
 #[derive(Debug, Deserialize)]
