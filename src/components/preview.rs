@@ -89,8 +89,8 @@ pub fn Previewer(
     let overlay_cls = "absolute bg-black bg-opacity-60 w-full h-full";
 
     // preview geometry takes precedence
-    let geom = if let PreviewMode::Candidate(Some(cand_geom)) = ui.preview_mode {
-        cand_geom
+    let geom = if let PreviewMode::Candidate(Some(mouseover_geom)) = ui.preview_mode {
+        mouseover_geom
     } else {
         wallpapers().get_geometry()
     };

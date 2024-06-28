@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use itertools::Itertools;
 
 use crate::{
     app_state::{PreviewMode, UiState, Wallpapers},
@@ -24,13 +23,7 @@ pub fn Candidates(
         return None;
     }
 
-    let candidates_geom: Vec<_> = walls
-        .crop_candidates()
-        .into_iter()
-        .unique()
-        .enumerate()
-        .collect();
-
+    let candidates_geom = walls.candidate_geometries();
     if candidates_geom.len() <= 1 {
         return None;
     }
@@ -40,7 +33,7 @@ pub fn Candidates(
             class: "flex",
             class: class.unwrap_or_default(),
 
-            {candidates_geom.into_iter().map(|(i, geom)| {
+            {candidates_geom.into_iter().enumerate().map(|(i, geom)| {
                 let btn_cls = if geom == current_geom {
                     "!bg-indigo-600"
                 } else {

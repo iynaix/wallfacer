@@ -1,10 +1,12 @@
 use clap::Parser;
+use itertools::Itertools;
 use std::path::PathBuf;
 
 use wallpaper_ui::{
     aspect_ratio::AspectRatio,
     cli::WallpaperUIArgs,
     config::WallpaperConfig,
+    cropper::Direction,
     filename, filter_images,
     geometry::Geometry,
     is_image,
@@ -271,7 +273,7 @@ impl Wallpapers {
         self.current.cropper().crop_candidates(&self.ratio)
     }
 
-    /// returns the resolutions
+    /// returns cropping ratios for resolution buttons
     pub fn image_ratios(&self) -> Vec<(String, AspectRatio)> {
         self.resolutions
             .clone()
@@ -284,5 +286,37 @@ impl Wallpapers {
                     > f64::EPSILON
             })
             .collect()
+    }
+
+    /// returns the candidate geometries for candidate buttons
+    pub fn candidate_geometries(&self) -> Vec<Geometry> {
+        self.crop_candidates().into_iter().unique().collect()
+    }
+
+    /// moves the crop area of the current wallpaper based on its direction
+    pub fn move_geometry_by(&self, delta: i32) -> Geometry {
+        let current_geom = self.get_geometry();
+
+        let negative_delta = delta < 0;
+        let delta = delta.unsigned_abs();
+
+        match self.current.direction(&current_geom) {
+            Direction::X => Geometry {
+                x: if negative_delta {
+                    current_geom.x.max(delta) - delta
+                } else {
+                    (current_geom.x + delta).min(self.current.width - current_geom.w)
+                },
+                ..current_geom
+            },
+            Direction::Y => Geometry {
+                y: if negative_delta {
+                    current_geom.y.max(delta) - delta
+                } else {
+                    (current_geom.y + delta).min(self.current.height - current_geom.h)
+                },
+                ..current_geom
+            },
+        }
     }
 }
