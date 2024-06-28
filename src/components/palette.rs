@@ -124,7 +124,7 @@ impl WallustConfig {
 }
 
 #[component]
-pub fn Wallust(wallpapers: Signal<Wallpapers>) -> Element {
+pub fn Palette(wallpapers: Signal<Wallpapers>) -> Element {
     let mut conf = use_signal(|| WallustConfig::from_args_str(&wallpapers.read().source.wallust));
     let mut is_running = use_signal(|| false);
     let preview_cls = if is_running() {

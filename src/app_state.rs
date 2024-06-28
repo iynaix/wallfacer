@@ -11,14 +11,41 @@ use wallpaper_ui::{
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
-#[allow(clippy::struct_excessive_bools)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UiMode {
+    Editor,
+    FileList,
+    Palette,
+}
+
+impl Default for UiMode {
+    fn default() -> Self {
+        Self::Editor
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct UiState {
-    pub show_filelist: bool,
-    pub show_faces: bool,
-    pub show_palette: bool,
+    pub mode: UiMode,
     pub preview_mode: PreviewMode,
+    pub show_faces: bool,
     pub is_saving: bool,
+}
+
+impl UiState {
+    pub fn toggle_filelist(&mut self) {
+        self.mode = match self.mode {
+            UiMode::FileList => UiMode::Editor,
+            _ => UiMode::FileList,
+        };
+    }
+
+    pub fn toggle_palette(&mut self) {
+        self.mode = match self.mode {
+            UiMode::Palette => UiMode::Editor,
+            _ => UiMode::Palette,
+        };
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

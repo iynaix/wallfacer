@@ -7,7 +7,7 @@ use dioxus_free_icons::icons::{
 use dioxus_free_icons::Icon;
 use wallpaper_ui::wallpapers::WallpapersCsv;
 
-use crate::app_state::{PreviewMode, UiState, Wallpapers};
+use crate::app_state::{PreviewMode, UiMode, UiState, Wallpapers};
 
 pub fn save_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
     let info = wallpapers().current;
@@ -118,7 +118,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                     a { class: "text-sm font-semibold leading-6 text-white text-center w-48 cursor-pointer",
                         onclick: move |_| {
                             ui.with_mut(|ui| {
-                                ui.show_filelist = !ui.show_filelist;
+                                ui.toggle_filelist();
                             });
                         },
                         {info.filename}
@@ -136,14 +136,14 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                     if supports_wallust() {
                         a {
                             class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
-                            class: if ui().show_palette {
+                            class: if ui().mode == UiMode::Palette {
                                 "bg-indigo-600 hover:bg-indigo-500"
                             } else {
                                 "bg-surface1 hover:bg-crust"
                             },
                             onclick: move |_| {
                                 ui.with_mut(|ui| {
-                                    ui.show_palette = !ui.show_palette;
+                                    ui.toggle_palette();
                                 });
                             },
                             Icon { fill: "white", icon:  MdPalette }

@@ -86,6 +86,7 @@ pub fn FileList(
                         class: "flex-1 border-0 bg-transparent py-1.5 pl-1 text-white focus:ring-0 sm:text-sm sm:leading-6",
                         id: "search_wallpapers",
                         oninput: move |evt| {
+                            evt.stop_propagation();
                             search.set(evt.value());
                         }
                     }
@@ -105,8 +106,8 @@ pub fn FileList(
                                 wallpapers.set_from_filename(&fname);
                             });
                             ui.with_mut(|ui| {
-                                ui.show_filelist = false;
                                 ui.preview_mode = PreviewMode::Candidate(None);
+                                ui.toggle_filelist();
                             });
                         },
                     }
