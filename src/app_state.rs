@@ -32,6 +32,7 @@ pub struct UiState {
     pub preview_mode: PreviewMode,
     pub show_faces: bool,
     pub is_saving: bool,
+    pub arrow_key_start: Option<std::time::Instant>,
 }
 
 impl UiState {

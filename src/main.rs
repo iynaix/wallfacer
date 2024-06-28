@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use clap::Parser;
-use components::app_header::save_image;
+use components::{app_header::save_image, editor::handle_arrow_keys_up};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
 use wallpaper_ui::config::WallpaperConfig;
@@ -86,10 +86,13 @@ fn handle_shortcuts(
                         ui.with_mut(app_state::UiState::toggle_palette);
                     }
                 }
-                _ => {}
+                _ => {
+                    if ui().mode == UiMode::Editor {
+                        handle_editor_shortcuts(event, wallpapers, ui);
+                    }
+                }
             }
         }
-
         _ => {
             if ui().mode == UiMode::Editor {
                 handle_editor_shortcuts(event, wallpapers, ui);
@@ -128,6 +131,9 @@ fn App() -> Element {
             autofocus: true,
             onkeydown: move |event| {
                 handle_shortcuts(&event, &mut wallpapers, &mut ui);
+            },
+            onkeyup: move |event| {
+                handle_arrow_keys_up(&event.key(), &mut ui);
             },
 
             AppHeader { wallpapers, ui }

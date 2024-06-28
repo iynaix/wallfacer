@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Instant};
 
 use crate::{
     app_state::{PreviewMode, UiState, Wallpapers},
@@ -13,17 +13,33 @@ use crate::{
     },
 };
 
-pub fn handle_arrow_keys(
+pub fn handle_arrow_keys_up(_arrow_key: &Key, ui: &mut Signal<UiState>) {
+    ui.with_mut(|ui| {
+        ui.arrow_key_start = None;
+    });
+}
+
+pub fn handle_arrow_keys_down(
     arrow_key: &Key,
     wallpapers: &mut Signal<Wallpapers>,
     ui: &mut Signal<UiState>,
 ) {
     let walls = wallpapers();
     let current_geom = walls.get_geometry();
-    let delta = 5;
+    let start_time_ms = ui()
+        .arrow_key_start
+        .map_or(0, |start_time| start_time.elapsed().as_millis());
+    // minimum move distance is 2px
+    let delta = (start_time_ms as f64 / 100.0 * 4.0).max(2.0) as i32;
 
     match arrow_key {
         Key::ArrowLeft | Key::ArrowUp => {
+            if start_time_ms == 0 {
+                ui.with_mut(|ui| {
+                    ui.arrow_key_start = Some(Instant::now());
+                });
+            }
+
             let new_geom = match ui().preview_mode {
                 PreviewMode::Candidate(_) => {
                     let candidates_geom = walls.candidate_geometries();
@@ -60,6 +76,12 @@ pub fn handle_arrow_keys(
         }
 
         Key::ArrowRight | Key::ArrowDown => {
+            if start_time_ms == 0 {
+                ui.with_mut(|ui| {
+                    ui.arrow_key_start = Some(Instant::now());
+                });
+            }
+
             let new_geom = match ui().preview_mode {
                 PreviewMode::Candidate(_) => {
                     let candidates_geom = walls.candidate_geometries();
@@ -95,7 +117,6 @@ pub fn handle_arrow_keys(
     }
 }
 
-#[allow(clippy::too_many_lines)]
 pub fn handle_editor_shortcuts(
     event: &Event<KeyboardData>,
     wallpapers: &mut Signal<Wallpapers>,
@@ -183,7 +204,7 @@ pub fn handle_editor_shortcuts(
             }
         }
 
-        key => handle_arrow_keys(&key, wallpapers, ui),
+        key => handle_arrow_keys_down(&key, wallpapers, ui),
     };
 }
 
