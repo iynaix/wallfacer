@@ -14,17 +14,7 @@ pub fn RatioSelector(
     ui: Signal<UiState>,
 ) -> Element {
     let walls = wallpapers();
-    let ratios: Vec<_> = walls
-        .resolutions
-        .into_iter()
-        .filter(|(_, ratio)| {
-            // do not show resolution if aspect ratio of image is the same,
-            // as there is only a single possible crop
-            (f64::from(walls.current.width) / f64::from(walls.current.height) - f64::from(ratio))
-                .abs()
-                > f64::EPSILON
-        })
-        .collect();
+    let ratios = walls.image_ratios();
 
     let len = ratios.len();
 

@@ -11,17 +11,19 @@ use wallpaper_ui::{
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct UiState {
     pub show_filelist: bool,
     pub show_faces: bool,
     pub show_palette: bool,
     pub preview_mode: PreviewMode,
+    pub is_saving: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreviewMode {
-    Manual,
+    Pan,
     /// stores the last mouseover geometry
     Candidate(Option<Geometry>),
 }
@@ -240,5 +242,20 @@ impl Wallpapers {
     /// returns crop candidates for current ratio and image
     pub fn crop_candidates(&self) -> Vec<Geometry> {
         self.current.cropper().crop_candidates(&self.ratio)
+    }
+
+    /// returns the resolutions
+    pub fn image_ratios(&self) -> Vec<(String, AspectRatio)> {
+        self.resolutions
+            .clone()
+            .into_iter()
+            .filter(|(_, ratio)| {
+                // do not show resolution if aspect ratio of image is the same,
+                // as there is only a single possible crop
+                (f64::from(self.current.width) / f64::from(self.current.height) - f64::from(ratio))
+                    .abs()
+                    > f64::EPSILON
+            })
+            .collect()
     }
 }

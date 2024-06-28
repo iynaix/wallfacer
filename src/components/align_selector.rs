@@ -15,6 +15,15 @@ use crate::{
     components::button::Button,
 };
 
+pub fn set_align(geom: &Geometry, wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
+    wallpapers.with_mut(|wallpapers| {
+        wallpapers.set_geometry(geom);
+    });
+    ui.with_mut(|ui| {
+        ui.preview_mode = PreviewMode::Candidate(None);
+    });
+}
+
 #[component]
 fn AlignButton(
     class: String,
@@ -30,16 +39,21 @@ fn AlignButton(
             class,
             active: current_geom == geom,
             onclick: move |_| {
-                wallpapers.with_mut(|wallpapers| {
-                    wallpapers.set_geometry(&geom);
-                });
-                ui.with_mut(|ui| {
-                    ui.preview_mode = PreviewMode::Candidate(None);
-                });
+                set_align(&geom, &mut wallpapers, &mut ui);
             },
             {children}
         }
     }
+}
+
+pub fn toggle_pan(ui: &mut Signal<UiState>) {
+    ui.with_mut(|ui| {
+        ui.preview_mode = if matches!(&ui.preview_mode, PreviewMode::Pan) {
+            PreviewMode::Candidate(None)
+        } else {
+            PreviewMode::Pan
+        }
+    });
 }
 
 #[component]
@@ -116,15 +130,9 @@ pub fn AlignSelector(
                 class: "isolate inline-flex rounded-md shadow-sm",
                 Button {
                     class: "text-sm rounded-md",
-                    active: align == PreviewMode::Manual,
+                    active: align == PreviewMode::Pan,
                     onclick: move |_| {
-                        ui.with_mut(|ui| {
-                            ui.preview_mode = if matches!(&ui.preview_mode, PreviewMode::Manual) {
-                                PreviewMode::Candidate(None)
-                            } else {
-                                PreviewMode::Manual
-                            }
-                        });
+                        toggle_pan(&mut ui);
                     },
                     Icon { fill: "white", icon: MdPanTool }
                 }

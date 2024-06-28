@@ -9,49 +9,76 @@ use wallpaper_ui::wallpapers::WallpapersCsv;
 
 use crate::app_state::{PreviewMode, UiState, Wallpapers};
 
+pub fn save_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
+    let info = wallpapers().current;
+    let mut wallpapers_csv = WallpapersCsv::load();
+    wallpapers_csv.insert(info.filename.clone(), info);
+    let resolutions: Vec<_> = wallpapers()
+        .resolutions
+        .iter()
+        .map(|(_, ratio)| ratio.clone())
+        .collect();
+    wallpapers_csv.save(&resolutions);
+
+    wallpapers.with_mut(|wallpapers| {
+        wallpapers.remove();
+    });
+    ui.with_mut(|ui| {
+        ui.preview_mode = PreviewMode::Candidate(None);
+        ui.is_saving = true;
+    });
+}
+
 #[component]
 pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
-    let mut clicked = use_signal(|| false);
+    let clicked = ui().is_saving;
 
     use_future(move || async move {
         loop {
-            if clicked() {
-                clicked.set(false);
+            if ui().is_saving {
+                ui.with_mut(|ui| {
+                    ui.is_saving = false;
+                });
             }
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     });
 
-    let btn_color = if clicked() {
+    let btn_color = if clicked {
         "bg-green-600"
     } else {
         "bg-indigo-600"
     };
-    let btn_text = if clicked() { "Saved" } else { "Save" };
+    let btn_text = if clicked { "Saved" } else { "Save" };
 
     rsx! {
         a {
             class: "rounded-md px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
             class: btn_color,
             onclick: move |_| {
-                let info = wallpapers().current;
-                let mut wallpapers_csv = WallpapersCsv::load();
-                wallpapers_csv.insert(info.filename.clone(), info);
-                let resolutions : Vec<_> = wallpapers().resolutions.iter().map(|(_, ratio)| ratio.clone()).collect();
-                wallpapers_csv.save(&resolutions);
-
-                wallpapers.with_mut(|wallpapers| {
-                    wallpapers.remove();
-                });
-                ui.with_mut(|ui| {
-                    ui.preview_mode = PreviewMode::Candidate(None);
-                });
-
-                clicked.set(true);
+                save_image(&mut wallpapers, &mut ui);
             },
             {btn_text}
         }
     }
+}
+
+pub fn prev_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
+    wallpapers.with_mut(|wallpapers| {
+        wallpapers.prev_wall();
+    });
+    ui.with_mut(|ui| {
+        ui.preview_mode = PreviewMode::Candidate(None);
+    });
+}
+
+pub fn next_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
+    wallpapers.with_mut(|wallpapers| {
+        wallpapers.next_wall();
+    });
+    ui.with_mut(|ui| {
+        ui.preview_mode = PreviewMode::Candidate(None);
+    });
 }
 
 #[component]
@@ -84,12 +111,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                 div { class: "flex flex-1 gap-x-3 items-center justify-center",
                     a { class: pagination_cls,
                         onclick: move |_| {
-                            wallpapers.with_mut(|wallpapers| {
-                                wallpapers.prev_wall();
-                            });
-                            ui.with_mut(|ui| {
-                                ui.preview_mode = PreviewMode::Candidate(None);
-                            });
+                            prev_image(&mut wallpapers, &mut ui);
                         },
                         Icon { fill: "white", icon:  MdChevronLeft, width: 16, height: 16 }
                     }
@@ -103,12 +125,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                     }
                     a { class: pagination_cls,
                         onclick: move |_| {
-                            wallpapers.with_mut(|wallpapers| {
-                                wallpapers.next_wall();
-                            });
-                            ui.with_mut(|ui| {
-                                ui.preview_mode = PreviewMode::Candidate(None);
-                            });
+                            next_image(&mut wallpapers, &mut ui);
                         },
                         Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
                     }

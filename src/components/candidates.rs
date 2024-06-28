@@ -13,7 +13,7 @@ pub fn Candidates(
     wallpapers: Signal<Wallpapers>,
     ui: Signal<UiState>,
 ) -> Element {
-    if ui().preview_mode == PreviewMode::Manual {
+    if ui().preview_mode == PreviewMode::Pan {
         return None;
     }
 

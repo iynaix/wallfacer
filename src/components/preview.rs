@@ -85,7 +85,7 @@ pub fn Previewer(
         .unwrap_or_else(|| panic!("could not convert {path:?} to str"))
         .to_string();
 
-    let is_manual = matches!(ui.preview_mode, PreviewMode::Manual);
+    let is_manual = matches!(ui.preview_mode, PreviewMode::Pan);
     let overlay_cls = "absolute bg-black bg-opacity-60 w-full h-full";
 
     // preview geometry takes precedence
