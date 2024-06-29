@@ -91,6 +91,13 @@ pub struct WallpapersAddArgs {
     )]
     pub format: Option<String>,
 
+    #[arg(
+        long,
+        action,
+        help = "reprocess the image even if it already exists in the csv"
+    )]
+    pub force: bool,
+
     // required positional argument for input directory
     // positional arguments for file paths
     pub paths: Option<Vec<PathBuf>>,

@@ -10,7 +10,7 @@ pub mod cli;
 pub mod config;
 pub mod cropper;
 pub mod geometry;
-pub mod image_ops;
+pub mod pipeline;
 pub mod wallpapers;
 
 pub fn full_path(p: &str) -> PathBuf {
