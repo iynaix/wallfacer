@@ -4778,7 +4778,6 @@ dependencies = [
  "image",
  "indexmap 2.2.6",
  "itertools",
- "lazy_static",
  "ordered-float 4.2.0",
  "rust-ini",
  "serde",

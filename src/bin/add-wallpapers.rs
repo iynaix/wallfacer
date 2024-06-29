@@ -1,194 +1,16 @@
-#[macro_use]
-extern crate lazy_static;
-
 use clap::Parser;
 use core::panic;
-use std::{
-    path::{Path, PathBuf},
-    process::{Command, Stdio},
-};
+use std::path::PathBuf;
 
 use wallpaper_ui::{
-    aspect_ratio::AspectRatio,
     cli::WallpapersAddArgs,
     config::WallpaperConfig,
-    cropper::Cropper,
-    filename, filter_images, is_image, run_wallpaper_ui,
-    wallpapers::{WallInfo, WallpapersCsv},
-    FaceJson, PathBufExt,
+    filename, filter_images,
+    image_ops::{detect_faces, optimize_images, upscale_images},
+    is_image, run_wallpaper_ui,
+    wallpapers::WallpapersCsv,
+    PathBufExt,
 };
-
-lazy_static! {
-    static ref CONFIG: WallpaperConfig = WallpaperConfig::new();
-}
-
-fn upscale_images(to_upscale: &[(PathBuf, u32)], format: &Option<String>) {
-    for (src, scale_factor) in to_upscale {
-        // let mut dest = src.with_directory(&CONFIG.wallpapers_path);
-        let mut dest = src.with_directory("/tmp");
-
-        if let Some(ext) = &format {
-            dest = dest.with_extension(ext);
-        }
-
-        println!("Upscaling {}...", &filename(src));
-
-        Command::new("realcugan-ncnn-vulkan")
-            .arg("-i")
-            .arg(src)
-            .arg("-s")
-            .arg(scale_factor.to_string())
-            .arg("-o")
-            .arg(dest)
-            // silence output
-            .stderr(Stdio::null())
-            .spawn()
-            .expect("could not spawn realcugan-ncnn-vulkan")
-            .wait()
-            .expect("could not wait for realcugan-ncnn-vulkan");
-    }
-}
-
-fn optimize_webp(infile: &PathBuf, outfile: &PathBuf) {
-    Command::new("cwebp")
-        .args(["-q", "100", "-m", "6", "-mt", "-af"])
-        .arg(infile)
-        .arg("-o")
-        .arg(outfile)
-        // silence output
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .expect("could not spawn cwebp")
-        .wait()
-        .expect("could not wait for cwebp");
-}
-
-fn optimize_jpg(infile: &PathBuf, outfile: &Path) {
-    Command::new("jpegoptim")
-        .arg("--strip-all")
-        .arg(infile)
-        .arg("--dest")
-        .arg(
-            outfile
-                .parent()
-                .unwrap_or_else(|| panic!("could not get parent directory for {infile:?}")),
-        )
-        // silence output
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .expect("could not spawn jpegoptim")
-        .wait()
-        .expect("could not wait for jpegoptim");
-}
-
-fn optimize_png(infile: &PathBuf, outfile: &PathBuf) {
-    Command::new("oxipng")
-        .args(["--opt", "max"])
-        .arg(infile)
-        .arg("--out")
-        .arg(outfile)
-        // silence output
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .expect("could not spawn oxipng")
-        .wait()
-        .expect("could not wait for oxipng");
-}
-
-fn optimize_images(paths: &[PathBuf], format: &Option<String>) {
-    let wall_dir = &CONFIG.wallpapers_path;
-    for img in paths {
-        println!("Optimizing {}...", filename(img));
-
-        let out_img = format
-            .as_ref()
-            .map_or_else(|| img.clone(), |format| img.with_extension(format))
-            .with_directory(wall_dir);
-
-        if let Some(ext) = out_img.extension() {
-            match ext.to_str().expect("could not convert extension to str") {
-                "jpg" | "jpeg" => optimize_jpg(img, &out_img),
-                "png" => optimize_png(img, &out_img),
-                "webp" => optimize_webp(img, &out_img),
-                _ => panic!("unsupported image format: {ext:?}"),
-            }
-        };
-    }
-}
-
-// returns the faces that need to be previewed for selection
-async fn detect_faces(
-    paths: &[PathBuf],
-    wallpapers_csv: &mut WallpapersCsv,
-    resolutions: &[AspectRatio],
-) -> Vec<PathBuf> {
-    use tokio::io::{AsyncBufReadExt, BufReader};
-    use tokio::process::Command;
-
-    if paths.is_empty() {
-        return Vec::new();
-    }
-
-    let mut to_preview = Vec::new();
-
-    let mut child = Command::new("anime-face-detector")
-        .args(paths)
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("failed to spawn anime-face-detector");
-
-    let reader = BufReader::new(
-        child
-            .stdout
-            .take()
-            .expect("failed to read stdout of anime-face-detector"),
-    );
-    let mut lines = reader.lines();
-    let mut paths_iter = paths.iter();
-
-    // read each line of anime-face-detector's output async
-    while let (Some(path), Ok(Some(line))) = (paths_iter.next(), lines.next_line().await) {
-        let fname = filename(path);
-        println!("Detecting faces in {fname}...");
-
-        let faces: Vec<FaceJson> =
-            serde_json::from_str(&line).expect("could not deserialize faces");
-        let faces: Vec<_> = faces
-            .into_iter()
-            .map(|f: FaceJson| FaceJson::to_face(&f))
-            .collect();
-
-        let (width, height) = image::image_dimensions(path)
-            .unwrap_or_else(|_| panic!("could not get image dimensions: {fname:?}"));
-        let cropper = Cropper::new(&faces, width, height);
-
-        // create WallInfo and save it
-        let wall_info = WallInfo {
-            filename: fname.clone(),
-            width,
-            height,
-            faces,
-            geometries: resolutions
-                .iter()
-                .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
-                .collect(),
-            wallust: String::new(),
-        };
-
-        // preview both multiple faces and no faces
-        if wall_info.faces.len() != 1 {
-            to_preview.push(path.with_directory(&CONFIG.wallpapers_path));
-        }
-
-        wallpapers_csv.insert(fname, wall_info);
-    }
-
-    wallpapers_csv.save(resolutions);
-    to_preview
-}
 
 /// waits for the images to be written to disk
 fn wait_for_images(paths: &[PathBuf]) {
@@ -200,17 +22,18 @@ fn wait_for_images(paths: &[PathBuf]) {
 #[tokio::main]
 async fn main() {
     let args = WallpapersAddArgs::parse();
-    let resolutions = CONFIG.sorted_resolutions();
+    let cfg = WallpaperConfig::new();
+    let resolutions = cfg.sorted_resolutions();
 
     if args.version {
         println!("wallpapers-add {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
     }
 
-    let min_width: u32 = args.min_width.unwrap_or_else(|| CONFIG.min_width);
-    let min_height: u32 = args.min_height.unwrap_or_else(|| CONFIG.min_height);
+    let min_width: u32 = args.min_width.unwrap_or(cfg.min_width);
+    let min_height: u32 = args.min_height.unwrap_or(cfg.min_height);
 
-    let wall_dir = &CONFIG.wallpapers_path;
+    let wall_dir = &cfg.wallpapers_path;
     let mut all_files = Vec::new();
     if let Some(paths) = args.paths {
         paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
@@ -273,26 +96,28 @@ async fn main() {
             } else {
                 to_detect.push(out_path);
             }
-        } else {
-            if width * 4 < min_width || height * 4 < min_height {
-                eprintln!(
-                    "{:?} is too small to be upscaled to {min_width}x{min_height}",
-                    &img
-                );
-                continue;
-            }
 
-            for scale_factor in 1..=4 {
-                if width * scale_factor >= min_width && height * scale_factor >= min_height {
-                    if scale_factor > 1 {
-                        to_upscale.push((img, scale_factor));
-                        to_optimize.push(out_path.with_directory("/tmp"));
-                    } else {
-                        to_optimize.push(img.clone());
-                    }
-                    to_detect.push(out_path);
-                    break;
+            continue;
+        }
+
+        if width * 4 < min_width || height * 4 < min_height {
+            eprintln!(
+                "{:?} is too small to be upscaled to {min_width}x{min_height}",
+                &img
+            );
+            continue;
+        }
+
+        for scale_factor in 1..=4 {
+            if width * scale_factor >= min_width && height * scale_factor >= min_height {
+                if scale_factor > 1 {
+                    to_upscale.push((img, scale_factor));
+                    to_optimize.push(out_path.with_directory("/tmp"));
+                } else {
+                    to_optimize.push(img.clone());
                 }
+                to_detect.push(out_path);
+                break;
             }
         }
     }
@@ -300,10 +125,12 @@ async fn main() {
     upscale_images(&to_upscale, &args.format);
     wait_for_images(&to_optimize);
 
-    optimize_images(&to_optimize, &args.format);
+    println!("\n");
+    optimize_images(&to_optimize, &args.format, wall_dir);
     wait_for_images(&to_detect);
 
-    to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv, &resolutions).await);
+    println!("\n");
+    to_preview.extend(detect_faces(&to_detect, &mut wallpapers_csv, &resolutions, wall_dir).await);
 
     if !to_preview.is_empty() {
         run_wallpaper_ui(&to_preview);
