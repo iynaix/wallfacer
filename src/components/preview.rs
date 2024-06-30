@@ -114,7 +114,7 @@ pub fn Previewer(
         preview_y(),
         use_window_size()(),
         (img_w, img_h),
-        wallpapers().crop_candidates().len() > 1,
+        wallpapers().has_candidates(),
     );
 
     rsx! {

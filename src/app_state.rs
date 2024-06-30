@@ -274,6 +274,13 @@ impl Wallpapers {
         self.current.cropper().crop_candidates(&self.ratio)
     }
 
+    pub fn has_candidates(&self) -> bool {
+        let cropper = self.current.cropper();
+        self.image_ratios()
+            .iter()
+            .any(|(_, ratio)| cropper.crop_candidates(ratio).len() > 1)
+    }
+
     /// returns cropping ratios for resolution buttons
     pub fn image_ratios(&self) -> Vec<(String, AspectRatio)> {
         self.resolutions
