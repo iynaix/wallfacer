@@ -1,11 +1,24 @@
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
+use wallpaper_ui::aspect_ratio::AspectRatio;
 
 use crate::{
-    app_state::{UiState, Wallpapers},
+    app_state::{PreviewMode, UiState, Wallpapers},
     components::button::Button,
 };
+
+pub fn change_ratio(
+    ratio: &AspectRatio,
+    wallpapers: &mut Signal<Wallpapers>,
+    ui: &mut Signal<UiState>,
+) {
+    wallpapers.with_mut(|wallpapers| {
+        wallpapers.ratio = ratio.clone();
+    });
+    // reset back to candidate mode
+    ui.with_mut(|ui| ui.preview_mode = PreviewMode::Candidate(None));
+}
 
 #[component]
 pub fn RatioSelector(
@@ -41,9 +54,7 @@ pub fn RatioSelector(
                 class: "text-sm {cls}",
                 active: is_active,
                 onclick: move |_|{
-                    wallpapers.with_mut(|wallpapers| {
-                        wallpapers.ratio = res.clone();
-                    });
+                    change_ratio(&res, &mut wallpapers, &mut ui);
                 }
                 {btn_text}
             }

@@ -13,6 +13,8 @@ use crate::{
     },
 };
 
+use super::ratio_selector::change_ratio;
+
 pub fn handle_arrow_keys_up(_arrow_key: &Key, ui: &mut Signal<UiState>) {
     ui.with_mut(|ui| {
         ui.arrow_key_start = None;
@@ -195,9 +197,7 @@ pub fn handle_editor_shortcuts(
 
                     if let Some(pos) = ratios.iter().position(|r| *r == walls.ratio) {
                         let next = (pos + 1) % ratios.len();
-                        wallpapers.with_mut(|wallpapers| {
-                            wallpapers.ratio = ratios[next].clone();
-                        });
+                        change_ratio(&ratios[next], wallpapers, ui);
                     }
                 }
                 _ => {}
