@@ -199,6 +199,34 @@ impl Wallpapers {
         }
     }
 
+    #[cfg_attr(test, allow(unused_variables))]
+    fn load_from_csv(&mut self) {
+        if self.files.is_empty() {
+            return;
+        }
+
+        let fname = filename(&self.files[self.index]);
+        #[cfg(not(test))]
+        {
+            let wallpapers_csv = WallpapersCsv::load();
+            let loaded = wallpapers_csv
+                .get(&fname)
+                .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
+            self.source = loaded.clone();
+            self.current = loaded.clone();
+        }
+
+        #[cfg(test)]
+        {
+            let loaded = WallInfo {
+                filename: fname,
+                ..WallInfo::default()
+            };
+            self.source = loaded.clone();
+            self.current = loaded;
+        }
+    }
+
     pub fn prev_wall(&mut self) {
         // loop back to the last wallpaper
         self.index = if self.index == 0 {
@@ -207,14 +235,7 @@ impl Wallpapers {
             self.index - 1
         };
 
-        let wallpapers_csv = WallpapersCsv::load();
-        let fname = filename(&self.files[self.index]);
-        let loaded = wallpapers_csv
-            // bounds check is not necessary since the index is always valid
-            .get(&fname)
-            .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
-        self.source = loaded.clone();
-        self.current = loaded.clone();
+        self.load_from_csv();
     }
 
     pub fn next_wall(&mut self) {
@@ -225,23 +246,21 @@ impl Wallpapers {
             self.index + 1
         };
 
-        let wallpapers_csv = WallpapersCsv::load();
-        let fname = filename(&self.files[self.index]);
-        let loaded = wallpapers_csv
-            // bounds check is not necessary since the index is always valid
-            .get(&filename(&self.files[self.index]))
-            .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
-        self.source = loaded.clone();
-        self.current = loaded.clone();
+        self.load_from_csv();
     }
 
     /// removes the current wallpaper from the list
     pub fn remove(&mut self) {
-        let current_index = self.index;
-        self.next_wall();
-        self.files.remove(current_index);
-        // current_index is unchanged after removal
-        self.index = current_index;
+        let current_file = self.files[self.index].clone();
+        if self.index == self.files.len() - 1 {
+            self.files.remove(self.index);
+            self.index = 0;
+        } else {
+            self.files.remove(self.index);
+        }
+
+        self.files.retain(|f| f != &current_file);
+        self.load_from_csv();
     }
 
     pub fn set_from_filename(&mut self, fname: &str) {
@@ -326,5 +345,112 @@ impl Wallpapers {
                 ..current_geom
             },
         }
+    }
+}
+
+#[cfg(test)]
+impl Wallpapers {
+    pub fn create_mock(len: usize, index: usize) -> Self {
+        assert!(index < len, "index must be less than len");
+
+        let mut files = Vec::new();
+        for i in 0..len {
+            files.push(PathBuf::from(format!("{}", i)));
+        }
+
+        let current = WallInfo {
+            filename: "0".to_string(),
+            ..WallInfo::default()
+        };
+
+        Self {
+            files,
+            index,
+            source: current.clone(),
+            current,
+            ratio: AspectRatio { w: 16, h: 9 },
+            resolutions: Vec::new(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_next_wall() {
+        static LEN: usize = 5;
+        let mut walls = Wallpapers::create_mock(LEN, 0);
+        walls.next_wall();
+        assert_eq!(walls.index, 1);
+        assert_eq!(walls.files.len(), LEN);
+
+        // loop around last element
+        walls.index = LEN - 1;
+        walls.next_wall();
+
+        assert_eq!(walls.index, 0);
+        assert_eq!(walls.files.len(), LEN);
+    }
+
+    #[test]
+    fn test_prev_wall() {
+        static LEN: usize = 5;
+        let mut walls = Wallpapers::create_mock(LEN, 1);
+        walls.prev_wall();
+        assert_eq!(walls.index, 0);
+        assert_eq!(walls.files.len(), LEN);
+
+        // loop around first element
+        walls.index = 0;
+        walls.prev_wall();
+        assert_eq!(walls.index, LEN - 1);
+        assert_eq!(walls.files.len(), LEN);
+    }
+
+    #[test]
+    fn test_remove_start() {
+        static LEN: usize = 5;
+        // remove first index
+        let mut walls = Wallpapers::create_mock(LEN, 0);
+        walls.remove();
+        assert_eq!(walls.index, 0, "remove index 0");
+        assert_eq!(walls.current.filename, "1", "remove index 0");
+        assert_eq!(walls.files.len(), LEN - 1, "remove index 0");
+    }
+
+    #[test]
+    fn test_remove_middle() {
+        // remove middle index
+        static LEN: usize = 5;
+        let mut walls = Wallpapers::create_mock(LEN, 2);
+        walls.remove();
+        assert_eq!(walls.index, 2, "remove index 2");
+        assert_eq!(walls.current.filename, "3", "remove index 2");
+        assert_eq!(walls.files.len(), LEN - 1, "remove index 2");
+    }
+
+    #[test]
+    fn test_remove_last() {
+        // remove last index
+        static LEN: usize = 5;
+        let mut walls = Wallpapers::create_mock(LEN, LEN - 1);
+        walls.remove();
+        assert_eq!(walls.index, 0, "remove index {}", LEN - 1);
+        assert_eq!(walls.current.filename, "0", "remove index {}", LEN - 1);
+        assert_eq!(walls.files.len(), LEN - 1, "remove index {}", LEN - 1);
+
+        walls.prev_wall();
+        assert_eq!(walls.index, LEN - 1 - 1, "prev after remove last");
+        assert_eq!(walls.current.filename, "3", "prev after remove last");
+        assert_eq!(walls.files.len(), LEN - 1, "prev after remove last");
+    }
+
+    #[test]
+    fn remove_single() {
+        let mut walls = Wallpapers::create_mock(1, 0);
+        walls.remove();
+        assert_eq!(walls.files.len(), 0);
     }
 }
