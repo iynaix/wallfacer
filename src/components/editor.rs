@@ -21,7 +21,7 @@ pub fn handle_arrow_keys_up(_arrow_key: &Key, ui: &mut Signal<UiState>) {
     });
 }
 
-pub fn handle_arrow_keys_down(
+pub fn handle_arrows_keydown(
     arrow_key: &Key,
     wallpapers: &mut Signal<Wallpapers>,
     ui: &mut Signal<UiState>,
@@ -120,13 +120,13 @@ pub fn handle_arrow_keys_down(
 }
 
 pub fn handle_editor_shortcuts(
-    event: &Event<KeyboardData>,
+    evt: &Event<KeyboardData>,
     wallpapers: &mut Signal<Wallpapers>,
     ui: &mut Signal<UiState>,
 ) {
     let walls = wallpapers();
 
-    match event.key() {
+    match evt.key() {
         Key::Character(shortcut) => {
             let shortcut = shortcut.as_str();
 
@@ -204,7 +204,7 @@ pub fn handle_editor_shortcuts(
             }
         }
 
-        key => handle_arrow_keys_down(&key, wallpapers, ui),
+        key => handle_arrows_keydown(&key, wallpapers, ui),
     };
 }
 

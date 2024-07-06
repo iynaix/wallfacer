@@ -53,11 +53,11 @@ fn main() {
 }
 
 fn handle_shortcuts(
-    event: &Event<KeyboardData>,
+    evt: &Event<KeyboardData>,
     wallpapers: &mut Signal<Wallpapers>,
     ui: &mut Signal<UiState>,
 ) {
-    match event.key() {
+    match evt.key() {
         Key::Character(shortcut) => {
             let shortcut = shortcut.as_str();
 
@@ -68,34 +68,34 @@ fn handle_shortcuts(
 
                 // ctrl+f
                 "f" => {
-                    if event.modifiers().ctrl() {
+                    if evt.modifiers().ctrl() {
                         ui.with_mut(app_state::UiState::toggle_filelist);
                     }
                 }
 
                 // ctrl+s
                 "s" => {
-                    if event.modifiers().ctrl() && !wallpapers().files.is_empty() {
+                    if evt.modifiers().ctrl() && !wallpapers().files.is_empty() {
                         save_image(wallpapers, ui);
                     }
                 }
 
                 // palette
                 "p" => {
-                    if event.modifiers().ctrl() && !wallpapers().files.is_empty() {
+                    if evt.modifiers().ctrl() && !wallpapers().files.is_empty() {
                         ui.with_mut(app_state::UiState::toggle_palette);
                     }
                 }
                 _ => {
                     if ui().mode == UiMode::Editor {
-                        handle_editor_shortcuts(event, wallpapers, ui);
+                        handle_editor_shortcuts(evt, wallpapers, ui);
                     }
                 }
             }
         }
         _ => {
             if ui().mode == UiMode::Editor {
-                handle_editor_shortcuts(event, wallpapers, ui);
+                handle_editor_shortcuts(evt, wallpapers, ui);
             }
         }
     };
@@ -129,11 +129,11 @@ fn App() -> Element {
             class: "dark flex flex-col h-full bg-base overflow-hidden",
             tabindex: 0,
             autofocus: true,
-            onkeydown: move |event| {
-                handle_shortcuts(&event, &mut wallpapers, &mut ui);
+            onkeydown: move |evt| {
+                handle_shortcuts(&evt, &mut wallpapers, &mut ui);
             },
-            onkeyup: move |event| {
-                handle_arrow_keys_up(&event.key(), &mut ui);
+            onkeyup: move |evt| {
+                handle_arrow_keys_up(&evt.key(), &mut ui);
             },
 
             AppHeader { wallpapers, ui }
