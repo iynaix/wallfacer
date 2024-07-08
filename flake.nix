@@ -27,7 +27,7 @@
         }:
         let
           # custom packages here
-          inherit (inputs.anime-face-detector.packages.${system}) anime-face-detector;
+          anime-face-detector = inputs.anime-face-detector.packages.${system}.with-cuda;
           realcugan-ncnn-vulkan = (pkgs.callPackage ./nix/realcugan-ncnn-vulkan { });
           catppuccin-tailwindcss =
             (pkgs.callPackage ./nix/catppuccin-tailwindcss { })."@catppuccin/tailwindcss";
