@@ -1,11 +1,12 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use dioxus_free_icons::icons::{
+    md_device_icons::MdWallpaper,
     md_image_icons::{MdFaceRetouchingNatural, MdPalette},
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 use dioxus_free_icons::Icon;
-use wallpaper_ui::wallpapers::WallpapersCsv;
+use wallpaper_ui::{config::WallpaperConfig, wallpapers::WallpapersCsv};
 
 use crate::app_state::{PreviewMode, UiMode, UiState, Wallpapers};
 
@@ -91,6 +92,9 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
     });
     let info = wallpapers().current;
 
+    let cfg = WallpaperConfig::new();
+    let wall_path = cfg.full_path(&info.filename);
+
     let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-crust focus-visible:outline-offset-0 cursor-pointer";
 
     rsx! {
@@ -133,6 +137,27 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
 
                 // right
                 div { class: "gap-x-6 flex flex-1 justify-end",
+                    if let Some(wallpaper_cmd) =  cfg.wallpaper_command {
+                        a {
+                            class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
+                            class: "bg-surface1 hover:bg-crust",
+                            onclick: move |_| {
+                                let wall_cmd = if wallpaper_cmd.contains("$1") {
+                                    wallpaper_cmd.replace("$1", &wall_path)
+                                } else {
+                                    format!("{} {}", wallpaper_cmd, wall_path)
+                                };
+
+                                std::process::Command::new("sh")
+                                    .arg("-c")
+                                    .arg(wall_cmd)
+                                    .spawn()
+                                    .expect("failed to set wallpaper");
+                            },
+                            Icon { fill: "white", icon: MdWallpaper }
+                        }
+                    }
+
                     if supports_wallust() {
                         a {
                             class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",

@@ -316,7 +316,7 @@ impl WallpapersCsv {
             .expect("could not write csv header");
 
         for wall in self.wallpapers.values() {
-            let wall_path = self.config.wallpapers_path.join(&wall.filename);
+            let wall_path = self.config.wallpapers_dir.join(&wall.filename);
             if wall_path.exists() {
                 let (width, height) = image::image_dimensions(&wall_path)
                     .unwrap_or_else(|_| panic!("could not open image: {:?}", &wall_path));

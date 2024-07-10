@@ -15,7 +15,7 @@ async fn main() {
         std::process::exit(0);
     }
 
-    let wall_dir = &cfg.wallpapers_path;
+    let wall_dir = &cfg.wallpapers_dir;
     let mut all_files = Vec::new();
     if let Some(paths) = args.paths {
         paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {

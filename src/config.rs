@@ -6,30 +6,32 @@ use ordered_float::OrderedFloat;
 
 use crate::{aspect_ratio::AspectRatio, full_path};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WallpaperConfig {
-    pub wallpapers_path: PathBuf,
+    pub wallpapers_dir: PathBuf,
     pub csv_path: PathBuf,
     pub min_width: u32,
     pub min_height: u32,
     pub show_faces: bool,
     pub resolutions: Vec<(String, AspectRatio)>,
+    pub wallpaper_command: Option<String>,
 }
 
 impl Default for WallpaperConfig {
     fn default() -> Self {
-        let wallpapers_path = full_path("~/Pictures/Wallpapers");
+        let wallpapers_dir = full_path("~/Pictures/Wallpapers");
         let config_dir = dirs::config_dir()
             .expect("could not get xdg config directory")
             .join("wallpaper-ui");
 
         Self {
-            wallpapers_path,
+            wallpapers_dir,
             csv_path: config_dir.join("wallpapers.csv"),
             min_width: 1920,
             min_height: 1080,
             show_faces: false,
             resolutions: vec![("HD".into(), AspectRatio::new(1920, 1080))],
+            wallpaper_command: None,
         }
     }
 }
@@ -63,9 +65,9 @@ impl WallpaperConfig {
             let general = conf.general_section();
 
             Self {
-                wallpapers_path: general
-                    .get("wallpapers_path")
-                    .map_or_else(|| default_cfg.wallpapers_path, full_path),
+                wallpapers_dir: general
+                    .get("wallpapers_dir")
+                    .map_or_else(|| default_cfg.wallpapers_dir, full_path),
                 csv_path: general
                     .get("csv_path")
                     .map_or_else(|| default_cfg.csv_path, full_path),
@@ -91,6 +93,9 @@ impl WallpaperConfig {
                     },
                 ),
                 resolutions,
+                wallpaper_command: general
+                    .get("wallpaper_command")
+                    .map(std::string::ToString::to_string),
             }
         } else {
             Self::default()
@@ -123,15 +128,28 @@ impl WallpaperConfig {
         self.resolutions.sort_by_key(|(_, r)| r.clone());
     }
 
+    pub fn full_path(&self, fname: &str) -> String {
+        self.wallpapers_dir
+            .join(fname)
+            .to_str()
+            .expect("could not convert full image path to string")
+            .to_string()
+    }
+
     /// saves the current configuration
     pub fn save(&self) -> std::io::Result<()> {
         let mut conf = Ini::new();
         conf.with_general_section()
-            .set("wallpapers_path", self.wallpapers_path.to_string_lossy())
+            .set("wallpapers_dir", self.wallpapers_dir.to_string_lossy())
             .set("csv_path", self.csv_path.to_string_lossy())
             .set("min_width", &self.min_width.to_string())
             .set("min_height", &self.min_height.to_string())
             .set("show_faces", &self.show_faces.to_string());
+
+        if let Some(wall_cmd) = &self.wallpaper_command {
+            conf.with_general_section()
+                .set("wallpaper_command", wall_cmd);
+        }
 
         for (k, v) in &self.resolutions {
             conf.with_section(Some("resolutions"))

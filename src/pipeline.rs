@@ -172,7 +172,7 @@ impl WallpaperPipeline {
         // do a check for duplicates
         wallpapers_csv.find_duplicates();
 
-        let wall_dir = &cfg.wallpapers_path;
+        let wall_dir = &cfg.wallpapers_dir;
 
         // add images from wallpapers dir that are not in the csv
         let to_detect: Vec<_> = filter_images(&wall_dir)
@@ -188,7 +188,7 @@ impl WallpaperPipeline {
             min_width,
             min_height,
             format,
-            wall_dir: cfg.wallpapers_path.clone(),
+            wall_dir: cfg.wallpapers_dir.clone(),
             resolutions: cfg.sorted_resolutions(),
             wallpapers_csv,
         }

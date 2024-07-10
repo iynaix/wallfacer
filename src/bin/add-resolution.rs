@@ -111,7 +111,7 @@ fn main() {
             println!("{fname}");
 
             config
-                .wallpapers_path
+                .wallpapers_dir
                 .join(&fname)
                 .to_str()
                 .expect("could not convert path to str")

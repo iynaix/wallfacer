@@ -107,7 +107,7 @@ impl WallustConfig {
         &self,
         img_filename: &str,
     ) -> impl std::future::Future<Output = Result<async_process::ExitStatus, std::io::Error>> {
-        let img = WallpaperConfig::new().wallpapers_path.join(img_filename);
+        let img = WallpaperConfig::new().wallpapers_dir.join(img_filename);
 
         async_process::Command::new("wallust")
             .arg("run")

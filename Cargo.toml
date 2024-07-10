@@ -9,6 +9,7 @@ build = "build.rs"
 [dependencies]
 dioxus-free-icons = { version = "0.8.3", features = [
     "material-design-icons-action",
+    "material-design-icons-device",
     "material-design-icons-editor",
     "material-design-icons-image",
     "material-design-icons-navigation",
