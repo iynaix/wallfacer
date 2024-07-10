@@ -15,7 +15,7 @@ use crate::{
 /// waits for the images to be written to disk
 fn wait_for_image(path: &Path) {
     while !path.exists() {
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
 

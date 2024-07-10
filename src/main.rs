@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use clap::Parser;
-use components::{app_header::save_image, editor::handle_arrow_keys_keyup};
+use components::{editor::handle_arrow_keys_keyup, save_button::save_image};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
 use wallpaper_ui::config::WallpaperConfig;

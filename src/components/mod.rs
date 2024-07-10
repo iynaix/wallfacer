@@ -9,7 +9,9 @@ pub mod filelist;
 pub mod palette;
 pub mod preview;
 pub mod ratio_selector;
+pub mod save_button;
 pub mod slider;
+pub mod wallpaper_button;
 
 pub fn use_wallpapers() -> dioxus::signals::Signal<crate::app_state::Wallpapers> {
     dioxus::hooks::use_context()
