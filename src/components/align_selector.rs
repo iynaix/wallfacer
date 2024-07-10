@@ -11,11 +11,14 @@ use dioxus_free_icons::Icon;
 use wallpaper_ui::{cropper::Direction, geometry::Geometry};
 
 use crate::{
-    app_state::{PreviewMode, UiState, Wallpapers},
-    components::button::Button,
+    app_state::PreviewMode,
+    components::{button::Button, use_ui, use_wallpapers},
 };
 
-pub fn set_align(geom: &Geometry, wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
+pub fn set_align(geom: &Geometry) {
+    let mut wallpapers = use_wallpapers();
+    let mut ui = use_ui();
+
     wallpapers.with_mut(|wallpapers| {
         wallpapers.set_geometry(geom);
     });
@@ -25,29 +28,23 @@ pub fn set_align(geom: &Geometry, wallpapers: &mut Signal<Wallpapers>, ui: &mut 
 }
 
 #[component]
-fn AlignButton(
-    class: String,
-    geom: Geometry,
-    ui: Signal<UiState>,
-    wallpapers: Signal<Wallpapers>,
-    children: Element,
-) -> Element {
-    let current_geom = (wallpapers)().get_geometry();
+fn AlignButton(class: String, geom: Geometry, children: Element) -> Element {
+    let current_geom = use_wallpapers()().get_geometry();
 
     rsx! {
         Button {
             class,
             active: current_geom == geom,
             onclick: move |_| {
-                set_align(&geom, &mut wallpapers, &mut ui);
+                set_align(&geom);
             },
             {children}
         }
     }
 }
 
-pub fn toggle_pan(ui: &mut Signal<UiState>) {
-    ui.with_mut(|ui| {
+pub fn toggle_pan() {
+    use_ui().with_mut(|ui| {
         ui.preview_mode = if matches!(&ui.preview_mode, PreviewMode::Pan) {
             PreviewMode::Candidate(None)
         } else {
@@ -57,16 +54,15 @@ pub fn toggle_pan(ui: &mut Signal<UiState>) {
 }
 
 #[component]
-pub fn AlignSelector(
-    class: Option<String>,
-    wallpapers: Signal<Wallpapers>,
-    ui: Signal<UiState>,
-) -> Element {
-    let info = wallpapers().current;
-    let ratio = wallpapers().ratio;
+pub fn AlignSelector(class: Option<String>) -> Element {
+    let ui = use_ui();
+
+    let walls = &use_wallpapers()();
+    let info = &walls.current;
+    let ratio = &walls.ratio;
     let align = ui().preview_mode;
-    let geom: Geometry = wallpapers().get_geometry();
-    let dir = info.direction(&geom);
+    let geom = &walls.get_geometry();
+    let dir = info.direction(geom);
 
     rsx! {
         div { class: "flex gap-x-6",
@@ -74,16 +70,12 @@ pub fn AlignSelector(
                 class: "isolate inline-flex rounded-md shadow-sm",
                 AlignButton {
                     class: "text-sm rounded-l-md",
-                    geom: wallpapers().source.get_geometry(&ratio),
-                    wallpapers,
-                    ui,
+                    geom: walls.source.get_geometry(ratio),
                     "Source"
                 }
                 AlignButton {
                     class: "text-sm rounded-r-md",
-                    geom: info.cropper().crop(&ratio),
-                    wallpapers,
-                    ui,
+                    geom: info.cropper().crop(ratio),
                     "Default"
                 }
             }
@@ -94,8 +86,6 @@ pub fn AlignSelector(
                 AlignButton {
                     class: "text-sm rounded-l-md",
                     geom: geom.align_start(info.width, info.height),
-                    wallpapers,
-                    ui,
                     if dir == Direction::X {
                         Icon { fill: "white", icon:  MdFormatAlignLeft }
                     } else {
@@ -105,8 +95,6 @@ pub fn AlignSelector(
                 AlignButton {
                     class: "text-sm -ml-px",
                     geom: geom.align_center(info.width, info.height),
-                    wallpapers,
-                    ui,
                     if dir == Direction::X {
                         Icon { fill: "white", icon:  MdFormatAlignCenter }
                     } else {
@@ -116,8 +104,6 @@ pub fn AlignSelector(
                 AlignButton {
                     class: "text-sm rounded-r-md",
                     geom: geom.align_end(info.width, info.height),
-                    wallpapers,
-                    ui,
                     if dir == Direction::X {
                         Icon { fill: "white", icon:  MdFormatAlignRight }
                     } else {
@@ -132,7 +118,7 @@ pub fn AlignSelector(
                     class: "text-sm rounded-md",
                     active: align == PreviewMode::Pan,
                     onclick: move |_| {
-                        toggle_pan(&mut ui);
+                        toggle_pan();
                     },
                     Icon { fill: "white", icon: MdPanTool }
                 }

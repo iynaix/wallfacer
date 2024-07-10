@@ -110,7 +110,7 @@ impl Wallpapers {
 
         let unmodified_filters = Self::resolution_arg(args.unmodified.as_deref(), &resolutions);
 
-        let mut all_files = Vec::new();
+        let mut all_files: Vec<PathBuf> = Vec::new();
         if let Some(paths) = args.paths {
             paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
                 if p.is_file() {

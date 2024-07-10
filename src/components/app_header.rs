@@ -8,9 +8,15 @@ use dioxus_free_icons::icons::{
 use dioxus_free_icons::Icon;
 use wallpaper_ui::{config::WallpaperConfig, wallpapers::WallpapersCsv};
 
-use crate::app_state::{PreviewMode, UiMode, UiState, Wallpapers};
+use crate::{
+    app_state::{PreviewMode, UiMode},
+    components::{use_ui, use_wallpapers},
+};
 
-pub fn save_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
+pub fn save_image() {
+    let mut wallpapers = use_wallpapers();
+    let mut ui = use_ui();
+
     let info = wallpapers().current;
     let mut wallpapers_csv = WallpapersCsv::load();
     wallpapers_csv.insert(info.filename.clone(), info);
@@ -31,7 +37,9 @@ pub fn save_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>)
 }
 
 #[component]
-pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
+pub fn SaveButton() -> Element {
+    let mut ui = use_ui();
+
     let clicked = ui().is_saving;
 
     use_future(move || async move {
@@ -57,14 +65,17 @@ pub fn SaveButton(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Elemen
             class: "rounded-md px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
             class: btn_color,
             onclick: move |_| {
-                save_image(&mut wallpapers, &mut ui);
+                save_image();
             },
             {btn_text}
         }
     }
 }
 
-pub fn prev_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
+pub fn prev_image() {
+    let mut wallpapers = use_wallpapers();
+    let mut ui = use_ui();
+
     wallpapers.with_mut(|wallpapers| {
         wallpapers.prev_wall();
     });
@@ -73,7 +84,10 @@ pub fn prev_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>)
     });
 }
 
-pub fn next_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>) {
+pub fn next_image() {
+    let mut wallpapers = use_wallpapers();
+    let mut ui = use_ui();
+
     wallpapers.with_mut(|wallpapers| {
         wallpapers.next_wall();
     });
@@ -83,14 +97,17 @@ pub fn next_image(wallpapers: &mut Signal<Wallpapers>, ui: &mut Signal<UiState>)
 }
 
 #[component]
-pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element {
+pub fn AppHeader() -> Element {
+    let walls = use_wallpapers()();
+    let mut ui = use_ui();
+
     let supports_wallust = use_signal(|| {
         std::process::Command::new("rustc")
             .stdout(std::process::Stdio::null())
             .spawn()
             .is_ok()
     });
-    let info = wallpapers().current;
+    let info = walls.current;
 
     let cfg = WallpaperConfig::new();
     let wall_path = cfg.full_path(&info.filename);
@@ -107,7 +124,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                 div {
                     class: "flex-1 justify-start ml-2",
                     a { class: "text-base font-semibold leading-6 text-white",
-                        "{wallpapers().index + 1} / {wallpapers().files.len()}"
+                        "{walls.index + 1} / {walls.files.len()}"
                     }
                 }
 
@@ -115,7 +132,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                 div { class: "flex flex-1 gap-x-3 items-center justify-center",
                     a { class: pagination_cls,
                         onclick: move |_| {
-                            prev_image(&mut wallpapers, &mut ui);
+                            prev_image();
                         },
                         Icon { fill: "white", icon:  MdChevronLeft, width: 16, height: 16 }
                     }
@@ -129,7 +146,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                     }
                     a { class: pagination_cls,
                         onclick: move |_| {
-                            next_image(&mut wallpapers, &mut ui);
+                            next_image();
                         },
                         Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
                     }
@@ -190,7 +207,7 @@ pub fn AppHeader(wallpapers: Signal<Wallpapers>, ui: Signal<UiState>) -> Element
                         Icon { fill: "white", icon:  MdFaceRetouchingNatural }
                     }
 
-                    SaveButton { wallpapers, ui }
+                    SaveButton { }
                 }
             }
         }

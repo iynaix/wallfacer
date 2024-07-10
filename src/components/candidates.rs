@@ -2,16 +2,15 @@
 use dioxus::prelude::*;
 
 use crate::{
-    app_state::{PreviewMode, UiState, Wallpapers},
-    components::button::Button,
+    app_state::PreviewMode,
+    components::{button::Button, use_ui, use_wallpapers},
 };
 
 #[component]
-pub fn Candidates(
-    class: Option<String>,
-    wallpapers: Signal<Wallpapers>,
-    ui: Signal<UiState>,
-) -> Element {
+pub fn Candidates(class: Option<String>) -> Element {
+    let mut wallpapers = use_wallpapers();
+    let mut ui = use_ui();
+
     if ui().preview_mode == PreviewMode::Pan {
         return None;
     }

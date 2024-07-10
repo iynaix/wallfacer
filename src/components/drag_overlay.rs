@@ -1,9 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
+use crate::components::use_wallpapers;
 use wallpaper_ui::{cropper::Direction, geometry::Geometry};
-
-use crate::app_state::Wallpapers;
 
 #[component]
 pub fn DragOverlay(
@@ -12,8 +11,9 @@ pub fn DragOverlay(
     overlay_ratios: (f64, f64),
     direction: Direction,
     geometry: Geometry,
-    wallpapers: Signal<Wallpapers>,
 ) -> Element {
+    let mut wallpapers = use_wallpapers();
+
     let mut is_dragging = use_signal(|| false);
     let mut drag_coords = use_signal(|| (0.0, 0.0));
 

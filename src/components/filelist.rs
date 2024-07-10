@@ -2,7 +2,10 @@
 use dioxus::prelude::*;
 use wallpaper_ui::filename;
 
-use crate::app_state::{PreviewMode, UiState, Wallpapers};
+use crate::{
+    app_state::PreviewMode,
+    components::{use_ui, use_wallpapers},
+};
 
 #[component]
 fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>) -> Element {
@@ -42,11 +45,10 @@ fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>
 }
 
 #[component]
-pub fn FileList(
-    class: Option<String>,
-    wallpapers: Signal<Wallpapers>,
-    ui: Signal<UiState>,
-) -> Element {
+pub fn FileList(class: Option<String>) -> Element {
+    let mut wallpapers = use_wallpapers();
+    let mut ui = use_ui();
+
     let mut search = use_signal(String::new);
     let normalized = search().to_lowercase();
 

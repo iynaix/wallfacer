@@ -6,8 +6,8 @@ use dioxus_sdk::utils::window::{use_window_size, WindowSize};
 use wallpaper_ui::{cropper::Direction, wallpapers::Face};
 
 use crate::{
-    app_state::{PreviewMode, UiState, Wallpapers},
-    components::drag_overlay::DragOverlay,
+    app_state::PreviewMode,
+    components::{drag_overlay::DragOverlay, use_ui, use_wallpapers},
 };
 
 #[component]
@@ -69,11 +69,10 @@ fn get_preview_size(
 }
 
 #[component]
-pub fn Previewer(
-    wallpapers: Signal<Wallpapers>,
-    ui: Signal<UiState>,
-    wallpapers_path: PathBuf,
-) -> Element {
+pub fn Previewer(wallpapers_path: PathBuf) -> Element {
+    let wallpapers = use_wallpapers();
+    let ui = use_ui();
+
     // store y coordinate of the previewer
     let mut preview_y = use_signal(|| 0.0);
     let info = wallpapers().current;
@@ -154,7 +153,6 @@ pub fn Previewer(
                     overlay_ratios: (start_ratio, 1.0 - end_ratio),
                     direction,
                     geometry: geom,
-                    wallpapers,
                 }
             }
 

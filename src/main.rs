@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use clap::Parser;
-use components::{app_header::save_image, editor::handle_arrow_keys_up};
+use components::{app_header::save_image, editor::handle_arrow_keys_keyup};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
 use wallpaper_ui::config::WallpaperConfig;
@@ -76,7 +76,7 @@ fn handle_shortcuts(
                 // ctrl+s
                 "s" => {
                     if evt.modifiers().ctrl() && !wallpapers().files.is_empty() {
-                        save_image(wallpapers, ui);
+                        save_image();
                     }
                 }
 
@@ -104,11 +104,16 @@ fn handle_shortcuts(
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
     let config = WallpaperConfig::new();
-    let mut wallpapers = use_signal(|| Wallpapers::from_args(&config.wallpapers_dir));
-    let mut ui = use_signal(|| UiState {
-        show_faces: config.show_faces,
-        ..UiState::default()
+
+    let mut wallpapers =
+        use_context_provider(|| Signal::new(Wallpapers::from_args(&config.wallpapers_dir)));
+    let mut ui = use_context_provider(|| {
+        Signal::new(UiState {
+            show_faces: config.show_faces,
+            ..UiState::default()
+        })
     });
+
     let has_files = !wallpapers().files.is_empty();
 
     if !has_files {
@@ -133,20 +138,20 @@ fn App() -> Element {
                 handle_shortcuts(&evt, &mut wallpapers, &mut ui);
             },
             onkeyup: move |evt| {
-                handle_arrow_keys_up(&evt.key(), &mut ui);
+                handle_arrow_keys_keyup(&evt.key(), &mut ui);
             },
 
-            AppHeader { wallpapers, ui }
+            AppHeader { }
 
             div {
                 class: "flex p-4 gap-4",
 
                 if ui().mode == UiMode::FileList {
-                    FileList { wallpapers, ui }
+                    FileList { }
                 } else if ui().mode == UiMode::Palette {
-                    Palette { wallpapers }
+                    Palette { }
                 } else if ui().mode == UiMode::Editor {
-                    Editor { wallpapers, ui, wallpapers_path: config.wallpapers_dir }
+                    Editor { wallpapers_path: config.wallpapers_dir }
                 }
             }
         }

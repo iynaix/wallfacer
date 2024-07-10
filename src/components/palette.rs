@@ -3,13 +3,11 @@ use clap::Parser;
 use dioxus::prelude::*;
 use wallpaper_ui::config::WallpaperConfig;
 
-use crate::{
-    app_state::Wallpapers,
-    components::{
-        button::Button,
-        dropdown::{Dropdown, DropdownOptions},
-        slider::Slider,
-    },
+use crate::components::{
+    button::Button,
+    dropdown::{Dropdown, DropdownOptions},
+    slider::Slider,
+    use_wallpapers,
 };
 
 use wallust::{
@@ -124,7 +122,9 @@ impl WallustConfig {
 }
 
 #[component]
-pub fn Palette(wallpapers: Signal<Wallpapers>) -> Element {
+pub fn Palette() -> Element {
+    let wallpapers = use_wallpapers();
+
     let mut conf = use_signal(|| WallustConfig::from_args_str(&wallpapers.read().source.wallust));
     let mut is_running = use_signal(|| false);
     let preview_cls = if is_running() {

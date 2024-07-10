@@ -10,3 +10,11 @@ pub mod palette;
 pub mod preview;
 pub mod ratio_selector;
 pub mod slider;
+
+pub fn use_wallpapers() -> dioxus::signals::Signal<crate::app_state::Wallpapers> {
+    dioxus::hooks::use_context()
+}
+
+pub fn use_ui() -> dioxus::signals::Signal<crate::app_state::UiState> {
+    dioxus::hooks::use_context()
+}

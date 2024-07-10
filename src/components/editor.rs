@@ -15,7 +15,7 @@ use crate::{
 
 use super::ratio_selector::change_ratio;
 
-pub fn handle_arrow_keys_up(_arrow_key: &Key, ui: &mut Signal<UiState>) {
+pub fn handle_arrow_keys_keyup(_arrow_key: &Key, ui: &mut Signal<UiState>) {
     ui.with_mut(|ui| {
         ui.arrow_key_start = None;
     });
@@ -138,11 +138,11 @@ pub fn handle_editor_shortcuts(
                 }
 
                 "h" => {
-                    prev_image(wallpapers, ui);
+                    prev_image();
                 }
 
                 "l" => {
-                    next_image(wallpapers, ui);
+                    next_image();
                 }
 
                 "0" => {
@@ -150,8 +150,6 @@ pub fn handle_editor_shortcuts(
                         &walls
                             .get_geometry()
                             .align_start(walls.current.width, walls.current.height),
-                        wallpapers,
-                        ui,
                     );
                 }
 
@@ -160,8 +158,6 @@ pub fn handle_editor_shortcuts(
                         &walls
                             .get_geometry()
                             .align_center(walls.current.width, walls.current.height),
-                        wallpapers,
-                        ui,
                     );
                 }
 
@@ -170,21 +166,19 @@ pub fn handle_editor_shortcuts(
                         &walls
                             .get_geometry()
                             .align_end(walls.current.width, walls.current.height),
-                        wallpapers,
-                        ui,
                     );
                 }
 
                 "u" => {
-                    set_align(&walls.source.get_geometry(&walls.ratio), wallpapers, ui);
+                    set_align(&walls.source.get_geometry(&walls.ratio));
                 }
 
                 "d" => {
-                    set_align(&walls.current.cropper().crop(&walls.ratio), wallpapers, ui);
+                    set_align(&walls.current.cropper().crop(&walls.ratio));
                 }
 
                 " " => {
-                    toggle_pan(ui);
+                    toggle_pan();
                 }
 
                 // tab through ratios
@@ -197,7 +191,7 @@ pub fn handle_editor_shortcuts(
 
                     if let Some(pos) = ratios.iter().position(|r| *r == walls.ratio) {
                         let next = (pos + 1) % ratios.len();
-                        change_ratio(&ratios[next], wallpapers, ui);
+                        change_ratio(&ratios[next]);
                     }
                 }
                 _ => {}
@@ -209,28 +203,24 @@ pub fn handle_editor_shortcuts(
 }
 
 #[component]
-pub fn Editor(
-    wallpapers: Signal<Wallpapers>,
-    ui: Signal<UiState>,
-    wallpapers_path: PathBuf,
-) -> Element {
+pub fn Editor(wallpapers_path: PathBuf) -> Element {
     rsx! {
         div {
             class: "flex flex-col gap-4 w-full h-full",
 
             div {
                 class:"flex flex-row justify-between",
-                RatioSelector { wallpapers, ui },
+                RatioSelector { },
 
                 div{
                     class: "flex justify-end",
-                    AlignSelector { wallpapers, ui },
+                    AlignSelector { },
                 }
             }
 
-            Previewer { wallpapers, ui, wallpapers_path }
+            Previewer { wallpapers_path }
 
-            Candidates { wallpapers, ui }
+            Candidates { }
         }
     }
 }
