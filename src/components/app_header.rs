@@ -6,7 +6,7 @@ use dioxus_free_icons::icons::{
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 use dioxus_free_icons::Icon;
-use wallpaper_ui::{config::WallpaperConfig, wallpapers::WallpapersCsv};
+use wallpaper_ui::config::WallpaperConfig;
 
 use crate::{
     app_state::{PreviewMode, UiMode},
@@ -18,16 +18,10 @@ pub fn save_image() {
     let mut ui = use_ui();
 
     let info = wallpapers().current;
-    let mut wallpapers_csv = WallpapersCsv::load();
-    wallpapers_csv.insert(info.filename.clone(), info);
-    let resolutions: Vec<_> = wallpapers()
-        .resolutions
-        .iter()
-        .map(|(_, ratio)| ratio.clone())
-        .collect();
-    wallpapers_csv.save(&resolutions);
-
     wallpapers.with_mut(|wallpapers| {
+        wallpapers.insert_csv(&info);
+        wallpapers.save_csv();
+
         wallpapers.remove();
     });
     ui.with_mut(|ui| {
@@ -39,7 +33,6 @@ pub fn save_image() {
 #[component]
 pub fn SaveButton() -> Element {
     let mut ui = use_ui();
-
     let clicked = ui().is_saving;
 
     use_future(move || async move {
@@ -100,6 +93,7 @@ pub fn next_image() {
 pub fn AppHeader() -> Element {
     let walls = use_wallpapers()();
     let mut ui = use_ui();
+    let cfg = use_context::<Signal<WallpaperConfig>>();
 
     let supports_wallust = use_signal(|| {
         std::process::Command::new("rustc")
@@ -107,10 +101,8 @@ pub fn AppHeader() -> Element {
             .spawn()
             .is_ok()
     });
-    let info = walls.current;
-
-    let cfg = WallpaperConfig::new();
-    let wall_path = cfg.full_path(&info.filename);
+    let info = &walls.current;
+    let wall_path = walls.full_path();
 
     let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-crust focus-visible:outline-offset-0 cursor-pointer";
 
@@ -142,7 +134,7 @@ pub fn AppHeader() -> Element {
                                 ui.toggle_filelist();
                             });
                         },
-                        {info.filename}
+                        {info.filename.clone()}
                     }
                     a { class: pagination_cls,
                         onclick: move |_| {
@@ -154,7 +146,7 @@ pub fn AppHeader() -> Element {
 
                 // right
                 div { class: "gap-x-6 flex flex-1 justify-end",
-                    if let Some(wallpaper_cmd) =  cfg.wallpaper_command {
+                    if let Some(wallpaper_cmd) =  cfg().wallpaper_command {
                         a {
                             class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
                             class: "bg-surface1 hover:bg-crust",
@@ -162,7 +154,7 @@ pub fn AppHeader() -> Element {
                                 let wall_cmd = if wallpaper_cmd.contains("$1") {
                                     wallpaper_cmd.replace("$1", &wall_path)
                                 } else {
-                                    format!("{} {}", wallpaper_cmd, wall_path)
+                                    format!("{} {}", wallpaper_cmd, &wall_path)
                                 };
 
                                 std::process::Command::new("sh")

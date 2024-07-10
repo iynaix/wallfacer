@@ -128,14 +128,6 @@ impl WallpaperConfig {
         self.resolutions.sort_by_key(|(_, r)| r.clone());
     }
 
-    pub fn full_path(&self, fname: &str) -> String {
-        self.wallpapers_dir
-            .join(fname)
-            .to_str()
-            .expect("could not convert full image path to string")
-            .to_string()
-    }
-
     /// saves the current configuration
     pub fn save(&self) -> std::io::Result<()> {
         let mut conf = Ini::new();

@@ -48,20 +48,20 @@ fn main() {
             )
         });
 
-    let mut config = WallpaperConfig::new();
-    let closest_res = config.closest_resolution(&new_res);
+    let mut cfg = WallpaperConfig::new();
+    let closest_res = cfg.closest_resolution(&new_res);
 
     // save the updated config
-    if !config.resolutions.iter().any(|(_, res)| res == &new_res) {
-        config.add_resolution(&args.name, new_res.clone());
-        config.save().unwrap_or_else(|_| {
-            eprintln!("Could not save config to {:?}!", config.csv_path);
+    if !cfg.resolutions.iter().any(|(_, res)| res == &new_res) {
+        cfg.add_resolution(&args.name, new_res.clone());
+        cfg.save().unwrap_or_else(|_| {
+            eprintln!("Could not save config to {:?}!", cfg.csv_path);
             std::process::exit(1);
         });
     }
 
     let mut to_process: Vec<String> = Vec::new();
-    let mut wallpapers_csv = WallpapersCsv::load();
+    let mut wallpapers_csv = WallpapersCsv::load(&cfg);
 
     let updated_infos: Vec<WallInfo> = wallpapers_csv
         .iter()
@@ -101,7 +101,7 @@ fn main() {
     }
 
     // update the csv
-    wallpapers_csv.save(&config.sorted_resolutions());
+    wallpapers_csv.save(&cfg.sorted_resolutions());
 
     // open in wallpaper ui
     to_process.sort();
@@ -110,8 +110,7 @@ fn main() {
         .map(|fname| {
             println!("{fname}");
 
-            config
-                .wallpapers_dir
+            cfg.wallpapers_dir
                 .join(&fname)
                 .to_str()
                 .expect("could not convert path to str")

@@ -103,13 +103,11 @@ fn handle_shortcuts(
 
 // define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
-    let config = WallpaperConfig::new();
-
-    let mut wallpapers =
-        use_context_provider(|| Signal::new(Wallpapers::from_args(&config.wallpapers_dir)));
+    let config = use_context_provider(|| Signal::new(WallpaperConfig::new()));
+    let mut wallpapers = use_context_provider(|| Signal::new(Wallpapers::from_args(&config())));
     let mut ui = use_context_provider(|| {
         Signal::new(UiState {
-            show_faces: config.show_faces,
+            show_faces: config().show_faces,
             ..UiState::default()
         })
     });
@@ -151,7 +149,7 @@ fn App() -> Element {
                 } else if ui().mode == UiMode::Palette {
                     Palette { }
                 } else if ui().mode == UiMode::Editor {
-                    Editor { wallpapers_path: config.wallpapers_dir }
+                    Editor { wallpapers_path: config().wallpapers_dir }
                 }
             }
         }

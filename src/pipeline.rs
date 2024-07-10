@@ -167,7 +167,7 @@ impl WallpaperPipeline {
         format: Option<String>,
     ) -> Self {
         // create the csv if it doesn't exist
-        let wallpapers_csv = WallpapersCsv::open().unwrap_or_default();
+        let wallpapers_csv = WallpapersCsv::open(cfg).unwrap_or_default();
 
         // do a check for duplicates
         wallpapers_csv.find_duplicates();

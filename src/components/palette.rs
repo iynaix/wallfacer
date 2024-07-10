@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
+
 use clap::Parser;
 use dioxus::prelude::*;
-use wallpaper_ui::config::WallpaperConfig;
 
 use crate::components::{
     button::Button,
@@ -103,10 +103,8 @@ impl WallustConfig {
 
     fn preview(
         &self,
-        img_filename: &str,
+        img: &str,
     ) -> impl std::future::Future<Output = Result<async_process::ExitStatus, std::io::Error>> {
-        let img = WallpaperConfig::new().wallpapers_dir.join(img_filename);
-
         async_process::Command::new("wallust")
             .arg("run")
             .args([
@@ -125,13 +123,14 @@ impl WallustConfig {
 pub fn Palette() -> Element {
     let wallpapers = use_wallpapers();
 
-    let mut conf = use_signal(|| WallustConfig::from_args_str(&wallpapers.read().source.wallust));
+    let mut wallust_cfg = use_signal(|| WallustConfig::from_args_str(&wallpapers().source.wallust));
     let mut is_running = use_signal(|| false);
     let preview_cls = if is_running() {
         "!bg-surface0"
     } else {
         "!bg-indigo-600"
     };
+    let wall_path = use_signal(|| wallpapers().full_path());
 
     let backend = DropdownOptions::new(vec![
         Backend::Full,
@@ -171,9 +170,9 @@ pub fn Palette() -> Element {
                 name: "Palette",
                 class: "w-1/2 py-4 px-8",
                 options: palettes,
-                value: conf.read().palette,
+                value: wallust_cfg().palette,
                 onchange: move |new_value| {
-                    conf.with_mut(|conf| {
+                    wallust_cfg.with_mut(|conf| {
                         conf.palette = new_value;
                     });
                 }
@@ -183,9 +182,9 @@ pub fn Palette() -> Element {
                 name: "Backend",
                 class: "w-1/2 py-4 px-8",
                 options: backend,
-                value: conf.read().backend,
+                value: wallust_cfg().backend,
                 onchange: move |new_value| {
-                    conf.with_mut(|conf| {
+                    wallust_cfg.with_mut(|conf| {
                         conf.backend = new_value;
                     });
                 }
@@ -195,9 +194,9 @@ pub fn Palette() -> Element {
                 name: "Colorspace",
                 class: "w-1/2 py-4 px-8",
                 options: colorspace,
-                value: conf.read().colorspace,
+                value: wallust_cfg().colorspace,
                 onchange: move |new_value| {
-                    conf.with_mut(|conf| {
+                    wallust_cfg.with_mut(|conf| {
                         conf.colorspace = new_value;
                     });
                 }
@@ -207,9 +206,9 @@ pub fn Palette() -> Element {
                 name: "Fallback Generator",
                 class: "w-1/2 py-4 px-8",
                 options: fallback_generator,
-                value: conf.read().fallback_generator,
+                value: wallust_cfg().fallback_generator,
                 onchange: move |new_value| {
-                    conf.with_mut(|conf| {
+                    wallust_cfg.with_mut(|conf| {
                         conf.fallback_generator = new_value;
                     });
                 }
@@ -218,9 +217,9 @@ pub fn Palette() -> Element {
             Slider {
                 name: "Saturation",
                 class: "w-1/2 py-4 px-8",
-                value: conf.read().saturation.unwrap_or_default(),
+                value: wallust_cfg().saturation.unwrap_or_default(),
                 onchange: move |new_value| {
-                    conf.with_mut(|conf| {
+                    wallust_cfg.with_mut(|conf| {
                         conf.saturation = if new_value == 0 {
                             None
                         } else {
@@ -233,9 +232,9 @@ pub fn Palette() -> Element {
             Slider {
                 name: "Threshold",
                 class: "w-1/2 py-4 px-8",
-                value: conf.read().threshold.unwrap_or_default(),
+                value: wallust_cfg().threshold.unwrap_or_default(),
                 onchange: move |new_value| {
-                    conf.with_mut(|conf| {
+                    wallust_cfg.with_mut(|conf| {
                         conf.threshold = if new_value == 0 {
                             None
                         } else {
@@ -250,10 +249,9 @@ pub fn Palette() -> Element {
                 Button {
                     class: "rounded-md px-5 py-2 w-full text-sm font-semibold justify-center text-white shadow-sm !bg-indigo-600 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
                     onclick: move |_| {
-                        conf.set(WallustConfig::from_args_str(&wallpapers.read().source.wallust));
                         spawn(async move {
                             is_running.set(true);
-                            let _ = conf.read().preview(&wallpapers.read().current.filename).await;
+                            let _ = wallust_cfg().preview(&wall_path()).await;
                             is_running.set(false);
                         });
                     },
@@ -269,7 +267,7 @@ pub fn Palette() -> Element {
                     onclick: move |_| {
                         spawn(async move {
                             is_running.set(true);
-                            let _ = conf.read().preview(&wallpapers.read().current.filename).await;
+                            let _ = wallust_cfg().preview(&wall_path()).await;
                             is_running.set(false);
                         });
                     },

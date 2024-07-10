@@ -67,12 +67,14 @@ impl Default for PreviewMode {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Wallpapers {
     pub files: Vec<PathBuf>,
+    csv: WallpapersCsv,
     // the original wallinfo before any modifications
     pub source: WallInfo,
     pub current: WallInfo,
     pub index: usize,
     pub ratio: AspectRatio,
     pub resolutions: Vec<(String, AspectRatio)>,
+    wall_dir: PathBuf,
 }
 
 impl Wallpapers {
@@ -94,9 +96,10 @@ impl Wallpapers {
         }
     }
 
-    pub fn from_args(wall_dir: &PathBuf) -> Self {
+    pub fn from_args(cfg: &WallpaperConfig) -> Self {
         let args = WallpaperUIArgs::parse();
-        let resolution_pairs = WallpaperConfig::new().resolutions;
+        let wall_dir = &cfg.wallpapers_dir;
+        let resolution_pairs = &cfg.resolutions;
         let resolutions: Vec<_> = resolution_pairs.iter().map(|(_, r)| r.clone()).collect();
 
         let mut modified_filters = Self::resolution_arg(args.modified.as_deref(), &resolutions);
@@ -133,7 +136,7 @@ impl Wallpapers {
             all_files.extend(filter_images(&wall_dir));
         }
 
-        let wallpapers_csv = WallpapersCsv::load();
+        let wallpapers_csv = WallpapersCsv::load(cfg);
 
         // filter only wallpapers that still use the default crops if needed
         all_files.retain(|f| {
@@ -192,10 +195,12 @@ impl Wallpapers {
         Self {
             index: Default::default(),
             files: all_files,
+            csv: wallpapers_csv.clone(),
             source: loaded.clone(),
             current: loaded.clone(),
             ratio: resolutions[0].clone(),
-            resolutions: resolution_pairs,
+            resolutions: resolution_pairs.clone(),
+            wall_dir: wall_dir.clone(),
         }
     }
 
@@ -208,8 +213,8 @@ impl Wallpapers {
         let fname = filename(&self.files[self.index]);
         #[cfg(not(test))]
         {
-            let wallpapers_csv = WallpapersCsv::load();
-            let loaded = wallpapers_csv
+            let loaded = self
+                .csv
                 .get(&fname)
                 .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
             self.source = loaded.clone();
@@ -264,8 +269,8 @@ impl Wallpapers {
     }
 
     pub fn set_from_filename(&mut self, fname: &str) {
-        let wallpapers_csv = WallpapersCsv::load();
-        let loaded = wallpapers_csv
+        let loaded = self
+            .csv
             .get(fname)
             .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"))
             .clone();
@@ -346,6 +351,31 @@ impl Wallpapers {
             },
         }
     }
+
+    // returns the full path of the current wallpaper
+    pub fn full_path(&self) -> String {
+        self.wall_dir
+            .join(&self.current.filename)
+            .to_str()
+            .expect("could not convert full image path to string")
+            .to_string()
+    }
+
+    // inserts a wallinfo into the csv
+    pub fn insert_csv(&mut self, info: &WallInfo) {
+        self.csv.insert(info.filename.to_string(), info.clone());
+    }
+
+    /// saves the csv
+    pub fn save_csv(&self) {
+        let resolutions: Vec<_> = self
+            .resolutions
+            .iter()
+            .map(|(_, ratio)| ratio.clone())
+            .collect();
+
+        self.csv.save(&resolutions);
+    }
 }
 
 #[cfg(test)]
@@ -365,11 +395,13 @@ impl Wallpapers {
 
         Self {
             files,
+            csv: WallpapersCsv::default(),
             index,
             source: current.clone(),
             current,
             ratio: AspectRatio { w: 16, h: 9 },
             resolutions: Vec::new(),
+            wall_dir: PathBuf::new(),
         }
     }
 }

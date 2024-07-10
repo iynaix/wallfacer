@@ -214,20 +214,19 @@ impl WallInfo {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WallpapersCsv {
     wallpapers: IndexMap<String, WallInfo>,
     config: WallpaperConfig,
 }
 
 impl WallpapersCsv {
-    pub fn open() -> Result<Self, std::io::Error> {
-        let config = WallpaperConfig::new();
-
+    pub fn open(config: &WallpaperConfig) -> Result<Self, std::io::Error> {
         std::fs::File::open(&config.csv_path).map(|csv_file| {
             let mut reader = csv::Reader::from_reader(std::io::BufReader::new(csv_file));
 
             Self {
-                config,
+                config: config.clone(),
                 wallpapers: reader
                     .deserialize::<WallInfo>()
                     .flatten()
@@ -237,8 +236,8 @@ impl WallpapersCsv {
         })
     }
 
-    pub fn load() -> Self {
-        Self::open().unwrap_or_else(|_| {
+    pub fn load(config: &WallpaperConfig) -> Self {
+        Self::open(config).unwrap_or_else(|_| {
             eprintln!("wallpapers.csv not found! Have you run \"wallpapers-add\" to create it?");
             std::process::exit(1);
         })

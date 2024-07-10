@@ -93,11 +93,9 @@ pub fn Dropdown<T: Copy + PartialEq + std::fmt::Display + 'static>(
                             li {
                                 role: "option",
                                 class: "text-gray-900 relative cursor-default select-none py-2 pl-3 pr-9",
-                                onclick: {
-                                    move |_| {
-                                        onchange.call(opt);
-                                        open.set(false);
-                                    }
+                                onclick: move |_| {
+                                    onchange.call(opt);
+                                    open.set(false);
                                 },
                                 span { class: "font-normal block truncate", {(options.label_fn)(&opt)} }
                                 span { class: "text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4",

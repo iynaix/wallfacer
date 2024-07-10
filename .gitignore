@@ -7,3 +7,4 @@ target
 node_modules/*
 dist/*
 public/tailwind.css
+src/bin/batch.rs
