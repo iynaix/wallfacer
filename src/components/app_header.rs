@@ -25,7 +25,8 @@ pub fn prev_image() {
         if ui.mode == UiMode::FileList {
             ui.mode = UiMode::Editor;
         }
-        ui.preview_mode = PreviewMode::Candidate(None);
+
+        ui.init_preview_mode();
     });
 }
 
@@ -41,6 +42,8 @@ pub fn next_image() {
             ui.mode = UiMode::Editor;
         }
         ui.preview_mode = PreviewMode::Candidate(None);
+
+        ui.init_preview_mode();
     });
 }
 

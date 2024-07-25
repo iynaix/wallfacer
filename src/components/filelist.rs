@@ -2,10 +2,7 @@
 use dioxus::prelude::*;
 use wallpaper_ui::filename;
 
-use crate::{
-    app_state::PreviewMode,
-    components::{use_ui, use_wallpapers},
-};
+use crate::components::{use_ui, use_wallpapers};
 
 #[component]
 fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>) -> Element {
@@ -108,7 +105,7 @@ pub fn FileList(class: Option<String>) -> Element {
                                 wallpapers.set_from_filename(&fname);
                             });
                             ui.with_mut(|ui| {
-                                ui.preview_mode = PreviewMode::Candidate(None);
+                                ui.init_preview_mode();
                                 ui.toggle_filelist();
                             });
                         },

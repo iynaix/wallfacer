@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use wallpaper_ui::aspect_ratio::AspectRatio;
 
 use crate::{
-    app_state::PreviewMode,
+    app_state::UiState,
     components::{button::Button, use_ui, use_wallpapers},
 };
 
@@ -15,8 +15,9 @@ pub fn change_ratio(ratio: &AspectRatio) {
     wallpapers.with_mut(|wallpapers| {
         wallpapers.ratio = ratio.clone();
     });
-    // reset back to candidate mode
-    ui.with_mut(|ui| ui.preview_mode = PreviewMode::Candidate(None));
+
+    // switch to pan mode if there are multiple candidates
+    ui.with_mut(UiState::init_preview_mode);
 }
 
 #[component]

@@ -13,6 +13,8 @@ use wallpaper_ui::{
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
+use crate::components::use_wallpapers;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UiMode {
     Editor,
@@ -48,6 +50,19 @@ impl UiState {
         self.mode = match self.mode {
             UiMode::Palette => UiMode::Editor,
             _ => UiMode::Palette,
+        };
+    }
+
+    /// switch to pan mode if there are multiple candidates
+    pub fn init_preview_mode(&mut self) {
+        let walls = use_wallpapers()();
+        let has_multiple_candidates =
+            walls.current.cropper().crop_candidates(&walls.ratio).len() > 1;
+
+        self.preview_mode = if has_multiple_candidates {
+            PreviewMode::Candidate(None)
+        } else {
+            PreviewMode::Pan
         };
     }
 }

@@ -273,13 +273,13 @@ impl WallpaperPipeline {
 
         let paths: Vec<_> = self.to_detect.iter().map(|img| img.0.clone()).collect();
 
+        println!();
         if !paths.is_empty() {
             // wait for all images before proceeding
             for path in &paths {
                 wait_for_image(path);
             }
 
-            println!();
             let mut child = Command::new("anime-face-detector")
                 .args(&paths)
                 .stdout(Stdio::piped())
