@@ -11,6 +11,7 @@ use crate::components::{
 };
 
 use wallust::{
+    args::Globals,
     backends::Backend,
     colorspaces::{ColorSpace, FallbackGenerator},
     palettes::Palette,
@@ -41,13 +42,8 @@ impl From<wallust::config::Config> for WallustConfig {
 
 impl WallustConfig {
     fn load_default() -> wallust::config::Config {
-        wallust::config::Config::new(
-            &dirs::config_dir().unwrap_or_else(|| panic!("could not get XDG config directory")),
-            None,
-            None,
-            false,
-        )
-        .unwrap_or_else(|_| panic!("unable to read wallust.toml"))
+        wallust::config::Config::new(&Globals::default())
+            .unwrap_or_else(|_| panic!("unable to read wallust.toml"))
     }
 
     fn from_args_str(arg_str: &str) -> Self {
