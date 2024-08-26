@@ -342,11 +342,11 @@ impl Wallpapers {
     }
 
     /// moves the crop area of the current wallpaper based on its direction
-    pub fn move_geometry_by(&self, delta: i32) -> Geometry {
+    pub fn move_geometry_by(&self, delta: f64) -> Geometry {
         let current_geom = self.get_geometry();
 
-        let negative_delta = delta < 0;
-        let delta = delta.unsigned_abs();
+        let negative_delta = delta.is_sign_negative();
+        let delta = (if negative_delta { -delta } else { delta }) as u32;
 
         match self.current.direction(&current_geom) {
             Direction::X => Geometry {

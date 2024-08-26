@@ -31,8 +31,9 @@ pub fn handle_arrows_keydown(
     let start_time_ms = ui()
         .arrow_key_start
         .map_or(0, |start_time| start_time.elapsed().as_millis());
-    // minimum move distance is 2px
-    let delta = (start_time_ms as f64 / 100.0 * 4.0).max(2.0) as i32;
+    let velocity = (start_time_ms as f64 / 100.0).mul_add(4.0, 0.0).max(20.0);
+    // minimum move distance is 1px
+    let delta = (velocity * start_time_ms as f64 / 1000.0).max(1.0);
 
     match arrow_key {
         Key::ArrowLeft | Key::ArrowUp => {
