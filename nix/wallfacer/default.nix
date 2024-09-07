@@ -83,18 +83,15 @@ rustPlatform.buildRustPackage {
       darwin.apple_sdk.frameworks.Security
     ];
 
-  preFixup = ''
-    for prog in wallfacer add-resolution wallpapers-add; do
-      installShellCompletion --cmd $prog \
-        --bash <($out/bin/$prog --generate bash) \
-        --fish <($out/bin/$prog --generate fish) \
-        --zsh <($out/bin/$prog --generate zsh)
-    done
-  '';
-
   postFixup = ''
-    wrapProgram $out/bin/wallpapers-add \
-      --prefix PATH : "$out/bin" \
+    installShellCompletion --cmd wallfacer \
+      --bash <($out/bin/wallfacer --generate bash) \
+      --fish <($out/bin/wallfacer --generate fish) \
+      --zsh <($out/bin/wallfacer --generate zsh)
+
+    # FIXME: GDK_BACKEND=x11 is required for keyboard shortcuts to work?
+    wrapProgram $out/bin/wallfacer \
+      --set WEBKIT_DISABLE_COMPOSITING_MODE 1 \
       --prefix PATH : "${
         lib.makeBinPath [
           realcugan-ncnn-vulkan
@@ -104,10 +101,6 @@ rustPlatform.buildRustPackage {
           jpegoptim
         ]
       }"
-
-    # FIXME: GDK_BACKEND=x11 is required for keyboard shortcuts to work?
-    wrapProgram $out/bin/wallfacer \
-      --set WEBKIT_DISABLE_COMPOSITING_MODE 1
   '';
 
   meta = with lib; {

@@ -1,51 +1,12 @@
-use clap::{ArgGroup, CommandFactory, Parser};
+use crate::cli::AddResolutionArgs;
 use wallfacer::{
     aspect_ratio::AspectRatio,
-    cli::ShellCompletion,
     config::WallpaperConfig,
     cropper::Direction,
     geometry::Geometry,
     run_wallfacer,
     wallpapers::{WallInfo, WallpapersCsv},
 };
-
-#[derive(Parser, Debug)]
-#[command(name = "add-resolution", about = "Adds a new resolution for cropping",   group(
-        ArgGroup::new("info")
-            .args(&["version", "generate"])
-    ))]
-pub struct AddResolutionArgs {
-    #[arg(
-        long,
-        action,
-        help = "print version information and exit",
-        exclusive = true,
-        group = "info"
-    )]
-    pub version: bool,
-
-    #[arg(
-        long,
-        value_enum,
-        help = "type of shell completion to generate",
-        hide = true,
-        exclusive = true,
-        group = "info"
-    )]
-    pub generate: Option<ShellCompletion>,
-
-    #[arg(
-        // help = "name of the new resolution",
-        required_unless_present_any =["version", "generate"]
-    )]
-    pub name: Option<String>,
-
-    #[arg(
-        // help = "the new resolution, in the format <width>x<height>",
-        required_unless_present_any = ["version", "generate"]
-    )]
-    pub resolution: Option<String>,
-}
 
 pub fn add_geometry(info: &WallInfo, ratio: &AspectRatio, geom: Geometry) -> WallInfo {
     let mut new_geometries = info.geometries.clone();
@@ -70,23 +31,8 @@ fn center_new_crop(old_crop: &Geometry, new_crop: &Geometry, info: &WallInfo) ->
         .clamp(default_start, direction, new_crop.w, new_crop.h)
 }
 
-fn main() {
-    let args = AddResolutionArgs::parse();
-
-    if args.version {
-        println!("add-resolution {}", env!("CARGO_PKG_VERSION"));
-        return;
-    }
-
-    if let Some(shell_completion) = args.generate {
-        wallfacer::cli::generate_completions(
-            "add-resolution",
-            &mut AddResolutionArgs::command(),
-            &shell_completion,
-        );
-        return;
-    }
-
+// needed for parity with add_wallpapers in a match {}
+pub fn add_resolution(args: AddResolutionArgs) {
     // the following checks shouldn't ever trigger as clap shouldn't allow it
     let name = args
         .name

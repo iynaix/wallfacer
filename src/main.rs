@@ -1,12 +1,17 @@
 #![allow(non_snake_case)]
+use crate::cli::ShellCompletion;
 use app_state::PreviewMode;
 use clap::{CommandFactory, Parser};
-use cli::{generate_completions, WallfacerArgs};
+use clap_complete::{generate, Shell};
+use cli::WallfacerArgs;
 use components::{editor::handle_arrow_keys_keyup, save_button::save_image};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
+use tokio::runtime::Runtime;
 use wallfacer::config::WallpaperConfig;
 
+pub mod add_resolution;
+pub mod add_wallpapers;
 pub mod app_state;
 pub mod cli;
 pub mod components;
@@ -23,44 +28,64 @@ use crate::{
 
 fn main() {
     let args = cli::WallfacerArgs::parse();
-    if args.version {
-        println!("wallfacer {}", env!("CARGO_PKG_VERSION"));
+
+    if let Some(comp) = args.generate {
+        match comp {
+            ShellCompletion::Bash => generate(
+                Shell::Bash,
+                &mut WallfacerArgs::command(),
+                "wallfacer",
+                &mut std::io::stdout(),
+            ),
+            ShellCompletion::Zsh => generate(
+                Shell::Zsh,
+                &mut WallfacerArgs::command(),
+                "wallfacer",
+                &mut std::io::stdout(),
+            ),
+            ShellCompletion::Fish => generate(
+                Shell::Fish,
+                &mut WallfacerArgs::command(),
+                "wallfacer",
+                &mut std::io::stdout(),
+            ),
+        }
+
         return;
     }
 
-    if let Some(shell_completion) = args.generate {
-        generate_completions(
-            "wallfacer",
-            &mut WallfacerArgs::command(),
-            &shell_completion,
-        );
-        return;
+    match args.command {
+        Some(cli::Commands::Add(args)) => {
+            let rt = Runtime::new().expect("unable to create tokio runtime for add wallpapers");
+            rt.block_on(add_wallpapers::add_wallpaper(args));
+        }
+        Some(cli::Commands::AddResolution(args)) => add_resolution::add_resolution(args),
+        _ => {
+            // use a custom index.html to set the height of body to the full height of the window
+            LaunchBuilder::desktop()
+                .with_cfg(
+                    Config::new()
+                        .with_background_color((30, 30, 46, 255))
+                        .with_menu(None)
+                        // disable on release builds
+                        .with_disable_context_menu(!cfg!(debug_assertions))
+                        .with_custom_index(
+                            r#"<!DOCTYPE html>
+                                <html>
+                                    <head>
+                                        <title>Dioxus app</title>
+                                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                        <link rel="stylesheet" href="public/tailwind.css">
+                                    </head>
+                                    <body>
+                                        <div id="main" style="height: 100vh;"></div>
+                                    </body>
+                                </html>"#.to_string(),
+                        ),
+                )
+                .launch(App);
+        }
     }
-
-    // use a custom index.html to set the height of body to the full height of the window
-    LaunchBuilder::desktop()
-        .with_cfg(
-            Config::new()
-                .with_background_color((30, 30, 46, 255))
-                .with_menu(None)
-                // disable on release builds
-                .with_disable_context_menu(!cfg!(debug_assertions))
-                .with_custom_index(
-                    r#"<!DOCTYPE html>
-<html>
-    <head>
-        <title>Dioxus app</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="public/tailwind.css">
-    </head>
-    <body>
-        <div id="main" style="height: 100vh;"></div>
-    </body>
-</html>"#
-                        .to_string(),
-                ),
-        )
-        .launch(App);
 }
 
 fn handle_shortcuts(
@@ -112,7 +137,6 @@ fn handle_shortcuts(
     };
 }
 
-// define a component that renders a div with the text "Hello, world!"
 fn App() -> Element {
     let config = use_context_provider(|| Signal::new(WallpaperConfig::new()));
     let mut wallpapers = use_context_provider(|| Signal::new(Wallpapers::from_args(&config())));
