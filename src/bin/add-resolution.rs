@@ -1,13 +1,51 @@
-use clap::Parser;
-use wallpaper_ui::{
+use clap::{ArgGroup, CommandFactory, Parser};
+use wallfacer::{
     aspect_ratio::AspectRatio,
-    cli::AddResolutionArgs,
+    cli::ShellCompletion,
     config::WallpaperConfig,
     cropper::Direction,
     geometry::Geometry,
-    run_wallpaper_ui,
+    run_wallfacer,
     wallpapers::{WallInfo, WallpapersCsv},
 };
+
+#[derive(Parser, Debug)]
+#[command(name = "add-resolution", about = "Adds a new resolution for cropping",   group(
+        ArgGroup::new("info")
+            .args(&["version", "generate"])
+    ))]
+pub struct AddResolutionArgs {
+    #[arg(
+        long,
+        action,
+        help = "print version information and exit",
+        exclusive = true,
+        group = "info"
+    )]
+    pub version: bool,
+
+    #[arg(
+        long,
+        value_enum,
+        help = "type of shell completion to generate",
+        hide = true,
+        exclusive = true,
+        group = "info"
+    )]
+    pub generate: Option<ShellCompletion>,
+
+    #[arg(
+        // help = "name of the new resolution",
+        required_unless_present_any =["version", "generate"]
+    )]
+    pub name: Option<String>,
+
+    #[arg(
+        // help = "the new resolution, in the format <width>x<height>",
+        required_unless_present_any = ["version", "generate"]
+    )]
+    pub resolution: Option<String>,
+}
 
 pub fn add_geometry(info: &WallInfo, ratio: &AspectRatio, geom: Geometry) -> WallInfo {
     let mut new_geometries = info.geometries.clone();
@@ -37,23 +75,35 @@ fn main() {
 
     if args.version {
         println!("add-resolution {}", env!("CARGO_PKG_VERSION"));
-        std::process::exit(0);
+        return;
     }
 
-    let new_res = std::convert::TryInto::<AspectRatio>::try_into(args.resolution.as_str())
-        .unwrap_or_else(|()| {
-            panic!(
-                "could not convert aspect ratio {} into string",
-                args.resolution
-            )
-        });
+    if let Some(shell_completion) = args.generate {
+        wallfacer::cli::generate_completions(
+            "add-resolution",
+            &mut AddResolutionArgs::command(),
+            &shell_completion,
+        );
+        return;
+    }
+
+    // the following checks shouldn't ever trigger as clap shouldn't allow it
+    let name = args
+        .name
+        .unwrap_or_else(|| panic!("resolution name is required"));
+    let resolution = args
+        .resolution
+        .unwrap_or_else(|| panic!("resolution is required"));
+
+    let new_res = std::convert::TryInto::<AspectRatio>::try_into(resolution.as_str())
+        .unwrap_or_else(|()| panic!("could not convert aspect ratio {} into string", resolution));
 
     let mut cfg = WallpaperConfig::new();
     let closest_res = cfg.closest_resolution(&new_res);
 
     // save the updated config
     if !cfg.resolutions.iter().any(|(_, res)| res == &new_res) {
-        cfg.add_resolution(&args.name, new_res.clone());
+        cfg.add_resolution(&name, new_res.clone());
         cfg.save().unwrap_or_else(|_| {
             eprintln!("Could not save config to {:?}!", cfg.csv_path);
             std::process::exit(1);
@@ -103,7 +153,7 @@ fn main() {
     // update the csv
     wallpapers_csv.save(&cfg.sorted_resolutions());
 
-    // open in wallpaper ui
+    // open in wallfacer
     to_process.sort();
     let images: Vec<_> = to_process
         .into_iter()
@@ -118,6 +168,6 @@ fn main() {
         })
         .collect();
 
-    // process the images in wallpaper ui
-    run_wallpaper_ui(images);
+    // process the images in wallfacer
+    run_wallfacer(images);
 }

@@ -45,6 +45,7 @@
               with pkgs;
               # pipeline dependencies
               [
+                cargo-edit
                 oxipng
                 jpegoptim
                 libwebp
@@ -107,7 +108,7 @@
                   nixpkgs.lib.replaceStrings [ "-dirty" ] [ "" ] self.dirtyShortRev;
             in
             rec {
-              default = pkgs.callPackage ./nix/wallpaper-ui {
+              default = pkgs.callPackage ./nix/wallfacer {
                 inherit
                   realcugan-ncnn-vulkan
                   anime-face-detector
@@ -115,8 +116,8 @@
                   version
                   ;
               };
-              wallpaper-ui = default;
-              with-cuda = pkgs.callPackage ./nix/wallpaper-ui-with-cuda {
+              wallfacer = default;
+              with-cuda = pkgs.callPackage ./nix/wallfacer-with-cuda {
                 inherit realcugan-ncnn-vulkan tailwindcss version;
                 anime-face-detector = inputs.anime-face-detector.packages.${system}.with-cuda;
               };

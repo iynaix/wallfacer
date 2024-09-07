@@ -1,10 +1,11 @@
 #![allow(non_snake_case)]
 use app_state::PreviewMode;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use cli::{generate_completions, WallfacerArgs};
 use components::{editor::handle_arrow_keys_keyup, save_button::save_image};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
-use wallpaper_ui::config::WallpaperConfig;
+use wallfacer::config::WallpaperConfig;
 
 pub mod app_state;
 pub mod cli;
@@ -21,10 +22,19 @@ use crate::{
 };
 
 fn main() {
-    let args = cli::WallpaperUIArgs::parse();
+    let args = cli::WallfacerArgs::parse();
     if args.version {
-        println!("wallpaper-ui {}", env!("CARGO_PKG_VERSION"));
-        std::process::exit(0);
+        println!("wallfacer {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
+    if let Some(shell_completion) = args.generate {
+        generate_completions(
+            "wallfacer",
+            &mut WallfacerArgs::command(),
+            &shell_completion,
+        );
+        return;
     }
 
     // use a custom index.html to set the height of body to the full height of the window

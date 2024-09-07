@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallpaper_ui::filename;
+use wallfacer::filename;
 
 use crate::components::{use_ui, use_wallpapers};
 

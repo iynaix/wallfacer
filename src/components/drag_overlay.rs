@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 
 use crate::components::use_wallpapers;
-use wallpaper_ui::{cropper::Direction, geometry::Geometry};
+use wallfacer::{cropper::Direction, geometry::Geometry};
 
 #[component]
 pub fn DragOverlay(

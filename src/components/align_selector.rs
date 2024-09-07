@@ -8,7 +8,7 @@ use dioxus_free_icons::icons::{
     },
 };
 use dioxus_free_icons::Icon;
-use wallpaper_ui::{cropper::Direction, geometry::Geometry};
+use wallfacer::{cropper::Direction, geometry::Geometry};
 
 use crate::{
     app_state::PreviewMode,

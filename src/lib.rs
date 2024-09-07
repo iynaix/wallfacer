@@ -102,32 +102,32 @@ impl FaceJson {
     }
 }
 
-pub fn run_wallpaper_ui<I, S>(args: I)
+pub fn run_wallfacer<I, S>(args: I)
 where
     I: IntoIterator<Item = S> + std::fmt::Debug + Clone,
     S: AsRef<std::ffi::OsStr>,
 {
     if cfg!(debug_assertions) {
         Command::new("cargo")
-            .args(["run", "--bin", "wallpaper-ui", "--"])
+            .args(["run", "--bin", "wallfacer", "--"])
             .args(args)
             .spawn()
-            .expect("could not spawn wallpaper-ui")
+            .expect("could not spawn wallfacer")
             .wait()
-            .expect("could not wait for wallpaper-ui");
+            .expect("could not wait for wallfacer");
     } else {
-        Command::new("wallpaper-ui")
+        Command::new("wallfacer")
             .args(args.clone())
             .spawn()
             .unwrap_or_else(|_| {
                 // try running it via cargo instead
                 Command::new("cargo")
-                    .args(["run", "--release", "--bin", "wallpaper-ui", "--"])
+                    .args(["run", "--release", "--bin", "wallfacer", "--"])
                     .args(args)
                     .spawn()
-                    .expect("could not spawn wallpaper-ui")
+                    .expect("could not spawn wallfacer")
             })
             .wait()
-            .expect("could not wait for wallpaper-ui");
+            .expect("could not wait for wallfacer");
     }
 }

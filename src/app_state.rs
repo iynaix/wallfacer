@@ -2,10 +2,10 @@ use clap::Parser;
 use itertools::Itertools;
 use std::path::PathBuf;
 
-use wallpaper_ui::{
+use wallfacer::{
     aspect_ratio::AspectRatio,
     cli::FacesFilter,
-    cli::WallpaperUIArgs,
+    cli::WallfacerArgs,
     config::WallpaperConfig,
     cropper::Direction,
     filename, filter_images,
@@ -114,7 +114,7 @@ impl Wallpapers {
     }
 
     pub fn from_args(cfg: &WallpaperConfig) -> Self {
-        let args = WallpaperUIArgs::parse();
+        let args = WallfacerArgs::parse();
         let wall_dir = &cfg.wallpapers_dir;
         let resolution_pairs = &cfg.resolutions;
         let resolutions: Vec<_> = resolution_pairs.iter().map(|(_, r)| r.clone()).collect();

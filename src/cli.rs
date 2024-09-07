@@ -1,8 +1,7 @@
+use clap::{value_parser, Parser, Subcommand, ValueEnum};
+use clap_complete::{generate, Shell};
 use std::path::PathBuf;
 
-use clap::{builder::PossibleValuesParser, value_parser, Parser, ValueEnum};
-
-// ------------------------- WALLPAPER UI -------------------------
 #[derive(ValueEnum, Debug, Clone)]
 pub enum FacesFilter {
     Zero,
@@ -17,11 +16,16 @@ pub enum FacesFilter {
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Parser, Debug)]
 #[command(
-    name = "wallpaper-ui",
+    name = "wallfacer",
     about = "Allows the selection of a cropping area for multiple monitor resolutions"
 )]
-pub struct WallpaperUIArgs {
-    #[arg(long, action, help = "print version information and exit")]
+pub struct WallfacerArgs {
+    #[arg(
+        long,
+        action,
+        help = "print version information and exit",
+        exclusive = true
+    )]
     pub version: bool,
 
     #[arg(
@@ -58,63 +62,33 @@ pub struct WallpaperUIArgs {
 
     // positional arguments for file paths
     pub paths: Option<Vec<PathBuf>>,
+
+    #[arg(
+        long,
+        value_enum,
+        help = "type of shell completion to generate",
+        hide = true,
+        exclusive = true
+    )]
+    pub generate: Option<ShellCompletion>,
 }
 
-#[derive(Parser, Debug)]
-#[command(
-    name = "add-wallpapers",
-    about = "Adds wallpapers, and performs the face detection"
-)]
-pub struct WallpapersAddArgs {
-    #[arg(long, action, help = "print version information and exit")]
-    pub version: bool,
-
-    #[arg(
-        long,
-        action,
-        value_name = "MIN_WIDTH",
-        help = "minimum width for wallpapers to be resized, defaults to 1920 if not provided in config.ini"
-    )]
-    pub min_width: Option<u32>,
-
-    #[arg(
-        long,
-        action,
-        value_name = "MIN_HEIGHT",
-        help = "minimum height for wallpapers to be resized, defaults to 1080 if not provided in config.ini"
-    )]
-    pub min_height: Option<u32>,
-
-    #[arg(
-        long,
-        action,
-        value_name = "FORMAT",
-        value_parser = PossibleValuesParser::new(["jpg", "png", "webp"]),
-        help = "optional format to convert the images to"
-    )]
-    pub format: Option<String>,
-
-    #[arg(
-        long,
-        action,
-        help = "reprocess the image even if it already exists in the csv"
-    )]
-    pub force: bool,
-
-    // required positional argument for input directory
-    // positional arguments for file paths
-    pub paths: Option<Vec<PathBuf>>,
+// for generating shell completions
+#[derive(Subcommand, ValueEnum, Debug, Clone)]
+pub enum ShellCompletion {
+    Bash,
+    Zsh,
+    Fish,
 }
 
-#[derive(Parser, Debug)]
-#[command(name = "add-resolution", about = "Adds a new resolution for cropping")]
-pub struct AddResolutionArgs {
-    #[arg(long, action, help = "print version information and exit")]
-    pub version: bool,
-
-    // required positional argument for input directory
-    pub name: String,
-
-    // required positional argument for input directory
-    pub resolution: String,
+pub fn generate_completions(
+    progname: &str,
+    cmd: &mut clap::Command,
+    shell_completion: &ShellCompletion,
+) {
+    match shell_completion {
+        ShellCompletion::Bash => generate(Shell::Bash, cmd, progname, &mut std::io::stdout()),
+        ShellCompletion::Zsh => generate(Shell::Zsh, cmd, progname, &mut std::io::stdout()),
+        ShellCompletion::Fish => generate(Shell::Fish, cmd, progname, &mut std::io::stdout()),
+    }
 }

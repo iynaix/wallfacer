@@ -1,4 +1,4 @@
-use wallpaper_ui::{config::WallpaperConfig, wallpapers::WallpapersCsv};
+use wallfacer::{config::WallpaperConfig, wallpapers::WallpapersCsv};
 
 fn main() {
     let cfg = WallpaperConfig::new();

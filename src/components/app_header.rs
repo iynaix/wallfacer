@@ -5,7 +5,7 @@ use dioxus_free_icons::icons::{
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 use dioxus_free_icons::Icon;
-use wallpaper_ui::config::WallpaperConfig;
+use wallfacer::config::WallpaperConfig;
 
 use crate::{
     app_state::{PreviewMode, UiMode},

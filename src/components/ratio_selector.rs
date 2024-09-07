@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
-use wallpaper_ui::aspect_ratio::AspectRatio;
+use wallfacer::aspect_ratio::AspectRatio;
 
 use crate::{
     app_state::UiState,

@@ -26,12 +26,17 @@
   makeWrapper,
 }:
 rustPlatform.buildRustPackage {
-  pname = "wallpaper-ui";
+  pname = "wallfacer";
   inherit version;
 
   src = ../../.;
 
-  cargoLock.lockFile = ../../Cargo.lock;
+  cargoLock = {
+    lockFile = ../../Cargo.lock;
+    outputHashes = {
+      "dioxus-sdk-0.5.0" = "sha256-ox/vWTfyrPYnfvHjEX+nc+OdKGA4Aa2yQsfMzFJ6e8s=";
+    };
+  };
 
   env.NIX_RELEASE_VERSION = version;
 
@@ -79,15 +84,16 @@ rustPlatform.buildRustPackage {
     ];
 
   preFixup = ''
-    installShellCompletion \
-      --bash completions/*.bash \
-      --fish completions/*.fish \
-      --zsh completions/_*
+    for prog in wallfacer add-resolution wallpapers-add; do
+      installShellCompletion --cmd $prog \
+        --bash <($out/bin/$prog --generate bash) \
+        --fish <($out/bin/$prog --generate fish) \
+        --zsh <($out/bin/$prog --generate zsh)
+    done
   '';
 
   postFixup = ''
-    # add own path so wallpaper-pipeline can run wallpaper-ui
-    wrapProgram $out/bin/add-wallpaper \
+    wrapProgram $out/bin/wallpapers-add \
       --prefix PATH : "$out/bin" \
       --prefix PATH : "${
         lib.makeBinPath [
@@ -100,15 +106,15 @@ rustPlatform.buildRustPackage {
       }"
 
     # FIXME: GDK_BACKEND=x11 is required for keyboard shortcuts to work?
-    wrapProgram $out/bin/wallpaper-ui \
+    wrapProgram $out/bin/wallfacer \
       --set WEBKIT_DISABLE_COMPOSITING_MODE 1
   '';
 
   meta = with lib; {
     description = "";
-    homepage = "https://github.com/iynaix/wallpaper-ui";
+    homepage = "https://github.com/iynaix/wallfacer";
     license = licenses.mit;
     maintainers = with maintainers; [ iynaix ];
-    mainProgram = "wallpaper-ui";
+    mainProgram = "wallfacer";
   };
 }

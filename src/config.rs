@@ -22,7 +22,7 @@ impl Default for WallpaperConfig {
         let wallpapers_dir = full_path("~/Pictures/Wallpapers");
         let config_dir = dirs::config_dir()
             .expect("could not get xdg config directory")
-            .join("wallpaper-ui");
+            .join("wallfacer");
 
         Self {
             wallpapers_dir,
@@ -40,7 +40,7 @@ impl WallpaperConfig {
     pub fn new() -> Self {
         let config_file = dirs::config_dir()
             .expect("could not get xdg config directory")
-            .join("wallpaper-ui/config.ini");
+            .join("wallfacer/config.ini");
 
         #[allow(clippy::option_if_let_else)]
         if let Ok(conf) = Ini::load_from_file(config_file) {
@@ -134,9 +134,9 @@ impl WallpaperConfig {
         conf.with_general_section()
             .set("wallpapers_dir", self.wallpapers_dir.to_string_lossy())
             .set("csv_path", self.csv_path.to_string_lossy())
-            .set("min_width", &self.min_width.to_string())
-            .set("min_height", &self.min_height.to_string())
-            .set("show_faces", &self.show_faces.to_string());
+            .set("min_width", self.min_width.to_string())
+            .set("min_height", self.min_height.to_string())
+            .set("show_faces", self.show_faces.to_string());
 
         if let Some(wall_cmd) = &self.wallpaper_command {
             conf.with_general_section()
@@ -144,14 +144,13 @@ impl WallpaperConfig {
         }
 
         for (k, v) in &self.resolutions {
-            conf.with_section(Some("resolutions"))
-                .set(k, &v.to_string());
+            conf.with_section(Some("resolutions")).set(k, v.to_string());
         }
 
         conf.write_to_file(
             dirs::config_dir()
                 .expect("could not get xdg config directory")
-                .join("wallpaper-ui/config.ini"),
+                .join("wallfacer/config.ini"),
         )
     }
 }

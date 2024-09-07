@@ -7,7 +7,7 @@ use crate::{
     aspect_ratio::AspectRatio,
     config::WallpaperConfig,
     cropper::Cropper,
-    filename, filter_images, run_wallpaper_ui,
+    filename, filter_images, run_wallfacer,
     wallpapers::{WallInfo, WallpapersCsv},
     FaceJson, PathBufExt,
 };
@@ -345,7 +345,7 @@ impl WallpaperPipeline {
         let preview_images: Vec<_> = self.to_preview.into_iter().map(|img| img.0).collect();
 
         if !preview_images.is_empty() {
-            run_wallpaper_ui(preview_images);
+            run_wallfacer(preview_images);
         }
     }
 }

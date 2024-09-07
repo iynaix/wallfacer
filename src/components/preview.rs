@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use dioxus::prelude::*;
 use dioxus_sdk::utils::window::{use_window_size, WindowSize};
-use wallpaper_ui::{cropper::Direction, wallpapers::Face};
+use wallfacer::{cropper::Direction, wallpapers::Face};
 
 use crate::{
     app_state::PreviewMode,
