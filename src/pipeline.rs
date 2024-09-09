@@ -82,81 +82,15 @@ pub fn optimize_png(infile: &PathBuf, outfile: &PathBuf) {
         .expect("could not wait for oxipng");
 }
 
-struct Upscale((PathBuf, u32)); // (src, scale_factor)
-struct Optimize(PathBuf);
-struct Detect(PathBuf);
-struct Preview(PathBuf);
-
-impl Upscale {
-    #[must_use]
-    pub fn upscale(&self, format: &Option<String>, progress: &str) -> Optimize {
-        let Self((src, scale_factor)) = self;
-
-        // nothing to do here
-        let mut dest = src.with_directory("/tmp");
-
-        if let Some(ext) = &format {
-            dest = dest.with_extension(ext);
-        }
-
-        println!("{} Upscaling {}...", progress, &filename(src));
-
-        Command::new("realcugan-ncnn-vulkan")
-            .arg("-i")
-            .arg(src)
-            .arg("-s")
-            .arg(scale_factor.to_string())
-            .arg("-o")
-            .arg(&dest)
-            // silence output
-            .stderr(Stdio::null())
-            .spawn()
-            .expect("could not spawn realcugan-ncnn-vulkan")
-            .wait()
-            .expect("could not wait for realcugan-ncnn-vulkan");
-        Optimize(dest)
-    }
-}
-
-impl Optimize {
-    #[must_use]
-    pub fn optimize(&self, format: &Option<String>, wall_dir: &PathBuf, progress: &str) -> Detect {
-        let Self(src) = self;
-        wait_for_image(src);
-
-        let out_img = format
-            .as_ref()
-            .map_or_else(|| src.clone(), |format| src.with_extension(format))
-            .with_directory(wall_dir);
-
-        println!("{} Optimizing {}...", progress, &filename(src));
-
-        if let Some(ext) = out_img.extension() {
-            match ext.to_str().expect("could not convert extension to str") {
-                "jpg" | "jpeg" => optimize_jpg(src, &out_img),
-                "png" => optimize_png(src, &out_img),
-                "webp" => optimize_webp(src, &out_img),
-                _ => panic!("unsupported image format: {ext:?}"),
-            }
-        };
-
-        Detect(out_img)
-    }
-}
-
 #[derive(Default)]
 pub struct WallpaperPipeline {
-    to_upscale: Vec<Upscale>,
-    to_optimize: Vec<Optimize>,
-    to_detect: Vec<Detect>,
-    to_preview: Vec<Preview>,
-
     format: Option<String>,
     min_width: u32,
     min_height: u32,
     wall_dir: PathBuf,
     resolutions: Vec<AspectRatio>,
     wallpapers_csv: WallpapersCsv,
+    to_preview: Vec<PathBuf>,
 }
 
 impl WallpaperPipeline {
@@ -172,26 +106,25 @@ impl WallpaperPipeline {
         // do a check for duplicates
         wallpapers_csv.find_duplicates();
 
-        let wall_dir = &cfg.wallpapers_dir;
-
-        // add images from wallpapers dir that are not in the csv
-        let to_detect: Vec<_> = filter_images(&wall_dir)
-            .filter(|img| wallpapers_csv.get(&filename(img)).is_none())
-            .map(Detect)
-            .collect();
-
-        Self {
-            to_upscale: Vec::new(),
-            to_optimize: Vec::new(),
-            to_detect,
-            to_preview: Vec::new(),
+        let mut pipeline = Self {
             min_width,
             min_height,
             format,
             wall_dir: cfg.wallpapers_dir.clone(),
             resolutions: cfg.sorted_resolutions(),
-            wallpapers_csv,
+            wallpapers_csv: wallpapers_csv.clone(),
+            to_preview: Vec::new(),
+        };
+
+        let wall_dir = &cfg.wallpapers_dir;
+        // add images from wallpapers dir that are not in the csv
+        for img in filter_images(&wall_dir) {
+            if wallpapers_csv.get(&filename(&img)).is_none() {
+                pipeline.detect(&img);
+            }
         }
+
+        pipeline
     }
 
     pub fn save_csv(&self) {
@@ -216,21 +149,21 @@ impl WallpaperPipeline {
                     let scale_factor =
                         get_scale_factor(width, height, self.min_width, self.min_height);
                     if scale_factor == 1 {
-                        self.to_optimize.push(Optimize(img.clone()));
+                        self.optimize(img);
                     } else {
-                        self.to_upscale.push(Upscale((img.clone(), scale_factor)));
+                        self.upscale(img, scale_factor);
                     }
                     return;
                 }
 
                 // re-preview if no / multiple faces detected and still using default crop
                 if info.faces.len() != 1 && info.is_default_crops(&self.resolutions) {
-                    self.to_preview.push(Preview(out_path));
+                    self.to_preview.push(out_path);
                     return;
                 }
             // no WallInfo, redetect faces to write to csv
             } else {
-                self.to_detect.push(Detect(out_path));
+                self.detect(&out_path);
                 return;
             }
             return;
@@ -238,114 +171,113 @@ impl WallpaperPipeline {
 
         let scale_factor = get_scale_factor(width, height, self.min_width, self.min_height);
         if scale_factor == 1 {
-            self.to_optimize.push(Optimize(img.clone()));
+            self.optimize(img);
         } else {
-            self.to_upscale.push(Upscale((img.clone(), scale_factor)));
+            self.upscale(img, scale_factor);
         }
     }
 
-    pub fn upscale_images(&mut self) {
-        let total = self.to_upscale.len();
-        self.to_optimize.extend(
-            self.to_upscale
+    pub fn upscale(&mut self, img: &PathBuf, scale_factor: u32) {
+        // nothing to do here
+        let mut dest = img.with_directory("/tmp");
+
+        if let Some(ext) = &self.format {
+            dest = dest.with_extension(ext);
+        }
+
+        Command::new("realcugan-ncnn-vulkan")
+            .arg("-i")
+            .arg(img)
+            .arg("-s")
+            .arg(scale_factor.to_string())
+            .arg("-o")
+            .arg(&dest)
+            // silence output
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("could not spawn realcugan-ncnn-vulkan")
+            .wait()
+            .expect("could not wait for realcugan-ncnn-vulkan");
+
+        self.optimize(img);
+    }
+
+    pub fn optimize(&mut self, img: &PathBuf) {
+        wait_for_image(img);
+
+        let out_img = self
+            .format
+            .as_ref()
+            .map_or_else(|| img.clone(), |format| img.with_extension(format))
+            .with_directory(self.wall_dir.clone());
+
+        if let Some(ext) = out_img.extension() {
+            match ext.to_str().expect("could not convert extension to str") {
+                "jpg" | "jpeg" => optimize_jpg(img, &out_img),
+                "png" => optimize_png(img, &out_img),
+                "webp" => optimize_webp(img, &out_img),
+                _ => panic!("unsupported image format: {ext:?}"),
+            }
+        };
+
+        self.detect(&out_img);
+    }
+
+    pub fn detect(&mut self, img: &PathBuf) {
+        wait_for_image(img);
+
+        let fname = filename(img);
+
+        // get output of anime face detector
+        let child = Command::new("anime-face-detector")
+            .arg(img)
+            .stdout(Stdio::piped())
+            .output()
+            .expect("failed to spawn anime-face-detector");
+
+        let line = std::str::from_utf8(&child.stdout)
+            .expect("could not convert output to str")
+            .strip_suffix("\n")
+            .unwrap_or_default()
+            .to_string();
+
+        let faces: Vec<FaceJson> =
+            serde_json::from_str(&line).expect("could not deserialize faces");
+        let faces: Vec<_> = faces
+            .into_iter()
+            .map(|f: FaceJson| FaceJson::to_face(&f))
+            .collect();
+
+        let (width, height) = image::image_dimensions(img)
+            .unwrap_or_else(|_| panic!("could not get image dimensions: {img:?}"));
+        let cropper = Cropper::new(&faces, width, height);
+
+        // create WallInfo and save it
+        let wall_info = WallInfo {
+            filename: fname.clone(),
+            width,
+            height,
+            faces,
+            geometries: self
+                .resolutions
                 .iter()
-                .enumerate()
-                .map(|(i, img)| img.upscale(&self.format, &format!("[{}/{}]", i + 1, total))),
-        );
-    }
+                .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
+                .collect(),
+            wallust: String::new(),
+        };
 
-    pub fn optimize_images(&mut self) {
-        println!();
-        let total = self.to_optimize.len();
-        self.to_detect
-            .extend(self.to_optimize.iter().enumerate().map(|(i, img)| {
-                img.optimize(
-                    &self.format,
-                    &self.wall_dir,
-                    &format!("[{}/{}]", i + 1, total),
-                )
-            }));
-    }
-
-    pub async fn detect_faces(&mut self) {
-        use tokio::io::{AsyncBufReadExt, BufReader};
-        use tokio::process::Command;
-
-        let paths: Vec<_> = self.to_detect.iter().map(|img| img.0.clone()).collect();
-
-        println!();
-        if !paths.is_empty() {
-            // wait for all images before proceeding
-            for path in &paths {
-                wait_for_image(path);
-            }
-
-            let mut child = Command::new("anime-face-detector")
-                .args(&paths)
-                .stdout(Stdio::piped())
-                .spawn()
-                .expect("failed to spawn anime-face-detector");
-
-            let reader = BufReader::new(
-                child
-                    .stdout
-                    .take()
-                    .expect("failed to read stdout of anime-face-detector"),
-            );
-            let mut lines = reader.lines();
-            let mut paths_iter = paths.iter();
-
-            // read each line of anime-face-detector's output async
-            let total = paths.len();
-            let mut idx = 0;
-            while let (Some(path), Ok(Some(line))) = (paths_iter.next(), lines.next_line().await) {
-                let fname = filename(path);
-                println!("[{}/{}] Detecting faces in {fname}...", idx + 1, total);
-
-                let faces: Vec<FaceJson> =
-                    serde_json::from_str(&line).expect("could not deserialize faces");
-                let faces: Vec<_> = faces
-                    .into_iter()
-                    .map(|f: FaceJson| FaceJson::to_face(&f))
-                    .collect();
-
-                let (width, height) = image::image_dimensions(path)
-                    .unwrap_or_else(|_| panic!("could not get image dimensions: {fname:?}"));
-                let cropper = Cropper::new(&faces, width, height);
-
-                // create WallInfo and save it
-                let wall_info = WallInfo {
-                    filename: fname.clone(),
-                    width,
-                    height,
-                    faces,
-                    geometries: self
-                        .resolutions
-                        .iter()
-                        .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
-                        .collect(),
-                    wallust: String::new(),
-                };
-
-                // preview both multiple faces and no faces
-                if wall_info.faces.len() != 1 {
-                    self.to_preview
-                        .push(Preview(path.with_directory(&self.wall_dir)));
-                }
-
-                self.wallpapers_csv.insert(fname, wall_info);
-                idx += 1;
-            }
+        // preview both multiple faces and no faces
+        if wall_info.faces.len() != 1 {
+            self.to_preview.push(img.with_directory(&self.wall_dir));
         }
 
+        self.wallpapers_csv.insert(fname, wall_info);
         self.wallpapers_csv.save(&self.resolutions);
     }
 
     pub fn preview(self) {
-        let preview_images: Vec<_> = self.to_preview.into_iter().map(|img| img.0).collect();
-
-        if !preview_images.is_empty() {
-            run_wallfacer(preview_images);
+        if !self.to_preview.is_empty() {
+            run_wallfacer(self.to_preview);
         }
     }
 }

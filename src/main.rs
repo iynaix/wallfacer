@@ -7,7 +7,6 @@ use cli::WallfacerArgs;
 use components::{editor::handle_arrow_keys_keyup, save_button::save_image};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
-use tokio::runtime::Runtime;
 use wallfacer::config::WallpaperConfig;
 
 pub mod add_resolution;
@@ -55,10 +54,7 @@ fn main() {
     }
 
     match args.command {
-        Some(cli::Commands::Add(args)) => {
-            let rt = Runtime::new().expect("unable to create tokio runtime for add wallpapers");
-            rt.block_on(add_wallpapers::add_wallpaper(args));
-        }
+        Some(cli::Commands::Add(args)) => add_wallpapers::add_wallpaper(args),
         Some(cli::Commands::AddResolution(args)) => add_resolution::add_resolution(args),
         _ => {
             // use a custom index.html to set the height of body to the full height of the window

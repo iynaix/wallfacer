@@ -1,7 +1,7 @@
 use crate::cli::AddWallpaperArgs;
 use wallfacer::{config::WallpaperConfig, filter_images, is_image, pipeline::WallpaperPipeline};
 
-pub async fn add_wallpaper(args: AddWallpaperArgs) {
+pub fn add_wallpaper(args: AddWallpaperArgs) {
     let cfg = WallpaperConfig::new();
 
     let wall_dir = &cfg.wallpapers_dir;
@@ -38,11 +38,9 @@ pub async fn add_wallpaper(args: AddWallpaperArgs) {
     }
 
     for img in all_files {
+        println!("Processing: {img:?}");
         pipeline.add_image(&img, args.force);
     }
 
-    pipeline.upscale_images();
-    pipeline.optimize_images();
-    pipeline.detect_faces().await;
     pipeline.preview();
 }
