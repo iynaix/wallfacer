@@ -1,18 +1,16 @@
 #![allow(non_snake_case)]
-use crate::cli::ShellCompletion;
 use app_state::PreviewMode;
-use clap::{CommandFactory, Parser};
+use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{generate, Shell};
-use cli::WallfacerArgs;
 use components::{editor::handle_arrow_keys_keyup, save_button::save_image};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
+use std::path::PathBuf;
 use wallfacer::config::WallpaperConfig;
 
 pub mod add_resolution;
 pub mod add_wallpapers;
 pub mod app_state;
-pub mod cli;
 pub mod components;
 
 use crate::{
@@ -25,8 +23,95 @@ use crate::{
     },
 };
 
+#[derive(ValueEnum, Debug, Clone)]
+pub enum FacesFilter {
+    Zero,
+    None,
+    One,
+    Single,
+    Many,
+    Multiple,
+    All,
+}
+
+// for generating shell completions
+#[derive(Subcommand, ValueEnum, Debug, Clone)]
+pub enum ShellCompletion {
+    Bash,
+    Zsh,
+    Fish,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    #[command(
+        name = "add",
+        about = "Adds wallpapers with upscaling and face detection"
+    )]
+    Add(add_wallpapers::AddWallpaperArgs),
+
+    #[command(name = "resolution", about = "Adds a new resolution for cropping")]
+    AddResolution(add_resolution::AddResolutionArgs),
+}
+
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Parser)]
+#[command(
+    name = "wallfacer",
+    about = "A GUI for selecting wallpaper cropping regions for multiple monitor resolutions, based on anime face detection.",
+    version = env!("CARGO_PKG_VERSION")
+)]
+pub struct WallfacerArgs {
+    #[arg(
+        long,
+        value_enum,
+        help = "type of shell completion to generate",
+        hide = true,
+        exclusive = true
+    )]
+    pub generate: Option<ShellCompletion>,
+
+    #[command(subcommand)]
+    pub command: Option<Commands>,
+
+    #[arg(
+        long,
+        default_value = None,
+        default_missing_value = "all",
+        num_args = 0..=1,
+        value_name = "RESOLUTIONS",
+        help = "only show wallpapers that use the default crops; either \"all\" or resolution(s) in the format \"1920x1080,1920x1200\""
+    )]
+    pub unmodified: Option<String>,
+
+    #[arg(
+        long,
+        default_value = None,
+        default_missing_value = "all",
+        num_args = 0..=1,
+        value_name = "RESOLUTIONS",
+        help = "only show wallpapers that don't use the default crops; either \"all\" or resolution(s) in the format \"1920x1080,1920x1200\""
+    )]
+    pub modified: Option<String>,
+
+    #[arg(
+        long,
+        default_value = "all",
+        default_missing_value = "all",
+        value_parser = clap::value_parser!(FacesFilter),
+        help = "only show wallpapers that have a palette"
+    )]
+    pub faces: FacesFilter,
+
+    #[arg(long, help = "filters wallpapers by filename (case-insensitive)")]
+    pub filter: Option<String>,
+
+    /// directories or images to add
+    pub paths: Option<Vec<PathBuf>>,
+}
+
 fn main() {
-    let args = cli::WallfacerArgs::parse();
+    let args = WallfacerArgs::parse();
 
     if let Some(comp) = args.generate {
         match comp {
@@ -54,8 +139,8 @@ fn main() {
     }
 
     match args.command {
-        Some(cli::Commands::Add(args)) => add_wallpapers::add_wallpaper(args),
-        Some(cli::Commands::AddResolution(args)) => add_resolution::add_resolution(args),
+        Some(Commands::Add(args)) => add_wallpapers::main(args),
+        Some(Commands::AddResolution(args)) => add_resolution::main(args),
         _ => {
             // use a custom index.html to set the height of body to the full height of the window
             LaunchBuilder::desktop()

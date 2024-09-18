@@ -6,7 +6,6 @@ use std::{
 use wallpapers::Face;
 
 pub mod aspect_ratio;
-pub mod cli;
 pub mod config;
 pub mod cropper;
 pub mod geometry;
@@ -102,32 +101,38 @@ impl FaceJson {
     }
 }
 
+#[cfg(debug_assertions)]
 pub fn run_wallfacer<I, S>(args: I)
 where
     I: IntoIterator<Item = S> + std::fmt::Debug + Clone,
     S: AsRef<std::ffi::OsStr>,
 {
-    if cfg!(debug_assertions) {
-        Command::new("cargo")
-            .args(["run", "--bin", "wallfacer", "--"])
-            .args(args)
-            .spawn()
-            .expect("could not spawn wallfacer")
-            .wait()
-            .expect("could not wait for wallfacer");
-    } else {
-        Command::new("wallfacer")
-            .args(args.clone())
-            .spawn()
-            .unwrap_or_else(|_| {
-                // try running it via cargo instead
-                Command::new("cargo")
-                    .args(["run", "--release", "--bin", "wallfacer", "--"])
-                    .args(args)
-                    .spawn()
-                    .expect("could not spawn wallfacer")
-            })
-            .wait()
-            .expect("could not wait for wallfacer");
-    }
+    Command::new("cargo")
+        .args(["run", "--bin", "wallfacer", "--"])
+        .args(args)
+        .spawn()
+        .expect("could not spawn wallfacer")
+        .wait()
+        .expect("could not wait for wallfacer");
+}
+
+#[cfg(not(debug_assertions))]
+pub fn run_wallfacer<I, S>(args: I)
+where
+    I: IntoIterator<Item = S> + std::fmt::Debug + Clone,
+    S: AsRef<std::ffi::OsStr>,
+{
+    Command::new("wallfacer")
+        .args(args.clone())
+        .spawn()
+        .unwrap_or_else(|_| {
+            // try running it via cargo instead
+            Command::new("cargo")
+                .args(["run", "--release", "--bin", "wallfacer", "--"])
+                .args(args)
+                .spawn()
+                .expect("could not spawn wallfacer")
+        })
+        .wait()
+        .expect("could not wait for wallfacer");
 }

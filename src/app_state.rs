@@ -4,8 +4,6 @@ use std::path::PathBuf;
 
 use wallfacer::{
     aspect_ratio::AspectRatio,
-    cli::FacesFilter,
-    cli::WallfacerArgs,
     config::WallpaperConfig,
     cropper::Direction,
     filename, filter_images,
@@ -14,7 +12,7 @@ use wallfacer::{
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
-use crate::components::use_wallpapers;
+use crate::{components::use_wallpapers, FacesFilter, WallfacerArgs};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UiMode {

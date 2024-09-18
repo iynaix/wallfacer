@@ -1,4 +1,4 @@
-use crate::cli::AddResolutionArgs;
+use clap::Args;
 use wallfacer::{
     aspect_ratio::AspectRatio,
     config::WallpaperConfig,
@@ -31,8 +31,17 @@ fn center_new_crop(old_crop: &Geometry, new_crop: &Geometry, info: &WallInfo) ->
         .clamp(default_start, direction, new_crop.w, new_crop.h)
 }
 
+#[derive(Args, Debug)]
+pub struct AddResolutionArgs {
+    /// name of the new resolution
+    pub name: Option<String>,
+
+    /// the new resolution, in the format <width>x<height>
+    pub resolution: Option<String>,
+}
+
 // needed for parity with add_wallpapers in a match {}
-pub fn add_resolution(args: AddResolutionArgs) {
+pub fn main(args: AddResolutionArgs) {
     // the following checks shouldn't ever trigger as clap shouldn't allow it
     let name = args
         .name
