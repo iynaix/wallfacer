@@ -8,7 +8,6 @@ use dioxus_free_icons::icons::{
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 use dioxus_free_icons::Icon;
-use wallfacer::config::WallpaperConfig;
 
 use crate::{
     add_wallpapers::wallpapers_from_paths,
@@ -17,6 +16,7 @@ use crate::{
         save_button::SaveButton, use_ui, use_wallpapers, wallpaper_button::WallpaperButton,
     },
 };
+use wallfacer::config::WallpaperConfig;
 
 pub fn prev_image() {
     let mut wallpapers = use_wallpapers();
@@ -62,9 +62,11 @@ pub fn AppHeader() -> Element {
             .stdout(std::process::Stdio::null())
             .spawn()
             .is_ok()
+            && cfg!(feature = "wallust")
     });
     let info = &walls.current;
 
+    let supports_adding = cfg!(feature = "adding");
     let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-crust focus-visible:outline-offset-0 cursor-pointer";
 
     rsx! {
@@ -80,28 +82,33 @@ pub fn AppHeader() -> Element {
                     label {
                         class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
                         class: "bg-surface1 hover:bg-crust",
+                        class: if !supports_adding { "hidden" },
                         Icon { fill: "white", icon:  LdImagePlus }
 
-                    input {
-                        class: "hidden",
-                        r#type: "file",
-                        accept: ".jpg,.jpeg,.png,.webp",
-                        directory: true,
-                        // pick multiple files
-                        multiple: true,
-                        onchange: move |evt| {
-                            if let Some(file_engine) = &evt.files() {
-                                let selected_paths: Vec<_> = file_engine.files().iter().map(PathBuf::from).collect();
-                                let all_files = wallpapers_from_paths(&selected_paths, &cfg());
+                        input {
+                            class: "hidden",
+                            r#type: "file",
+                            accept: ".jpg,.jpeg,.png,.webp",
+                            directory: true,
+                            // pick multiple files
+                            multiple: true,
+                            onchange: move |evt| {
+                                if let Some(file_engine) = &evt.files() {
+                                    let selected_paths: Vec<_> = file_engine.files().iter().map(PathBuf::from).collect();
+                                    let all_files = wallpapers_from_paths(&selected_paths, &cfg());
 
-                                todo!("process the files with a UI");
+                                    ui.with_mut(|ui| {
+                                        ui.mode = UiMode::Adding(all_files);
+                                    });
+                                }
                             }
                         }
                     }
-                    }
 
 
-                    a { class: "text-base font-semibold leading-6 text-white",
+                    a {
+                        class: "text-base font-semibold leading-6 text-white",
+                        class: if !supports_adding { "ml-2" },
                         "{walls.index + 1} / {walls.files.len()}"
                     }
                 }

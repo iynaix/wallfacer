@@ -3,7 +3,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{
+use super::{
     aspect_ratio::AspectRatio,
     config::WallpaperConfig,
     cropper::Cropper,

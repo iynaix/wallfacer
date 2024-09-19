@@ -4,7 +4,7 @@ use ini::Ini;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 
-use crate::{aspect_ratio::AspectRatio, full_path};
+use super::{aspect_ratio::AspectRatio, full_path};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WallpaperConfig {

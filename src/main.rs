@@ -5,6 +5,7 @@ use clap_complete::{generate, Shell};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
 use std::path::PathBuf;
+
 use wallfacer::config::WallpaperConfig;
 
 pub mod add_resolution;
@@ -276,8 +277,8 @@ fn App() -> Element {
                     Palette { }
                 } else if ui().mode == UiMode::Editor {
                     Editor { wallpapers_path: config().wallpapers_dir }
-                } else if ui().mode == UiMode::Adding {
-                    Adding { }
+                } else if let UiMode::Adding(images) = ui().mode {
+                    Adding { images }
                 }
             }
         }

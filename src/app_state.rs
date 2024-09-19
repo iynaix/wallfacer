@@ -2,6 +2,8 @@ use clap::Parser;
 use itertools::Itertools;
 use std::path::PathBuf;
 
+use crate::{components::use_wallpapers, FacesFilter, WallfacerArgs};
+
 use wallfacer::{
     aspect_ratio::AspectRatio,
     config::WallpaperConfig,
@@ -12,14 +14,12 @@ use wallfacer::{
     wallpapers::{WallInfo, WallpapersCsv},
 };
 
-use crate::{components::use_wallpapers, FacesFilter, WallfacerArgs};
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UiMode {
     Editor,
     FileList,
     Palette,
-    Adding,
+    Adding(Vec<PathBuf>),
 }
 
 impl Default for UiMode {

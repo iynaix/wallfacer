@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallfacer::filename;
 
 use crate::components::{use_ui, use_wallpapers};
+use wallfacer::filename;
 
 #[component]
 fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>) -> Element {

@@ -5,7 +5,7 @@ use serde::{
 };
 use std::collections::HashMap;
 
-use crate::{
+use super::{
     aspect_ratio::AspectRatio,
     config::WallpaperConfig,
     cropper::{Cropper, Direction},

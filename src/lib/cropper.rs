@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 
-use crate::{aspect_ratio::AspectRatio, geometry::Geometry, wallpapers::Face};
+use super::{aspect_ratio::AspectRatio, geometry::Geometry, wallpapers::Face};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {

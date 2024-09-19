@@ -3,12 +3,12 @@ use std::path::PathBuf;
 
 use dioxus::prelude::*;
 use dioxus_sdk::utils::window::{use_window_size, WindowSize};
-use wallfacer::{cropper::Direction, wallpapers::Face};
 
 use crate::{
     app_state::PreviewMode,
     components::{drag_overlay::DragOverlay, use_ui, use_wallpapers},
 };
+use wallfacer::{cropper::Direction, wallpapers::Face};
 
 #[component]
 fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {

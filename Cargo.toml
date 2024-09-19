@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
+[lib]
+path = "src/lib/mod.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -35,6 +38,11 @@ async-process = "2.3.0"
 rust-ini = "0.21.1"
 ordered-float = "4.2.2"
 wallust = "3.0.0"
+
+[features]
+default = ["adding"]
+wallust = []
+adding = []
 
 [lints.rust]
 unsafe_code = "forbid"

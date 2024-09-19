@@ -8,12 +8,12 @@ use dioxus_free_icons::icons::{
     },
 };
 use dioxus_free_icons::Icon;
-use wallfacer::{cropper::Direction, geometry::Geometry};
 
 use crate::{
     app_state::PreviewMode,
     components::{button::Button, use_ui, use_wallpapers},
 };
+use wallfacer::{cropper::Direction, geometry::Geometry};
 
 pub fn set_align(geom: &Geometry) {
     let mut wallpapers = use_wallpapers();

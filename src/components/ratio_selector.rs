@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
-use wallfacer::aspect_ratio::AspectRatio;
 
 use crate::{
     app_state::UiState,
     components::{button::Button, use_ui, use_wallpapers},
 };
+use wallfacer::aspect_ratio::AspectRatio;
 
 pub fn change_ratio(ratio: &AspectRatio) {
     let mut wallpapers = use_wallpapers();
