@@ -2,7 +2,6 @@
 use app_state::PreviewMode;
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{generate, Shell};
-use components::{editor::handle_arrow_keys_keyup, save_button::save_image};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
 use std::path::PathBuf;
@@ -12,12 +11,14 @@ pub mod add_resolution;
 pub mod add_wallpapers;
 pub mod app_state;
 pub mod components;
+pub mod screens;
 
 use crate::{
     app_state::{UiMode, UiState, Wallpapers},
-    components::{
-        app_header::AppHeader,
-        editor::{handle_editor_shortcuts, Editor},
+    components::{app_header::AppHeader, save_button::save_image},
+    screens::{
+        adding::Adding,
+        editor::{handle_arrow_keys_keyup, handle_editor_shortcuts, Editor},
         filelist::FileList,
         palette::Palette,
     },
@@ -275,6 +276,8 @@ fn App() -> Element {
                     Palette { }
                 } else if ui().mode == UiMode::Editor {
                     Editor { wallpapers_path: config().wallpapers_dir }
+                } else if ui().mode == UiMode::Adding {
+                    Adding { }
                 }
             }
         }

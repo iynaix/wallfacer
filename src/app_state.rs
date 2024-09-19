@@ -19,6 +19,7 @@ pub enum UiMode {
     Editor,
     FileList,
     Palette,
+    Adding,
 }
 
 impl Default for UiMode {

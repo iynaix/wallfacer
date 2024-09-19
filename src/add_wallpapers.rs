@@ -45,16 +45,13 @@ pub struct AddWallpaperArgs {
     pub paths: Vec<PathBuf>,
 }
 
-pub fn main(args: AddWallpaperArgs) {
-    let cfg = WallpaperConfig::new();
-
-    let wall_dir = &cfg.wallpapers_dir;
+pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &WallpaperConfig) -> Vec<PathBuf> {
     let mut all_files = Vec::new();
-    for p in args.paths.iter().flat_map(std::fs::canonicalize) {
+    for p in paths.iter().flat_map(std::fs::canonicalize) {
         if let Some(p) = is_image(&p) {
             all_files.push(p);
-        } else if p == *wall_dir {
-            let wallpapers_csv = WallpapersCsv::open(&cfg).unwrap_or_default();
+        } else if p == cfg.wallpapers_dir {
+            let wallpapers_csv = WallpapersCsv::open(cfg).unwrap_or_default();
             let new_files = filter_images(&p)
                 .filter(|p| wallpapers_csv.get(&filename(p)).is_none())
                 .map(|p| {
@@ -71,6 +68,13 @@ pub fn main(args: AddWallpaperArgs) {
             all_files.extend(filter_images(&p));
         }
     }
+
+    all_files
+}
+
+pub fn main(args: AddWallpaperArgs) {
+    let cfg = WallpaperConfig::new();
+    let all_files = wallpapers_from_paths(&args.paths, &cfg);
 
     // allow loading and cleaning of wallpapers.csv
     let mut pipeline = WallpaperPipeline::new(

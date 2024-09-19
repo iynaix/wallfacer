@@ -8,6 +8,7 @@ build = "build.rs"
 
 [dependencies]
 dioxus-free-icons = { version = "0.8.6", features = [
+    "lucide",
     "material-design-icons-action",
     "material-design-icons-device",
     "material-design-icons-editor",
@@ -15,7 +16,7 @@ dioxus-free-icons = { version = "0.8.6", features = [
     "material-design-icons-navigation",
 ] }
 clap = { version = "4.5.17", features = ["derive"] }
-clap_complete = "4.5.26"
+clap_complete = "4.5.28"
 csv = "1.3.0"
 dioxus = { version = "0.5.6", features = ["desktop"] }
 dioxus-sdk = { git = "https://github.com/DioxusLabs/sdk.git", branch = "master", features = [
@@ -30,7 +31,7 @@ serde = "1.0.210"
 serde_json = "1.0.128"
 thiserror = "1.0.63"
 tokio = { version = "1.40.0", features = ["process"] }
-async-process = "2.2.4"
+async-process = "2.3.0"
 rust-ini = "0.21.1"
 ordered-float = "4.2.2"
 wallust = "3.0.0"

@@ -9,11 +9,9 @@ use crate::{
         app_header::{next_image, prev_image},
         candidates::Candidates,
         preview::Previewer,
-        ratio_selector::RatioSelector,
+        ratio_selector::{change_ratio, RatioSelector},
     },
 };
-
-use super::ratio_selector::change_ratio;
 
 pub fn handle_arrow_keys_keyup(_arrow_key: &Key, ui: &mut Signal<UiState>) {
     ui.with_mut(|ui| {
