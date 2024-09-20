@@ -1,4 +1,5 @@
 use serde::Serialize;
+use thiserror::Error;
 
 /// euclid's algorithm to find the greatest common divisor
 const fn gcd(mut a: u32, mut b: u32) -> u32 {
@@ -8,6 +9,12 @@ const fn gcd(mut a: u32, mut b: u32) -> u32 {
         a = tmp;
     }
     a
+}
+
+#[derive(Error, Debug)]
+pub enum AspectRatioError {
+    #[error("Invalid aspect ratio")]
+    InvalidAspectRatio,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -43,16 +50,16 @@ impl From<&AspectRatio> for f64 {
 }
 
 impl TryFrom<&str> for AspectRatio {
-    type Error = ();
+    type Error = AspectRatioError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = s.split('x').collect();
-        assert!(parts.len() == 2, "Invalid aspect ratio: {}", s);
+        let parts: Vec<_> = s.split('x').filter_map(|s| s.parse::<u32>().ok()).collect();
 
-        let width = parts[0].parse().map_err(|_| ())?;
-        let height = parts[1].parse().map_err(|_| ())?;
+        if parts.len() != 2 {
+            return Err(AspectRatioError::InvalidAspectRatio);
+        }
 
-        Ok(Self::new(width, height))
+        Ok(Self::new(parts[0], parts[1]))
     }
 }
 

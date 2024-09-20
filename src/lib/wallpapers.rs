@@ -129,7 +129,7 @@ impl<'de> Deserialize<'de> for WallInfo {
                         }
                         _ => {
                             geometries.insert(
-                                key.try_into().unwrap_or_else(|()| {
+                                key.try_into().unwrap_or_else(|_| {
                                     panic!("could not convert aspect ratio {key} into string")
                                 }),
                                 value
@@ -301,7 +301,7 @@ impl WallpapersCsv {
         header
     }
 
-    pub fn save(&self, ratios: &[AspectRatio]) {
+    pub fn save(&mut self, ratios: &[AspectRatio]) {
         let writer = std::io::BufWriter::new(
             std::fs::File::create(&self.config.csv_path).expect("could not create wallpapers.csv"),
         );
@@ -314,6 +314,7 @@ impl WallpapersCsv {
         wtr.write_record(self.header(ratios))
             .expect("could not write csv header");
 
+        let mut removed = Vec::new();
         for wall in self.wallpapers.values() {
             let wall_path = self.config.wallpapers_dir.join(&wall.filename);
             if wall_path.exists() {
@@ -335,8 +336,13 @@ impl WallpapersCsv {
                     panic!("could not write row: {:?}", &wall);
                 });
             } else {
+                removed.push(wall.filename.to_string());
                 println!("Removed wallpaper: {}", wall.filename);
             }
+        }
+
+        for r in removed {
+            self.wallpapers.shift_remove(&r);
         }
     }
 }

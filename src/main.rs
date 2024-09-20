@@ -67,7 +67,7 @@ pub struct WallfacerArgs {
     #[arg(
         long,
         value_enum,
-        help = "type of shell completion to generate",
+        help = "Type of shell completion to generate",
         hide = true,
         exclusive = true
     )]
@@ -82,7 +82,7 @@ pub struct WallfacerArgs {
         default_missing_value = "all",
         num_args = 0..=1,
         value_name = "RESOLUTIONS",
-        help = "only show wallpapers that use the default crops; either \"all\" or resolution(s) in the format \"1920x1080,1920x1200\""
+        help = "Only show wallpapers that use the default crops; either \"all\" or resolution(s) in the format \"1920x1080,1920x1200\""
     )]
     pub unmodified: Option<String>,
 
@@ -92,7 +92,7 @@ pub struct WallfacerArgs {
         default_missing_value = "all",
         num_args = 0..=1,
         value_name = "RESOLUTIONS",
-        help = "only show wallpapers that don't use the default crops; either \"all\" or resolution(s) in the format \"1920x1080,1920x1200\""
+        help = "Only show wallpapers that don't use the default crops; either \"all\" or resolution(s) in the format \"1920x1080,1920x1200\""
     )]
     pub modified: Option<String>,
 
@@ -101,14 +101,14 @@ pub struct WallfacerArgs {
         default_value = "all",
         default_missing_value = "all",
         value_parser = clap::value_parser!(FacesFilter),
-        help = "only show wallpapers that have a palette"
+        help = "Only show wallpapers that have a palette"
     )]
     pub faces: FacesFilter,
 
-    #[arg(long, help = "filters wallpapers by filename (case-insensitive)")]
+    #[arg(long, help = "Filters wallpapers by filename (case-insensitive)")]
     pub filter: Option<String>,
 
-    /// directories or images to add
+    #[arg(help = "Directories or images to be displayed", value_name = "PATHS")]
     pub paths: Option<Vec<PathBuf>>,
 }
 

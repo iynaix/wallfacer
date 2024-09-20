@@ -4,7 +4,6 @@ use std::{
 };
 
 use super::{
-    aspect_ratio::AspectRatio,
     config::WallpaperConfig,
     cropper::Cropper,
     filename, filter_images, run_wallfacer,
@@ -84,22 +83,14 @@ pub fn optimize_png(infile: &PathBuf, outfile: &PathBuf) {
 
 #[derive(Default)]
 pub struct WallpaperPipeline {
+    config: WallpaperConfig,
     format: Option<String>,
-    min_width: u32,
-    min_height: u32,
-    wall_dir: PathBuf,
-    resolutions: Vec<AspectRatio>,
     wallpapers_csv: WallpapersCsv,
     to_preview: Vec<PathBuf>,
 }
 
 impl WallpaperPipeline {
-    pub fn new(
-        cfg: &WallpaperConfig,
-        min_width: u32,
-        min_height: u32,
-        format: Option<String>,
-    ) -> Self {
+    pub fn new(cfg: &WallpaperConfig, format: Option<String>) -> Self {
         // create the csv if it doesn't exist
         let wallpapers_csv = WallpapersCsv::open(cfg).unwrap_or_default();
 
@@ -107,11 +98,8 @@ impl WallpaperPipeline {
         wallpapers_csv.find_duplicates();
 
         let mut pipeline = Self {
-            min_width,
-            min_height,
             format,
-            wall_dir: cfg.wallpapers_dir.clone(),
-            resolutions: cfg.sorted_resolutions(),
+            config: cfg.clone(),
             wallpapers_csv: wallpapers_csv.clone(),
             to_preview: Vec::new(),
         };
@@ -127,8 +115,8 @@ impl WallpaperPipeline {
         pipeline
     }
 
-    pub fn save_csv(&self) {
-        self.wallpapers_csv.save(&self.resolutions);
+    pub fn save_csv(&mut self) {
+        self.wallpapers_csv.save(&self.config.sorted_resolutions());
     }
 
     pub fn add_image(&mut self, img: &PathBuf, force: bool) {
@@ -139,15 +127,19 @@ impl WallpaperPipeline {
             .format
             .as_ref()
             .map_or_else(|| img.clone(), |ext| img.with_extension(ext.as_str()))
-            .with_directory(&self.wall_dir);
+            .with_directory(&self.config.wallpapers_dir);
 
         if out_path.exists() && !force {
             // check if corresponding WallInfo exists
             if let Some(info) = self.wallpapers_csv.get(&filename(&out_path)) {
                 // image has been edited, re-process the image
                 if info.width / width != info.height / height {
-                    let scale_factor =
-                        get_scale_factor(width, height, self.min_width, self.min_height);
+                    let scale_factor = get_scale_factor(
+                        width,
+                        height,
+                        self.config.min_width,
+                        self.config.min_height,
+                    );
                     if scale_factor == 1 {
                         self.optimize(img);
                     } else {
@@ -157,7 +149,8 @@ impl WallpaperPipeline {
                 }
 
                 // re-preview if no / multiple faces detected and still using default crop
-                if info.faces.len() != 1 && info.is_default_crops(&self.resolutions) {
+                if info.faces.len() != 1 && info.is_default_crops(&self.config.sorted_resolutions())
+                {
                     self.to_preview.push(out_path);
                     return;
                 }
@@ -169,7 +162,8 @@ impl WallpaperPipeline {
             return;
         }
 
-        let scale_factor = get_scale_factor(width, height, self.min_width, self.min_height);
+        let scale_factor =
+            get_scale_factor(width, height, self.config.min_width, self.config.min_height);
         if scale_factor == 1 {
             self.optimize(img);
         } else {
@@ -209,7 +203,7 @@ impl WallpaperPipeline {
             .format
             .as_ref()
             .map_or_else(|| img.clone(), |format| img.with_extension(format))
-            .with_directory(self.wall_dir.clone());
+            .with_directory(self.config.wallpapers_dir.clone());
 
         if let Some(ext) = out_img.extension() {
             match ext.to_str().expect("could not convert extension to str") {
@@ -253,13 +247,13 @@ impl WallpaperPipeline {
         let cropper = Cropper::new(&faces, width, height);
 
         // create WallInfo and save it
+        let resolutions = self.config.sorted_resolutions();
         let wall_info = WallInfo {
             filename: fname.clone(),
             width,
             height,
             faces,
-            geometries: self
-                .resolutions
+            geometries: resolutions
                 .iter()
                 .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
                 .collect(),
@@ -268,11 +262,12 @@ impl WallpaperPipeline {
 
         // preview both multiple faces and no faces
         if wall_info.faces.len() != 1 {
-            self.to_preview.push(img.with_directory(&self.wall_dir));
+            self.to_preview
+                .push(img.with_directory(&self.config.wallpapers_dir));
         }
 
         self.wallpapers_csv.insert(fname, wall_info);
-        self.wallpapers_csv.save(&self.resolutions);
+        self.wallpapers_csv.save(&resolutions);
     }
 
     pub fn preview(self) {

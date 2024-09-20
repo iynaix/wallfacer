@@ -51,7 +51,7 @@ pub fn main(args: AddResolutionArgs) {
         .unwrap_or_else(|| panic!("resolution is required"));
 
     let new_res = std::convert::TryInto::<AspectRatio>::try_into(resolution.as_str())
-        .unwrap_or_else(|()| panic!("could not convert aspect ratio {} into string", resolution));
+        .unwrap_or_else(|_| panic!("invalid aspect ratio: {resolution} into string"));
 
     let mut cfg = WallpaperConfig::new();
     let closest_res = cfg.closest_resolution(&new_res);

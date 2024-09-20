@@ -106,7 +106,7 @@ impl Wallpapers {
                 .split(',')
                 .map(|s| {
                     std::convert::TryInto::<AspectRatio>::try_into(s.trim())
-                        .unwrap_or_else(|()| panic!("Invalid resolution {s} provided."))
+                        .unwrap_or_else(|_| panic!("Invalid resolution {s} provided."))
                 })
                 .collect(),
         }
@@ -382,7 +382,7 @@ impl Wallpapers {
     }
 
     /// saves the csv
-    pub fn save_csv(&self) {
+    pub fn save_csv(&mut self) {
         let resolutions: Vec<_> = self
             .resolutions
             .iter()

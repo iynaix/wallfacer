@@ -65,7 +65,12 @@ fn get_preview_size(
         final_w = max_h / img_h * img_w;
     }
 
-    (final_w, final_h)
+    // cannot be larger than the image
+    if final_w > img_w || final_h > img_h {
+        (img_w, img_h)
+    } else {
+        (final_w, final_h)
+    }
 }
 
 #[component]

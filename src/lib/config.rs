@@ -1,10 +1,20 @@
 use std::path::PathBuf;
+use thiserror::Error;
 
 use ini::Ini;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 
 use super::{aspect_ratio::AspectRatio, full_path};
+
+#[derive(Error, Debug)]
+pub enum WallpaperConfigError {
+    #[error("Invalid config")]
+    InvalidConfig,
+}
+
+type WallpaperConfigResult<T> = std::result::Result<T, WallpaperConfigError>;
+pub type Result<T> = WallpaperConfigResult<T>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WallpaperConfig {
@@ -51,9 +61,8 @@ impl WallpaperConfig {
                         .map(|(k, v)| {
                             (
                                 k.to_string(),
-                                std::convert::TryInto::<AspectRatio>::try_into(v).unwrap_or_else(
-                                    |()| panic!("could not convert aspect ratio {v} from string"),
-                                ),
+                                std::convert::TryInto::<AspectRatio>::try_into(v)
+                                    .unwrap_or_else(|_| panic!("Invalid aspect ratio: {v}")),
                             )
                         })
                         .sorted_by_key(|(_, ratio)| ratio.clone())

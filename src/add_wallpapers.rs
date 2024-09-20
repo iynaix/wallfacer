@@ -11,32 +11,16 @@ pub struct AddWallpaperArgs {
     #[arg(
         long,
         action,
-        value_name = "MIN_WIDTH",
-        help = "minimum width for wallpapers to be resized, defaults to 1920 if not provided in config.ini"
-    )]
-    pub min_width: Option<u32>,
-
-    #[arg(
-        long,
-        action,
-        value_name = "MIN_HEIGHT",
-        help = "minimum height for wallpapers to be resized, defaults to 1080 if not provided in config.ini"
-    )]
-    pub min_height: Option<u32>,
-
-    #[arg(
-        long,
-        action,
         value_name = "FORMAT",
         value_parser = PossibleValuesParser::new(["jpg", "png", "webp"]),
-        help = "optional format to convert the images to"
+        help = "Optional format to convert the images to"
     )]
     pub format: Option<String>,
 
     #[arg(
         long,
         action,
-        help = "reprocess the image even if it already exists in the csv"
+        help = "Reprocess the image even if it already exists in the csv"
     )]
     pub force: bool,
 
@@ -77,12 +61,7 @@ pub fn main(args: AddWallpaperArgs) {
     let all_files = wallpapers_from_paths(&args.paths, &cfg);
 
     // allow loading and cleaning of wallpapers.csv
-    let mut pipeline = WallpaperPipeline::new(
-        &cfg,
-        args.min_width.unwrap_or(cfg.min_width),
-        args.min_height.unwrap_or(cfg.min_height),
-        args.format,
-    );
+    let mut pipeline = WallpaperPipeline::new(&cfg, args.format);
 
     if all_files.is_empty() {
         pipeline.save_csv();
