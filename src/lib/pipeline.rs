@@ -193,7 +193,7 @@ impl WallpaperPipeline {
             .wait()
             .expect("could not wait for realcugan-ncnn-vulkan");
 
-        self.optimize(img);
+        self.optimize(&dest);
     }
 
     pub fn optimize(&mut self, img: &PathBuf) {

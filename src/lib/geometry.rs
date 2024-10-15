@@ -27,7 +27,7 @@ impl TryFrom<String> for Geometry {
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         let geometry: Vec<_> = s
-            .split(|c| c == 'x' || c == '+')
+            .split(['x', '+'])
             .filter_map(|s| s.parse::<u32>().ok())
             .collect();
 
