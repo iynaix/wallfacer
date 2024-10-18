@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
-    app_state::{PreviewMode, UiState, Wallpapers},
+    app_state::{UiState, Wallpapers},
     components::{
         align_selector::{set_align, toggle_pan, AlignSelector},
         app_header::{next_image, prev_image},
@@ -24,8 +24,6 @@ pub fn handle_arrows_keydown(
     wallpapers: &mut Signal<Wallpapers>,
     ui: &mut Signal<UiState>,
 ) {
-    let walls = wallpapers();
-    let current_geom = walls.get_geometry();
     let start_time_ms = ui()
         .arrow_key_start
         .map_or(0, |start_time| start_time.elapsed().as_millis());
@@ -41,36 +39,7 @@ pub fn handle_arrows_keydown(
                 });
             }
 
-            let new_geom = match ui().preview_mode {
-                PreviewMode::Candidate(_) => {
-                    let candidates_geom = walls.candidate_geometries();
-                    candidates_geom
-                        .iter()
-                        .position(|geom| *geom == current_geom)
-                        .map_or_else(
-                            || candidates_geom[0].clone(),
-                            |pos| {
-                                // has candidates
-                                if candidates_geom.len() > 1 {
-                                    let prev = if pos == 0 {
-                                        candidates_geom.len() - 1
-                                    } else {
-                                        pos - 1
-                                    };
-                                    candidates_geom[prev].clone()
-                                } else {
-                                    // no candidates, start move by delta
-                                    ui.with_mut(|ui| {
-                                        ui.preview_mode = PreviewMode::Pan;
-                                    });
-                                    wallpapers().move_geometry_by(-delta)
-                                }
-                            },
-                        )
-                }
-                PreviewMode::Pan => wallpapers().move_geometry_by(-delta),
-            };
-
+            let new_geom = wallpapers().move_geometry_by(-delta);
             wallpapers.with_mut(|wallpapers| {
                 wallpapers.set_geometry(&new_geom);
             });
@@ -83,32 +52,7 @@ pub fn handle_arrows_keydown(
                 });
             }
 
-            let new_geom = match ui().preview_mode {
-                PreviewMode::Candidate(_) => {
-                    let candidates_geom = walls.candidate_geometries();
-                    candidates_geom
-                        .iter()
-                        .position(|geom| *geom == current_geom)
-                        .map_or_else(
-                            || candidates_geom[0].clone(),
-                            |pos| {
-                                // has candidates
-                                if candidates_geom.len() > 1 {
-                                    let next = (pos + 1) % candidates_geom.len();
-                                    candidates_geom[next].clone()
-                                } else {
-                                    // no candidates, start move by delta
-                                    ui.with_mut(|ui| {
-                                        ui.preview_mode = PreviewMode::Pan;
-                                    });
-                                    wallpapers().move_geometry_by(delta)
-                                }
-                            },
-                        )
-                }
-                PreviewMode::Pan => wallpapers().move_geometry_by(delta),
-            };
-
+            let new_geom = wallpapers().move_geometry_by(delta);
             wallpapers.with_mut(|wallpapers| {
                 wallpapers.set_geometry(&new_geom);
             });
@@ -160,6 +104,7 @@ pub fn handle_editor_shortcuts(
                     );
                 }
 
+                // TODO: n for next candidate, p for prev candidate
                 "$" => {
                     set_align(
                         &walls
