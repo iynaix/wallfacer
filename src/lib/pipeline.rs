@@ -3,6 +3,8 @@ use std::{
     process::{Command, Stdio},
 };
 
+use itertools::Itertools;
+
 use super::{
     config::WallpaperConfig,
     cropper::Cropper,
@@ -19,17 +21,8 @@ fn wait_for_image(path: &Path) {
 }
 
 /// get scale factor for the image
-fn get_scale_factor(width: u32, height: u32, min_width: u32, min_height: u32) -> u32 {
-    for scale_factor in 1..=4 {
-        if width * scale_factor >= min_width && height * scale_factor >= min_height {
-            return scale_factor;
-        }
-    }
-
-    panic!(
-        "image is too small to be upscaled to {}x{}",
-        min_width, min_height
-    );
+fn get_scale(width: u32, height: u32, min_width: u32, min_height: u32) -> Option<u32> {
+    (1..=4).find(|&scale| width * scale >= min_width && height * scale >= min_height)
 }
 
 pub fn optimize_webp(infile: &PathBuf, outfile: &PathBuf) {
@@ -97,22 +90,26 @@ impl WallpaperPipeline {
         // do a check for duplicates
         wallpapers_csv.find_duplicates();
 
-        let mut pipeline = Self {
-            format,
-            config: cfg.clone(),
-            wallpapers_csv: wallpapers_csv.clone(),
-            to_preview: Vec::new(),
-        };
-
         let wall_dir = &cfg.wallpapers_dir;
+
         // add images from wallpapers dir that are not in the csv
-        for img in filter_images(&wall_dir) {
-            if wallpapers_csv.get(&filename(&img)).is_none() {
-                pipeline.detect(&img);
+        let orphan_wallpapers = filter_images(&wall_dir)
+            .filter(|img| wallpapers_csv.get(&filename(img)).is_none())
+            .collect_vec();
+
+        if !orphan_wallpapers.is_empty() {
+            for img in orphan_wallpapers {
+                eprintln!("orphan wallpaper: {img:?}");
             }
+            std::process::exit(1);
         }
 
-        pipeline
+        Self {
+            format,
+            config: cfg.clone(),
+            wallpapers_csv,
+            to_preview: Vec::new(),
+        }
     }
 
     pub fn save_csv(&mut self) {
@@ -129,21 +126,19 @@ impl WallpaperPipeline {
             .map_or_else(|| img.clone(), |ext| img.with_extension(ext.as_str()))
             .with_directory(&self.config.wallpapers_dir);
 
+        let scale = get_scale(width, height, self.config.min_width, self.config.min_height);
         if out_path.exists() && !force {
             // check if corresponding WallInfo exists
             if let Some(info) = self.wallpapers_csv.get(&filename(&out_path)) {
                 // image has been edited, re-process the image
                 if info.width / width != info.height / height {
-                    let scale_factor = get_scale_factor(
-                        width,
-                        height,
-                        self.config.min_width,
-                        self.config.min_height,
-                    );
-                    if scale_factor == 1 {
-                        self.optimize(img);
-                    } else {
-                        self.upscale(img, scale_factor);
+                    match scale {
+                        None => {
+                            eprintln!("{img:?} is too small to be upscaled!");
+                            std::process::exit(1);
+                        }
+                        Some(1) => self.optimize(img),
+                        Some(scale) => self.upscale(img, scale),
                     }
                     return;
                 }
@@ -162,12 +157,13 @@ impl WallpaperPipeline {
             return;
         }
 
-        let scale_factor =
-            get_scale_factor(width, height, self.config.min_width, self.config.min_height);
-        if scale_factor == 1 {
-            self.optimize(img);
-        } else {
-            self.upscale(img, scale_factor);
+        match scale {
+            None => {
+                eprintln!("{img:?} is too small to be upscaled!");
+                std::process::exit(1);
+            }
+            Some(1) => self.optimize(img),
+            Some(scale) => self.upscale(img, scale),
         }
     }
 

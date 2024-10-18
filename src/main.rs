@@ -239,9 +239,7 @@ fn App() -> Element {
         })
     });
 
-    let has_files = !wallpapers().files.is_empty();
-
-    if !has_files {
+    if wallpapers().files.is_empty() {
         return rsx! {
             main {
                 class: "dark flex items-center h-full justify-center bg-base overflow-hidden",
