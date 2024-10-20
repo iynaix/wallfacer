@@ -1,16 +1,12 @@
 #![allow(non_snake_case)]
-use std::path::PathBuf;
-
 use dioxus::prelude::*;
 use dioxus_free_icons::icons::{
-    ld_icons::LdImagePlus,
     md_image_icons::{MdFaceRetouchingNatural, MdPalette},
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 use dioxus_free_icons::Icon;
 
 use crate::{
-    add_wallpapers::wallpapers_from_paths,
     app_state::UiMode,
     components::{
         save_button::SaveButton, use_ui, use_wallpapers, wallpaper_button::WallpaperButton,
@@ -74,11 +70,12 @@ pub fn AppHeader() -> Element {
                 div {
                     class: "flex flex-1 justify-start items-center gap-x-3",
 
+                    /*
                     label {
                         class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
                         class: "bg-surface1 hover:bg-crust",
                         class: if !supports_adding { "hidden" },
-                        Icon { fill: "white", icon:  LdImagePlus }
+                        Icon { fill: "white", icon:  dioxus_free_icons::icons::ld_icons::LdImagePlus }
 
                         input {
                             class: "hidden",
@@ -89,8 +86,8 @@ pub fn AppHeader() -> Element {
                             multiple: true,
                             onchange: move |evt| {
                                 if let Some(file_engine) = &evt.files() {
-                                    let selected_paths: Vec<_> = file_engine.files().iter().map(PathBuf::from).collect();
-                                    let all_files = wallpapers_from_paths(&selected_paths, &cfg());
+                                    let selected_paths: Vec<_> = file_engine.files().iter().map(std::path::PathBuf::from).collect();
+                                    let all_files = crate::add_wallpapers::wallpapers_from_paths(&selected_paths, &cfg());
 
                                     ui.with_mut(|ui| {
                                         ui.mode = UiMode::Adding(all_files);
@@ -99,7 +96,7 @@ pub fn AppHeader() -> Element {
                             }
                         }
                     }
-
+                    */
 
                     a {
                         class: "text-base font-semibold leading-6 text-white",

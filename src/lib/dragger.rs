@@ -35,7 +35,6 @@ impl Dragger {
         let outer_rect = "0 0, 100% 0, 100% 100%, 0 100%, 0 0";
 
         // inner rect format is: top left, bottom left, bottom right, top right, back to top left
-
         let clip_path = match self.direction(geom) {
             Direction::X => format!(
                 "clip-path: polygon({outer_rect}, {start:.2}% 0, {start:.2}% 100%, {end:.2}% 100%, {end:.2}% 0, {start:.2}% 0)",
@@ -50,7 +49,7 @@ impl Dragger {
         };
 
         format!(
-            "height: {}px; {clip_path}; transform: translateZ(0);",
+            "height: {}px; {clip_path}; will-change: clip-path; transform: translateZ(0); transition: clip-path 0.3s ease",
             self.preview_h
         )
     }

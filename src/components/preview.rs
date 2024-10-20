@@ -35,8 +35,10 @@ fn FacesOverlay(info: WallInfo) -> Element {
 
 /// fit the image within the max preview area
 fn get_preview_size(min_y: f64, win_size: WindowSize, img: (f64, f64)) -> (f64, f64) {
-    let margin: f64 = 16.0;
-    let candidate_btns: f64 = 36.0;
+    let scale = dioxus::desktop::window().scale_factor();
+    let margin: f64 = 16.0 * scale;
+    let candidate_btns: f64 = 36.0 * scale;
+    let min_y = min_y * scale;
 
     let max_w = margin.mul_add(-2.0, f64::from(win_size.width));
     // handle extra space for candidate buttons
@@ -54,9 +56,9 @@ fn get_preview_size(min_y: f64, win_size: WindowSize, img: (f64, f64)) -> (f64, 
 
     // cannot be larger than the image
     if final_w > img_w || final_h > img_h {
-        (img_w, img_h)
+        (img_w / scale, img_h / scale)
     } else {
-        (final_w, final_h)
+        (final_w / scale, final_h / scale)
     }
 }
 
@@ -72,9 +74,20 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
     let window_size = use_window_size();
     // calculate the preview size of the image
     // only needs to change when the window resizes
-    let preview_wh =
-        use_memo(move || get_preview_size(preview_y(), window_size(), image_dimensions));
-    let mut dragger = use_signal(|| Dragger::new(image_dimensions, preview_wh()));
+    let mut dragger = use_signal(|| {
+        let wh = get_preview_size(preview_y(), window_size(), image_dimensions);
+        Dragger::new(image_dimensions, wh)
+    });
+
+    // update dragger on resize
+    use_effect(move || {
+        let (w, h) = get_preview_size(preview_y(), window_size(), image_dimensions);
+
+        dragger.with_mut(|dragger| {
+            dragger.preview_w = w;
+            dragger.preview_h = h;
+        });
+    });
 
     let ui = ui();
 
@@ -89,7 +102,7 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
     rsx! {
         div {
             class: "relative m-auto",
-            style: "width: {preview_wh().0}px; height: {preview_wh().1}px;",
+            style: "width: {dragger().preview_w}px; height: {dragger().preview_h}px;",
             img {
                 class: match dragger().direction(&geom) {
                     Direction::X => "cursor-ew-resize",
