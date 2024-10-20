@@ -8,6 +8,7 @@ use wallpapers::Face;
 pub mod aspect_ratio;
 pub mod config;
 pub mod cropper;
+pub mod dragger;
 pub mod geometry;
 pub mod pipeline;
 pub mod wallpapers;

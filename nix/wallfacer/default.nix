@@ -9,6 +9,7 @@
   gdk-pixbuf,
   glib,
   gtk3,
+  libiconv,
   libsoup_3,
   openssl,
   pango,
@@ -70,6 +71,7 @@ rustPlatform.buildRustPackage {
       gdk-pixbuf
       glib
       gtk3
+      libiconv
       libsoup_3
       openssl
       pango

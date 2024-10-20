@@ -74,13 +74,12 @@
 
             env = {
               # RUST_BACKTRACE = "full";
-              XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:$XDG_DATA_DIRS";
+              # XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:$XDG_DATA_DIRS";
+              XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}";
               GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
               # FIXME: fix lag on wayland?
               # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
               # WEBKIT_DISABLE_COMPOSITING_MODE = 1;
-              # FIXME: keyboard shortcuts do not seem to work without this option
-              # GDK_BACKEND = "x11";
             };
 
             languages.rust.enable = true;

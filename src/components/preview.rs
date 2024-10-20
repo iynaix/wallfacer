@@ -1,25 +1,24 @@
 #![allow(non_snake_case)]
 use std::path::PathBuf;
 
-use dioxus::prelude::*;
-use dioxus_sdk::utils::window::{use_window_size, WindowSize};
-
 use crate::{
     app_state::PreviewMode,
     components::{drag_overlay::DragOverlay, use_ui, use_wallpapers},
 };
-use wallfacer::{cropper::Direction, wallpapers::Face};
+use dioxus::prelude::*;
+use dioxus_sdk::utils::window::{use_window_size, WindowSize};
+use wallfacer::{cropper::Direction, dragger::Dragger, wallpapers::WallInfo};
 
 #[component]
-fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
-    if faces.is_empty() {
+fn FacesOverlay(info: WallInfo) -> Element {
+    if info.faces.is_empty() {
         return None;
     }
 
-    let (img_w, img_h) = image_dimensions;
+    let (img_w, img_h) = info.dimensions_f64();
 
     rsx! {
-        {faces.iter().map(|face| {
+        {info.faces.iter().map(|face| {
             let start_x = f64::from(face.xmin) / img_w * 100.0;
             let start_y = f64::from(face.ymin) / img_h * 100.0;
 
@@ -29,7 +28,8 @@ fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
             rsx! {
                 div {
                     class: "absolute border-2 border-red-500",
-                    style: format!("top: {start_y}%; left: {start_x}%; width: {w}%; height: {h}%;"),
+                    // pointer-events: none to allow mouse events to pass through
+                    style: "top: {start_y}%; left: {start_x}%; width: {w}%; height: {h}%; pointer-events: none;",
                 }
             }
         })}
@@ -37,23 +37,13 @@ fn FacesOverlay(faces: Vec<Face>, image_dimensions: (f64, f64)) -> Element {
 }
 
 /// fit the image within the max preview area
-fn get_preview_size(
-    min_y: f64,
-    win_size: WindowSize,
-    img: (f64, f64),
-    has_candidates: bool,
-) -> (f64, f64) {
+fn get_preview_size(min_y: f64, win_size: WindowSize, img: (f64, f64)) -> (f64, f64) {
     let margin: f64 = 16.0;
     let candidate_btns: f64 = 36.0;
 
     let max_w = margin.mul_add(-2.0, f64::from(win_size.width));
     // handle extra space for candidate buttons
-    let reserved_height = if has_candidates {
-        candidate_btns + margin
-    } else {
-        0.0
-    };
-    let max_h = f64::from(win_size.height) - min_y - margin - reserved_height;
+    let max_h = f64::from(win_size.height) - min_y - margin - (candidate_btns + margin);
 
     let (img_w, img_h) = img;
 
@@ -75,22 +65,28 @@ fn get_preview_size(
 
 #[component]
 pub fn Previewer(wallpapers_path: PathBuf) -> Element {
-    let wallpapers = use_wallpapers();
+    let mut wallpapers = use_wallpapers();
+    let info = wallpapers().current;
+    let image_dimensions = info.dimensions_f64();
     let ui = use_ui();
 
     // store y coordinate of the previewer
     let mut preview_y = use_signal(|| 0.0);
-    let info = wallpapers().current;
+    let window_size = use_window_size();
+    // calculate the preview size of the image
+    // only needs to change when the window resizes
+    let preview_wh =
+        use_memo(move || get_preview_size(preview_y(), window_size(), image_dimensions));
+    let mut dragger = use_signal(|| Dragger::new(image_dimensions, preview_wh()));
+
     let ui = ui();
 
     let path = wallpapers_path.join(&info.filename);
     let path = path
         .to_str()
-        .unwrap_or_else(|| panic!("could not convert {path:?} to str"))
-        .to_string();
+        .unwrap_or_else(|| panic!("could not convert {path:?} to str"));
 
-    let is_manual = matches!(ui.preview_mode, PreviewMode::Pan);
-    let overlay_cls = "absolute bg-black bg-opacity-60 w-full h-full";
+    let is_panning = matches!(ui.preview_mode, PreviewMode::Pan);
 
     // preview geometry takes precedence
     let geom = if let PreviewMode::Candidate(Some(mouseover_geom)) = ui.preview_mode {
@@ -99,33 +95,15 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
         wallpapers().get_geometry()
     };
 
-    let (direction, start_ratio, end_ratio) = info.overlay_transforms(&geom);
-
-    let img_w = f64::from(info.width);
-    let img_h = f64::from(info.height);
-    let start_cls = match direction {
-        Direction::X => "origin-left top-0 left-0",
-        Direction::Y => "origin-top top-0 left-0",
-    };
-
-    let end_cls = match direction {
-        Direction::X => "origin-right top-0 right-0",
-        Direction::Y => "origin-bottom bottom-0 left-0",
-    };
-
-    // get preview size of the image
-    let (preview_w, preview_h) = get_preview_size(
-        preview_y(),
-        use_window_size()(),
-        (img_w, img_h),
-        wallpapers().has_candidates(),
-    );
-
     rsx! {
         div {
             class: "relative m-auto",
-            style: "width: {preview_w}px; height: {preview_h}px;",
+            style: "width: {preview_wh().0}px; height: {preview_wh().1}px;",
             img {
+                class: match dragger().direction(&geom) {
+                    Direction::X => "cursor-ew-resize",
+                    Direction::Y => "cursor-ns-resize",
+                },
                 src: path,
                 // store the final rendered width and height of the image
                 onmounted: move |evt| {
@@ -135,37 +113,48 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
                         preview_y.set(coords.min_y());
                     }
                 },
-            }
-            div {
-                class: overlay_cls,
-                class: start_cls,
-                // don't apply transitions in manual mode
-                class: if !is_manual { "transition transition-transform ease-linear" },
-                style: format!("transform: scale{}({})", direction, start_ratio),
-            }
-            div {
-                class: overlay_cls,
-                class: end_cls,
-                // don't apply transitions in manual mode
-                class: if !is_manual { "transition" },
-                style: format!("transform: scale{}({})", direction, end_ratio),
-            }
+                // clip-path produces a "hole", so detect click events on the image
+                onmousedown: move |evt| {
+                    if !is_panning {
+                        return
+                    }
 
-            if is_manual {
-                DragOverlay {
-                    dimensions: (preview_w, preview_h),
-                    image_dimensions: (img_w, img_h),
-                    overlay_ratios: (start_ratio, 1.0 - end_ratio),
-                    direction,
-                    geometry: geom,
-                }
+                    let (x, y) = evt.element_coordinates().into();
+                    dragger.with_mut(|dragger| {
+                        dragger.is_dragging = true;
+                        dragger.x = x;
+                        dragger.y = y;
+                    });
+                },
+                onmousemove: move |evt| {
+                    if dragger().is_dragging && evt.held_buttons().contains(dioxus::html::input_data::MouseButton::Primary) {
+                        let (new_x, new_y) = evt.element_coordinates().into();
+
+                        wallpapers.with_mut(|wallpapers| {
+                            let new_geom = dragger().update((new_x, new_y), &geom);
+                            wallpapers.set_geometry(&new_geom);
+                        });
+
+                        dragger.with_mut(|dragger| {
+                            dragger.x = new_x;
+                            dragger.y = new_y;
+                        });
+                    }
+                },
+                onmouseup: move |_| {
+                    dragger.with_mut(|dragger| {
+                        dragger.is_dragging = true;
+                    });
+                },
             }
 
             if ui.show_faces {
-                FacesOverlay {
-                    faces: info.faces,
-                    image_dimensions: (img_w, img_h),
-                }
+                FacesOverlay { info }
+            }
+
+            DragOverlay {
+                geometry: geom.clone(),
+                dragger,
             }
         }
     }

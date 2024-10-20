@@ -164,6 +164,14 @@ impl<'de> Deserialize<'de> for WallInfo {
 }
 
 impl WallInfo {
+    pub fn dimensions_f64(&self) -> (f64, f64) {
+        (f64::from(self.width), f64::from(self.height))
+    }
+
+    pub fn ratio(&self) -> f64 {
+        f64::from(self.width) / f64::from(self.height)
+    }
+
     pub const fn direction(&self, g: &Geometry) -> Direction {
         if self.height == g.h {
             Direction::X
@@ -192,25 +200,6 @@ impl WallInfo {
         resolutions
             .iter()
             .all(|ratio| self.get_geometry(ratio) == cropper.crop(ratio))
-    }
-
-    pub fn overlay_transforms(&self, g: &Geometry) -> (Direction, f64, f64) {
-        let img_w = f64::from(self.width);
-        let img_h = f64::from(self.height);
-
-        if self.height == g.h {
-            (
-                Direction::X,
-                f64::from(g.x) / img_w,
-                (1.0 - f64::from(g.x + g.w) / img_w),
-            )
-        } else {
-            (
-                Direction::Y,
-                f64::from(g.y) / img_h,
-                (1.0 - f64::from(g.y + g.h) / img_h),
-            )
-        }
     }
 }
 

@@ -328,9 +328,7 @@ impl Wallpapers {
             .filter(|(_, ratio)| {
                 // do not show resolution if aspect ratio of image is the same,
                 // as there is only a single possible crop
-                (f64::from(self.current.width) / f64::from(self.current.height) - f64::from(ratio))
-                    .abs()
-                    > f64::EPSILON
+                (self.current.ratio() - f64::from(ratio)).abs() > f64::EPSILON
             })
             .collect()
     }
