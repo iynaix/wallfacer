@@ -2,22 +2,15 @@
 
 use dioxus::prelude::*;
 
-use crate::{
-    app_state::UiState,
-    components::{button::Button, use_ui, use_wallpapers},
-};
+use crate::components::{button::Button, use_wallpapers};
 use wallfacer::aspect_ratio::AspectRatio;
 
 pub fn change_ratio(ratio: &AspectRatio) {
     let mut wallpapers = use_wallpapers();
-    let mut ui = use_ui();
 
     wallpapers.with_mut(|wallpapers| {
         wallpapers.ratio = ratio.clone();
     });
-
-    // switch to pan mode if there are multiple candidates
-    ui.with_mut(UiState::init_preview_mode);
 }
 
 #[component]

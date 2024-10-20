@@ -1,10 +1,7 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
-use crate::{
-    app_state::PreviewMode,
-    components::{use_ui, use_wallpapers},
-};
+use crate::components::{use_ui, use_wallpapers};
 
 pub fn save_image() {
     let mut wallpapers = use_wallpapers();
@@ -18,7 +15,6 @@ pub fn save_image() {
         wallpapers.remove();
     });
     ui.with_mut(|ui| {
-        ui.preview_mode = PreviewMode::Candidate(None);
         ui.is_saving = true;
     });
 }

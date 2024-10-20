@@ -105,7 +105,6 @@ pub fn FileList(class: Option<String>) -> Element {
                                 wallpapers.set_from_filename(&fname);
                             });
                             ui.with_mut(|ui| {
-                                ui.init_preview_mode();
                                 ui.toggle_filelist();
                             });
                         },

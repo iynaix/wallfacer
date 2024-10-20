@@ -1,19 +1,13 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
+use wallfacer::geometry::Geometry;
 
-use crate::{
-    app_state::PreviewMode,
-    components::{button::Button, use_ui, use_wallpapers},
-};
+use crate::components::{button::Button, use_wallpapers};
 
 #[component]
 pub fn Candidates(class: Option<String>) -> Element {
     let mut wallpapers = use_wallpapers();
-    let mut ui = use_ui();
-
-    if ui().preview_mode == PreviewMode::Pan {
-        return None;
-    }
+    let mut prev_geometry = use_signal(Geometry::default);
 
     let walls = wallpapers();
     let current_geom = walls.get_geometry();
@@ -45,22 +39,20 @@ pub fn Candidates(class: Option<String>) -> Element {
                         onmouseenter: {
                             let geom = geom.clone();
                             move |_| {
-                                ui.with_mut(|ui| {
-                                    ui.preview_mode = PreviewMode::Candidate(Some(geom.clone()));
+                                wallpapers.with_mut(|wallpapers| {
+                                    prev_geometry.set(wallpapers.get_geometry());
+                                    wallpapers.set_geometry(&geom);
                                 });
                             }
                         },
                         onmouseleave: move |_| {
-                            ui.with_mut(|ui| {
-                                ui.preview_mode = PreviewMode::Candidate(None);
+                            wallpapers.with_mut(|wallpapers| {
+                                wallpapers.set_geometry(&prev_geometry());
                             });
                         },
                         onclick: move |_| {
                             wallpapers.with_mut(|wallpapers| {
                                 wallpapers.set_geometry(&geom);
-                            });
-                            ui.with_mut(|ui| {
-                                ui.preview_mode = PreviewMode::Candidate(None);
                             });
                         },
                         {(i + 1).to_string()}

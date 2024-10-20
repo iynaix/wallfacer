@@ -11,7 +11,7 @@ use dioxus_free_icons::Icon;
 
 use crate::{
     add_wallpapers::wallpapers_from_paths,
-    app_state::{PreviewMode, UiMode},
+    app_state::UiMode,
     components::{
         save_button::SaveButton, use_ui, use_wallpapers, wallpaper_button::WallpaperButton,
     },
@@ -29,8 +29,6 @@ pub fn prev_image() {
         if ui.mode == UiMode::FileList {
             ui.mode = UiMode::Editor;
         }
-
-        ui.init_preview_mode();
     });
 }
 
@@ -45,9 +43,6 @@ pub fn next_image() {
         if ui.mode == UiMode::FileList {
             ui.mode = UiMode::Editor;
         }
-        ui.preview_mode = PreviewMode::Candidate(None);
-
-        ui.init_preview_mode();
     });
 }
 

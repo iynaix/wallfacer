@@ -5,7 +5,7 @@ use std::{path::PathBuf, time::Instant};
 use crate::{
     app_state::{UiState, Wallpapers},
     components::{
-        align_selector::{set_align, toggle_pan, AlignSelector},
+        align_selector::{set_align, AlignSelector},
         app_header::{next_image, prev_image},
         candidates::Candidates,
         preview::Previewer,
@@ -119,10 +119,6 @@ pub fn handle_editor_shortcuts(
 
                 "d" => {
                     set_align(&walls.current.cropper().crop(&walls.ratio));
-                }
-
-                " " => {
-                    toggle_pan();
                 }
 
                 // tab through ratios

@@ -1,10 +1,7 @@
 #![allow(non_snake_case)]
 use std::path::PathBuf;
 
-use crate::{
-    app_state::PreviewMode,
-    components::{drag_overlay::DragOverlay, use_ui, use_wallpapers},
-};
+use crate::components::{drag_overlay::DragOverlay, use_ui, use_wallpapers};
 use dioxus::prelude::*;
 use dioxus_sdk::utils::window::{use_window_size, WindowSize};
 use wallfacer::{cropper::Direction, dragger::Dragger, wallpapers::WallInfo};
@@ -86,14 +83,8 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
         .to_str()
         .unwrap_or_else(|| panic!("could not convert {path:?} to str"));
 
-    let is_panning = matches!(ui.preview_mode, PreviewMode::Pan);
-
     // preview geometry takes precedence
-    let geom = if let PreviewMode::Candidate(Some(mouseover_geom)) = ui.preview_mode {
-        mouseover_geom
-    } else {
-        wallpapers().get_geometry()
-    };
+    let geom = wallpapers().get_geometry();
 
     rsx! {
         div {
@@ -115,10 +106,6 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
                 },
                 // clip-path produces a "hole", so detect click events on the image
                 onmousedown: move |evt| {
-                    if !is_panning {
-                        return
-                    }
-
                     let (x, y) = evt.element_coordinates().into();
                     dragger.with_mut(|dragger| {
                         dragger.is_dragging = true;
@@ -153,7 +140,7 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
             }
 
             DragOverlay {
-                geometry: geom.clone(),
+                geom: geom.clone(),
                 dragger,
             }
         }

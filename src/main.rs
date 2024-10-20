@@ -1,5 +1,4 @@
 #![allow(non_snake_case)]
-use app_state::PreviewMode;
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{generate, Shell};
 use dioxus::desktop::Config;
@@ -224,17 +223,8 @@ fn App() -> Element {
     let config = use_context_provider(|| Signal::new(WallpaperConfig::new()));
     let mut wallpapers = use_context_provider(|| Signal::new(Wallpapers::from_args(&config())));
     let mut ui = use_context_provider(|| {
-        let walls = wallpapers();
-        let has_multiple_candidates =
-            walls.current.cropper().crop_candidates(&walls.ratio).len() > 1;
-
         Signal::new(UiState {
             show_faces: config().show_faces,
-            preview_mode: if has_multiple_candidates {
-                PreviewMode::Candidate(None)
-            } else {
-                PreviewMode::Pan
-            },
             ..UiState::default()
         })
     });

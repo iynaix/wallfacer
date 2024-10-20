@@ -2,7 +2,7 @@ use clap::Parser;
 use itertools::Itertools;
 use std::path::PathBuf;
 
-use crate::{components::use_wallpapers, FacesFilter, WallfacerArgs};
+use crate::{FacesFilter, WallfacerArgs};
 
 use wallfacer::{
     aspect_ratio::AspectRatio,
@@ -31,7 +31,6 @@ impl Default for UiMode {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct UiState {
     pub mode: UiMode,
-    pub preview_mode: PreviewMode,
     pub show_faces: bool,
     pub is_saving: bool,
     pub is_applying_wallpaper: bool,
@@ -52,33 +51,20 @@ impl UiState {
             _ => UiMode::Palette,
         };
     }
-
-    /// switch to pan mode if there are multiple candidates
-    pub fn init_preview_mode(&mut self) {
-        let walls = use_wallpapers()();
-        let has_multiple_candidates =
-            walls.current.cropper().crop_candidates(&walls.ratio).len() > 1;
-
-        self.preview_mode = if has_multiple_candidates {
-            PreviewMode::Candidate(None)
-        } else {
-            PreviewMode::Pan
-        };
-    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PreviewMode {
-    Pan,
-    /// stores the last mouseover geometry
-    Candidate(Option<Geometry>),
-}
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub enum PreviewMode {
+//     Pan,
+//     /// stores the last mouseover geometry
+//     Candidate(Option<Geometry>),
+// }
 
-impl Default for PreviewMode {
-    fn default() -> Self {
-        Self::Candidate(None)
-    }
-}
+// impl Default for PreviewMode {
+//     fn default() -> Self {
+//         Self::Candidate(None)
+//     }
+// }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Wallpapers {

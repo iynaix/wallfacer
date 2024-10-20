@@ -5,13 +5,13 @@ use crate::components::use_wallpapers;
 use wallfacer::{dragger::Dragger, geometry::Geometry};
 
 #[component]
-pub fn DragOverlay(geometry: Geometry, dragger: Signal<Dragger>) -> Element {
+pub fn DragOverlay(geom: Geometry, dragger: Signal<Dragger>) -> Element {
     let mut wallpapers = use_wallpapers();
 
     rsx! {
         div {
             class: "absolute bg-black bg-opacity-60 inset-0",
-            style: dragger().overlay_style(&geometry),
+            style: dragger().overlay_style(&geom),
             onmouseup: move |_| {
                 dragger.with_mut(|dragger| {
                     dragger.is_dragging = true;
@@ -23,7 +23,7 @@ pub fn DragOverlay(geometry: Geometry, dragger: Signal<Dragger>) -> Element {
                         let (new_x, new_y) = evt.element_coordinates().into();
 
                         wallpapers.with_mut(|wallpapers| {
-                            let new_geom = dragger().update((new_x, new_y), &geometry);
+                            let new_geom = dragger().update((new_x, new_y), &geom);
                             wallpapers.set_geometry(&new_geom);
                         });
 
