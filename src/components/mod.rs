@@ -1,11 +1,11 @@
-pub mod align_selector;
+pub mod align_buttons;
 pub mod app_header;
 pub mod button;
 pub mod candidates;
 pub mod drag_overlay;
 pub mod dropdown;
 pub mod preview;
-pub mod ratio_selector;
+pub mod ratio_buttons;
 pub mod save_button;
 pub mod slider;
 pub mod wallpaper_button;

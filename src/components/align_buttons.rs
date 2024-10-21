@@ -6,7 +6,7 @@ use dioxus_free_icons::icons::md_editor_icons::{
 };
 use dioxus_free_icons::Icon;
 
-use crate::components::{button::Button, use_wallpapers};
+use crate::components::{button::PreviewableButton, use_wallpapers};
 use wallfacer::{cropper::Direction, geometry::Geometry};
 
 pub fn set_align(geom: &Geometry) {
@@ -22,8 +22,9 @@ fn AlignButton(class: String, geom: Geometry, children: Element) -> Element {
     let current_geom = use_wallpapers()().get_geometry();
 
     rsx! {
-        Button {
+        PreviewableButton {
             class,
+            geom: geom.clone(),
             active: current_geom == geom,
             onclick: move |_| {
                 set_align(&geom);
@@ -34,7 +35,7 @@ fn AlignButton(class: String, geom: Geometry, children: Element) -> Element {
 }
 
 #[component]
-pub fn AlignSelector(class: Option<String>) -> Element {
+pub fn AlignButtons(class: Option<String>) -> Element {
     let walls = &use_wallpapers()();
     let info = &walls.current;
     let ratio = &walls.ratio;

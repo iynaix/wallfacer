@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use wallfacer::geometry::Geometry;
 
-use crate::components::{button::Button, use_wallpapers};
+use crate::components::{button::PreviewableButton, use_wallpapers};
 
 pub fn prev_candidate() {
     let mut wallpapers = use_wallpapers();
@@ -60,7 +59,6 @@ pub fn next_candidate() {
 #[component]
 pub fn Candidates(class: Option<String>) -> Element {
     let mut wallpapers = use_wallpapers();
-    let mut prev_geometry = use_signal(Geometry::default);
 
     let walls = wallpapers();
     let current_geom = walls.get_geometry();
@@ -87,22 +85,9 @@ pub fn Candidates(class: Option<String>) -> Element {
                 };
 
                 rsx! {
-                    Button {
+                    PreviewableButton {
+                        geom: geom.clone(),
                         class: "flex-1 justify-center text-sm {btn_cls}",
-                        onmouseenter: {
-                            let geom = geom.clone();
-                            move |_| {
-                                wallpapers.with_mut(|wallpapers| {
-                                    prev_geometry.set(wallpapers.get_geometry());
-                                    wallpapers.set_geometry(&geom);
-                                });
-                            }
-                        },
-                        onmouseleave: move |_| {
-                            wallpapers.with_mut(|wallpapers| {
-                                wallpapers.set_geometry(&prev_geometry());
-                            });
-                        },
                         onclick: move |_| {
                             wallpapers.with_mut(|wallpapers| {
                                 wallpapers.set_geometry(&geom);

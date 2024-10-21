@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 
-use crate::components::{button::Button, use_wallpapers};
+use crate::components::{button::PreviewableButton, use_wallpapers};
 use wallfacer::aspect_ratio::AspectRatio;
 
 pub fn change_ratio(ratio: &AspectRatio) {
@@ -14,7 +14,7 @@ pub fn change_ratio(ratio: &AspectRatio) {
 }
 
 #[component]
-pub fn RatioSelector(class: Option<String>) -> Element {
+pub fn RatioButtons(class: Option<String>) -> Element {
     let walls = use_wallpapers()();
     let ratios = walls.image_ratios();
 
@@ -31,21 +31,23 @@ pub fn RatioSelector(class: Option<String>) -> Element {
 
         let is_active = walls.ratio == res;
         let dirty_marker = if walls.current.get_geometry(&res) == walls.source.get_geometry(&res) {
-            ""
+            " "
         } else {
-            " *"
+            "*"
         };
 
-        let btn_text = format!("{}{}", res_name, dirty_marker);
-
         rsx! {
-            Button {
+            PreviewableButton {
                 class: "text-sm {cls}",
+                geom: walls.current.get_geometry(&res),
                 active: is_active,
                 onclick: move |_| {
                     change_ratio(&res);
+                },
+                span {
+                    class: "whitespace-pre",
+                    "  {res_name} {dirty_marker}"
                 }
-                {btn_text}
             }
         }
     });

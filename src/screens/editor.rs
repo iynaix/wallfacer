@@ -5,11 +5,11 @@ use std::{path::PathBuf, time::Instant};
 use crate::{
     app_state::{UiState, Wallpapers},
     components::{
-        align_selector::{set_align, AlignSelector},
+        align_buttons::{set_align, AlignButtons},
         app_header::{next_image, prev_image},
         candidates::{next_candidate, prev_candidate, Candidates},
         preview::Previewer,
-        ratio_selector::{change_ratio, RatioSelector},
+        ratio_buttons::{change_ratio, RatioButtons},
     },
 };
 
@@ -157,11 +157,11 @@ pub fn Editor(wallpapers_path: PathBuf) -> Element {
 
             div {
                 class:"flex flex-row justify-between",
-                RatioSelector { },
+                RatioButtons { },
 
                 div{
                     class: "flex justify-end",
-                    AlignSelector { },
+                    AlignButtons { },
                 }
             }
 

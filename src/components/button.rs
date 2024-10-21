@@ -1,5 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
+use wallfacer::geometry::Geometry;
+
+use crate::components::use_wallpapers;
 
 #[component]
 pub fn Button(
@@ -62,6 +65,67 @@ pub fn Button(
                 }
             }
             {children},
+        }
+    }
+}
+
+#[component]
+pub fn PreviewableButton(
+    class: Option<String>,
+    active: Option<bool>,
+    geom: Geometry,
+    onclick: Option<EventHandler<MouseEvent>>,
+    onmouseenter: Option<EventHandler<MouseEvent>>,
+    onmouseleave: Option<EventHandler<MouseEvent>>,
+    children: Element,
+) -> Element {
+    const PREVIEW_DELAY: u64 = 300;
+    let mut wallpapers = use_wallpapers();
+    let mut prev_geometry = use_signal(|| None);
+    // only show preview after the user has hovered over the button for a short period
+    let mut is_hovering = use_signal(|| false);
+
+    rsx! {
+        Button {
+            class,
+            active,
+            onclick: {
+                is_hovering.set(false);
+
+                move |evt| {
+                    prev_geometry.set(None);
+                    if let Some(handler) = &onclick {
+                        handler.call(evt);
+                    }
+                }
+            },
+            onmouseenter: {
+                move |_| {
+                    let geom = geom.clone();
+                    is_hovering.set(true);
+
+                    spawn(async move {
+                        tokio::time::sleep(std::time::Duration::from_millis(PREVIEW_DELAY)).await;
+                        // only proceed if user is still hovering over the button
+                        if is_hovering() {
+                            wallpapers.with_mut(|wallpapers| {
+                                prev_geometry.set(Some(wallpapers.get_geometry()));
+                                wallpapers.set_geometry(&geom);
+                            });
+                        }
+                    });
+                }
+            },
+            onmouseleave: move |_| {
+                is_hovering.set(false);
+
+                wallpapers.with_mut(|wallpapers| {
+                    if let Some(prev_geom) = prev_geometry() {
+                        wallpapers.set_geometry(&prev_geom);
+                    }
+                });
+            },
+            {children}
         }
     }
 }
