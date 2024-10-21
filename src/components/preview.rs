@@ -97,7 +97,9 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
         .unwrap_or_else(|| panic!("could not convert {path:?} to str"));
 
     // preview geometry takes precedence
-    let geom = wallpapers().get_geometry();
+    let geom = ui
+        .mouseover_geom
+        .unwrap_or_else(|| wallpapers().get_geometry());
 
     rsx! {
         div {

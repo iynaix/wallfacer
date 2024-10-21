@@ -113,7 +113,7 @@ pub fn AppHeader() -> Element {
                         },
                         Icon { fill: "white", icon:  MdChevronLeft, width: 16, height: 16 }
                     }
-                    a { class: "text-sm font-semibold leading-6 text-white text-center w-48 cursor-pointer",
+                    a { class: "text-sm font-semibold leading-6 text-white text-center w-72 cursor-pointer overflow-ellipsis overflow-hidden whitespace-nowrap",
                         onclick: move |_| {
                             ui.with_mut(|ui| {
                                 ui.toggle_filelist();

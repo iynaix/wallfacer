@@ -35,6 +35,7 @@ pub struct UiState {
     pub is_saving: bool,
     pub is_applying_wallpaper: bool,
     pub arrow_key_start: Option<std::time::Instant>,
+    pub mouseover_geom: Option<Geometry>,
 }
 
 impl UiState {
@@ -52,19 +53,6 @@ impl UiState {
         };
     }
 }
-
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub enum PreviewMode {
-//     Pan,
-//     /// stores the last mouseover geometry
-//     Candidate(Option<Geometry>),
-// }
-
-// impl Default for PreviewMode {
-//     fn default() -> Self {
-//         Self::Candidate(None)
-//     }
-// }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Wallpapers {

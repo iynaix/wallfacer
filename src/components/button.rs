@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 use wallfacer::geometry::Geometry;
 
-use crate::components::use_wallpapers;
+use crate::components::use_ui;
 
 #[component]
 pub fn Button(
@@ -80,8 +80,7 @@ pub fn PreviewableButton(
     children: Element,
 ) -> Element {
     const PREVIEW_DELAY: u64 = 300;
-    let mut wallpapers = use_wallpapers();
-    let mut prev_geometry = use_signal(|| None);
+    let mut ui = use_ui();
     // only show preview after the user has hovered over the button for a short period
     let mut is_hovering = use_signal(|| false);
 
@@ -93,7 +92,9 @@ pub fn PreviewableButton(
                 is_hovering.set(false);
 
                 move |evt| {
-                    prev_geometry.set(None);
+                    ui.with_mut(|ui| {
+                        ui.mouseover_geom = None;
+                    });
                     if let Some(handler) = &onclick {
                         handler.call(evt);
                     }
@@ -108,9 +109,8 @@ pub fn PreviewableButton(
                         tokio::time::sleep(std::time::Duration::from_millis(PREVIEW_DELAY)).await;
                         // only proceed if user is still hovering over the button
                         if is_hovering() {
-                            wallpapers.with_mut(|wallpapers| {
-                                prev_geometry.set(Some(wallpapers.get_geometry()));
-                                wallpapers.set_geometry(&geom);
+                            ui.with_mut(|ui| {
+                                ui.mouseover_geom = Some(geom);
                             });
                         }
                     });
@@ -119,10 +119,8 @@ pub fn PreviewableButton(
             onmouseleave: move |_| {
                 is_hovering.set(false);
 
-                wallpapers.with_mut(|wallpapers| {
-                    if let Some(prev_geom) = prev_geometry() {
-                        wallpapers.set_geometry(&prev_geom);
-                    }
+                ui.with_mut(|ui| {
+                    ui.mouseover_geom = None;
                 });
             },
             {children}
