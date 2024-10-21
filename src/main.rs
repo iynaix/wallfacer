@@ -199,11 +199,11 @@ fn handle_shortcuts(
                 }
 
                 // palette
-                "p" => {
-                    if evt.modifiers().ctrl() && !wallpapers().files.is_empty() {
-                        ui.with_mut(app_state::UiState::toggle_palette);
-                    }
-                }
+                // "p" => {
+                //     if evt.modifiers().ctrl() && !wallpapers().files.is_empty() {
+                //         ui.with_mut(app_state::UiState::toggle_palette);
+                //     }
+                // }
                 _ => {
                     if ui().mode == UiMode::Editor {
                         handle_editor_shortcuts(evt, wallpapers, ui);

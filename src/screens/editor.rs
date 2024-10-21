@@ -7,7 +7,7 @@ use crate::{
     components::{
         align_selector::{set_align, AlignSelector},
         app_header::{next_image, prev_image},
-        candidates::Candidates,
+        candidates::{next_candidate, prev_candidate, Candidates},
         preview::Previewer,
         ratio_selector::{change_ratio, RatioSelector},
     },
@@ -104,7 +104,14 @@ pub fn handle_editor_shortcuts(
                     );
                 }
 
-                // TODO: n for next candidate, p for prev candidate
+                "p" => {
+                    prev_candidate();
+                }
+
+                "n" => {
+                    next_candidate();
+                }
+
                 "$" => {
                     set_align(
                         &walls

@@ -22,6 +22,18 @@ impl std::fmt::Display for Geometry {
     }
 }
 
+impl std::cmp::Ord for Geometry {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.x.cmp(&other.x).then_with(|| self.y.cmp(&other.y))
+    }
+}
+
+impl std::cmp::PartialOrd for Geometry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl TryFrom<String> for Geometry {
     type Error = GeometryError;
 
