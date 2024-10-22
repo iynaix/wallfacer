@@ -1,15 +1,16 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
-use crate::components::{use_ui, use_wallpapers};
+use crate::{
+    components::use_ui,
+    state::{Wall, Wallpapers},
+};
 
-pub fn save_image() {
-    let mut wallpapers = use_wallpapers();
+pub fn save_image(wall: &Wall, wallpapers: &mut Signal<Wallpapers>) {
     let mut ui = use_ui();
 
-    let info = wallpapers().current;
     wallpapers.with_mut(|wallpapers| {
-        wallpapers.insert_csv(&info);
+        wallpapers.insert_csv(&wall.current);
         wallpapers.save_csv();
 
         wallpapers.remove();
@@ -20,7 +21,7 @@ pub fn save_image() {
 }
 
 #[component]
-pub fn SaveButton() -> Element {
+pub fn SaveButton(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element {
     let mut ui = use_ui();
     let clicked = ui().is_saving;
 
@@ -47,7 +48,7 @@ pub fn SaveButton() -> Element {
             class: "rounded-md px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
             class: btn_color,
             onclick: move |_| {
-                save_image();
+                save_image(&wall(), &mut wallpapers);
             },
             {btn_text}
         }

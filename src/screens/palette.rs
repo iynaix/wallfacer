@@ -3,11 +3,13 @@
 use clap::Parser;
 use dioxus::prelude::*;
 
-use crate::components::{
-    button::Button,
-    dropdown::{Dropdown, DropdownOptions},
-    slider::Slider,
-    use_wallpapers,
+use crate::{
+    components::{
+        button::Button,
+        dropdown::{Dropdown, DropdownOptions},
+        slider::Slider,
+    },
+    state::Wall,
 };
 
 use wallust::{
@@ -116,17 +118,14 @@ impl WallustConfig {
 }
 
 #[component]
-pub fn Palette() -> Element {
-    let wallpapers = use_wallpapers();
-
-    let mut wallust_cfg = use_signal(|| WallustConfig::from_args_str(&wallpapers().source.wallust));
+pub fn Palette(wall: Signal<Wall>) -> Element {
+    let mut wallust_cfg = use_signal(|| WallustConfig::from_args_str(&wall().source.wallust));
     let mut is_running = use_signal(|| false);
     let preview_cls = if is_running() {
         "!bg-surface0"
     } else {
         "!bg-indigo-600"
     };
-    let wall_path = use_signal(|| wallpapers().full_path());
 
     let backend = DropdownOptions::new(vec![
         Backend::Full,
@@ -247,7 +246,7 @@ pub fn Palette() -> Element {
                     onclick: move |_| {
                         spawn(async move {
                             is_running.set(true);
-                            let _ = wallust_cfg().preview(&wall_path()).await;
+                            let _ = wallust_cfg().preview(wall().path()).await;
                             is_running.set(false);
                         });
                     },
@@ -263,7 +262,7 @@ pub fn Palette() -> Element {
                     onclick: move |_| {
                         spawn(async move {
                             is_running.set(true);
-                            let _ = wallust_cfg().preview(&wall_path()).await;
+                            let _ = wallust_cfg().preview(wall().path()).await;
                             is_running.set(false);
                         });
                     },

@@ -1,5 +1,8 @@
 #![allow(non_snake_case)]
-use crate::components::{drag_overlay::DragOverlay, use_ui, use_wallpapers};
+use crate::{
+    components::{drag_overlay::DragOverlay, use_ui},
+    state::Wall,
+};
 use dioxus::prelude::*;
 use dioxus_sdk::utils::window::{use_window_size, WindowSize};
 use wallfacer::{cropper::Direction, dragger::Dragger, wallpapers::WallInfo};
@@ -61,9 +64,8 @@ fn get_preview_size(min_y: f64, win_size: WindowSize, img: (f64, f64)) -> (f64, 
 }
 
 #[component]
-pub fn Previewer() -> Element {
-    let mut wallpapers = use_wallpapers();
-    let info = wallpapers().current;
+pub fn Previewer(wall: Signal<Wall>) -> Element {
+    let info = wall().current;
     let image_dimensions = info.dimensions_f64();
     let ui = use_ui();
 
@@ -89,15 +91,8 @@ pub fn Previewer() -> Element {
 
     let ui = ui();
 
-    let path = wallpapers().path;
-    let path = path
-        .to_str()
-        .unwrap_or_else(|| panic!("could not convert {path:?} to str"));
-
     // preview geometry takes precedence
-    let geom = ui
-        .mouseover_geom
-        .unwrap_or_else(|| wallpapers().get_geometry());
+    let geom = ui.mouseover_geom.unwrap_or_else(|| wall().get_geometry());
 
     rsx! {
         div {
@@ -108,7 +103,7 @@ pub fn Previewer() -> Element {
                     Direction::X => "cursor-ew-resize",
                     Direction::Y => "cursor-ns-resize",
                 },
-                src: path,
+                src: wall().path(),
                 // store the final rendered width and height of the image
                 onmounted: move |evt| {
                     async move {
@@ -130,7 +125,7 @@ pub fn Previewer() -> Element {
                     if dragger().is_dragging && evt.held_buttons().contains(dioxus::html::input_data::MouseButton::Primary) {
                         let (new_x, new_y) = evt.element_coordinates().into();
 
-                        wallpapers.with_mut(|wallpapers| {
+                        wall.with_mut(|wallpapers| {
                             let new_geom = dragger().update((new_x, new_y), &geom);
                             wallpapers.set_geometry(&new_geom);
                         });
@@ -153,6 +148,7 @@ pub fn Previewer() -> Element {
             }
 
             DragOverlay {
+                wall,
                 geom: geom.clone(),
                 dragger,
             }

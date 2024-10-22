@@ -7,15 +7,12 @@ use dioxus_free_icons::icons::{
 use dioxus_free_icons::Icon;
 
 use crate::{
-    components::{
-        save_button::SaveButton, use_ui, use_wallpapers, wallpaper_button::WallpaperButton,
-    },
-    state::UiMode,
+    components::{save_button::SaveButton, use_ui, wallpaper_button::WallpaperButton},
+    state::{UiMode, Wall, Wallpapers},
 };
 use wallfacer::config::WallpaperConfig;
 
-pub fn prev_image() {
-    let mut wallpapers = use_wallpapers();
+pub fn prev_image(wallpapers: &mut Signal<Wallpapers>) {
     let mut ui = use_ui();
 
     wallpapers.with_mut(|wallpapers| {
@@ -28,8 +25,7 @@ pub fn prev_image() {
     });
 }
 
-pub fn next_image() {
-    let mut wallpapers = use_wallpapers();
+pub fn next_image(wallpapers: &mut Signal<Wallpapers>) {
     let mut ui = use_ui();
 
     wallpapers.with_mut(|wallpapers| {
@@ -43,8 +39,7 @@ pub fn next_image() {
 }
 
 #[component]
-pub fn AppHeader() -> Element {
-    let walls = use_wallpapers()();
+pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element {
     let mut ui = use_ui();
     let cfg = use_context::<Signal<WallpaperConfig>>();
 
@@ -55,7 +50,6 @@ pub fn AppHeader() -> Element {
             .is_ok()
             && cfg!(feature = "wallust")
     });
-    let info = &walls.current;
 
     let supports_adding = cfg!(feature = "adding");
     let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-crust focus-visible:outline-offset-0 cursor-pointer";
@@ -101,7 +95,7 @@ pub fn AppHeader() -> Element {
                     a {
                         class: "text-base font-semibold leading-6 text-white",
                         class: if !supports_adding { "ml-2" },
-                        "{walls.index + 1} / {walls.files.len()}"
+                        "{wallpapers().index + 1} / {wallpapers().files.len()}"
                     }
                 }
 
@@ -109,7 +103,7 @@ pub fn AppHeader() -> Element {
                 div { class: "flex flex-1 gap-x-3 items-center justify-center",
                     a { class: pagination_cls,
                         onclick: move |_| {
-                            prev_image();
+                            prev_image(&mut wallpapers);
                         },
                         Icon { fill: "white", icon:  MdChevronLeft, width: 16, height: 16 }
                     }
@@ -119,11 +113,11 @@ pub fn AppHeader() -> Element {
                                 ui.toggle_filelist();
                             });
                         },
-                        {info.filename.clone()}
+                        {wallpapers().current().current.filename}
                     }
                     a { class: pagination_cls,
                         onclick: move |_| {
-                            next_image();
+                            next_image(&mut wallpapers);
                         },
                         Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
                     }
@@ -132,7 +126,7 @@ pub fn AppHeader() -> Element {
                 // right
                 div { class: "gap-x-6 flex flex-1 justify-end",
                     if let Some(wallpaper_cmd) =  cfg().wallpaper_command {
-                        WallpaperButton { wallpaper_cmd }
+                        WallpaperButton { wall, wallpaper_cmd }
                     }
 
                     if supports_wallust() {
@@ -167,7 +161,7 @@ pub fn AppHeader() -> Element {
                         Icon { fill: "white", icon:  MdFaceRetouchingNatural }
                     }
 
-                    SaveButton { }
+                    SaveButton { wall, wallpapers }
                 }
             }
         }

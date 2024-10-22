@@ -1,13 +1,12 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
-use crate::components::use_wallpapers;
 use wallfacer::{dragger::Dragger, geometry::Geometry};
 
-#[component]
-pub fn DragOverlay(geom: Geometry, dragger: Signal<Dragger>) -> Element {
-    let mut wallpapers = use_wallpapers();
+use crate::state::Wall;
 
+#[component]
+pub fn DragOverlay(wall: Signal<Wall>, geom: Geometry, dragger: Signal<Dragger>) -> Element {
     rsx! {
         div {
             class: "absolute bg-black bg-opacity-60 inset-0",
@@ -22,9 +21,9 @@ pub fn DragOverlay(geom: Geometry, dragger: Signal<Dragger>) -> Element {
                     if dragger().is_dragging && evt.held_buttons().contains(dioxus::html::input_data::MouseButton::Primary) {
                         let (new_x, new_y) = evt.element_coordinates().into();
 
-                        wallpapers.with_mut(|wallpapers| {
+                        wall.with_mut(|wall| {
                             let new_geom = dragger().update((new_x, new_y), &geom);
-                            wallpapers.set_geometry(&new_geom);
+                            wall.set_geometry(&new_geom);
                         });
 
                         dragger.with_mut(|dragger| {

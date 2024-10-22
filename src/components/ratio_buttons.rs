@@ -2,21 +2,18 @@
 
 use dioxus::prelude::*;
 
-use crate::components::{button::PreviewableButton, use_wallpapers};
+use crate::{components::button::PreviewableButton, state::Wall};
 use wallfacer::aspect_ratio::AspectRatio;
 
-pub fn change_ratio(ratio: &AspectRatio) {
-    let mut wallpapers = use_wallpapers();
-
-    wallpapers.with_mut(|wallpapers| {
-        wallpapers.ratio = ratio.clone();
+pub fn change_ratio(wall: &mut Signal<Wall>, ratio: &AspectRatio) {
+    wall.with_mut(|wall| {
+        wall.ratio = ratio.clone();
     });
 }
 
 #[component]
-pub fn RatioButtons(class: Option<String>) -> Element {
-    let walls = use_wallpapers()();
-    let ratios = walls.image_ratios();
+pub fn RatioButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
+    let ratios = wall().ratios;
 
     let len = ratios.len();
 
@@ -29,8 +26,8 @@ pub fn RatioButtons(class: Option<String>) -> Element {
             "-ml-px"
         };
 
-        let is_active = walls.ratio == res;
-        let dirty_marker = if walls.current.get_geometry(&res) == walls.source.get_geometry(&res) {
+        let current_geom = wall().current.get_geometry(&res);
+        let dirty_marker = if current_geom == wall().source.get_geometry(&res) {
             " "
         } else {
             "*"
@@ -39,10 +36,10 @@ pub fn RatioButtons(class: Option<String>) -> Element {
         rsx! {
             PreviewableButton {
                 class: "text-sm {cls}",
-                geom: walls.current.get_geometry(&res),
-                active: is_active,
+                geom: current_geom,
+                active: wall().ratio == res,
                 onclick: move |_| {
-                    change_ratio(&res);
+                    change_ratio(&mut wall, &res);
                 },
                 span {
                     class: "whitespace-pre",

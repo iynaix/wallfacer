@@ -3,6 +3,7 @@ use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{generate, Shell};
 use dioxus::desktop::Config;
 use dioxus::prelude::*;
+use state::Wall;
 use std::path::PathBuf;
 
 use wallfacer::config::WallpaperConfig;
@@ -172,6 +173,7 @@ fn main() {
 
 fn handle_shortcuts(
     evt: &Event<KeyboardData>,
+    wall: &mut Signal<Wall>,
     wallpapers: &mut Signal<Wallpapers>,
     ui: &mut Signal<UiState>,
 ) {
@@ -194,7 +196,7 @@ fn handle_shortcuts(
                 // ctrl+s
                 "s" => {
                     if evt.modifiers().ctrl() && !wallpapers().files.is_empty() {
-                        save_image();
+                        save_image(&wall(), wallpapers);
                     }
                 }
 
@@ -206,14 +208,14 @@ fn handle_shortcuts(
                 // }
                 _ => {
                     if ui().mode == UiMode::Editor {
-                        handle_editor_shortcuts(evt, wallpapers, ui);
+                        handle_editor_shortcuts(evt, wall, wallpapers, ui);
                     }
                 }
             }
         }
         _ => {
             if ui().mode == UiMode::Editor {
-                handle_editor_shortcuts(evt, wallpapers, ui);
+                handle_editor_shortcuts(evt, wall, wallpapers, ui);
             }
         }
     };
@@ -222,11 +224,16 @@ fn handle_shortcuts(
 fn App() -> Element {
     let config = use_context_provider(|| Signal::new(WallpaperConfig::new()));
     let mut wallpapers = use_context_provider(|| Signal::new(Wallpapers::from_args(&config())));
+    let mut wall = use_signal(|| wallpapers().current());
     let mut ui = use_context_provider(|| {
         Signal::new(UiState {
             show_faces: config().show_faces,
             ..UiState::default()
         })
+    });
+
+    use_effect(move || {
+        wall.set(wallpapers().current());
     });
 
     if wallpapers().files.is_empty() {
@@ -248,23 +255,23 @@ fn App() -> Element {
             tabindex: 0,
             autofocus: true,
             onkeydown: move |evt| {
-                handle_shortcuts(&evt, &mut wallpapers, &mut ui);
+                handle_shortcuts(&evt, &mut wall, &mut wallpapers, &mut ui);
             },
             onkeyup: move |evt| {
                 handle_arrow_keys_keyup(&evt.key(), &mut ui);
             },
 
-            AppHeader { }
+            AppHeader { wall, wallpapers }
 
             div {
                 class: "flex p-4 gap-4",
 
                 if ui().mode == UiMode::FileList {
-                    FileList { }
+                    FileList { wallpapers }
                 } else if ui().mode == UiMode::Palette {
-                    Palette { }
+                    Palette { wall }
                 } else if ui().mode == UiMode::Editor {
-                    Editor { }
+                    Editor { wall }
                 } else if let UiMode::Adding(images) = ui().mode {
                     Adding { images }
                 }

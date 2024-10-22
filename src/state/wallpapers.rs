@@ -1,5 +1,5 @@
 use clap::Parser;
-use itertools::Itertools;
+use indexmap::IndexMap;
 use std::path::PathBuf;
 
 use crate::{FacesFilter, WallfacerArgs};
@@ -7,24 +7,19 @@ use crate::{FacesFilter, WallfacerArgs};
 use wallfacer::{
     aspect_ratio::AspectRatio,
     config::WallpaperConfig,
-    cropper::Direction,
-    filename, filter_images,
-    geometry::Geometry,
-    is_image,
+    filename, filter_images, is_image,
     wallpapers::{WallInfo, WallpapersCsv},
 };
+
+use super::Wall;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Wallpapers {
     pub files: Vec<PathBuf>,
     csv: WallpapersCsv,
-    // the original wallinfo before any modifications
-    pub source: WallInfo,
-    pub current: WallInfo,
-    pub path: PathBuf,
     pub index: usize,
     pub ratio: AspectRatio,
-    pub resolutions: Vec<(String, AspectRatio)>,
+    pub resolutions: IndexMap<String, AspectRatio>,
     wall_dir: PathBuf,
 }
 
@@ -50,8 +45,7 @@ impl Wallpapers {
     pub fn from_args(cfg: &WallpaperConfig) -> Self {
         let args = WallfacerArgs::parse();
         let wall_dir = &cfg.wallpapers_dir;
-        let resolution_pairs = &cfg.resolutions;
-        let resolutions: Vec<_> = resolution_pairs.iter().map(|(_, r)| r.clone()).collect();
+        let resolutions: Vec<_> = cfg.resolutions.clone().into_values().collect();
 
         let mut modified_filters = Self::resolution_arg(args.modified.as_deref(), &resolutions);
         if !modified_filters.is_empty() {
@@ -133,52 +127,24 @@ impl Wallpapers {
         });
         all_files.reverse();
 
-        let first = all_files.first().expect("no wallpapers provided").clone();
-        let loaded = wallpapers_csv
-            .get(&first)
-            .unwrap_or_else(|| panic!("could not get wallpaper info for {first:?}"));
-
         Self {
             index: Default::default(),
             files: all_files,
             csv: wallpapers_csv.clone(),
-            source: loaded.clone(),
-            current: loaded.clone(),
-            path: first,
             ratio: resolutions[0].clone(),
-            resolutions: resolution_pairs.clone(),
+            resolutions: cfg.resolutions.clone(),
             wall_dir: wall_dir.clone(),
         }
     }
 
-    #[cfg_attr(test, allow(unused_variables))]
-    fn load_from_csv(&mut self) {
-        if self.files.is_empty() {
-            return;
-        }
-
+    pub fn current(&self) -> Wall {
         let path = self.files[self.index].clone();
-        #[cfg(not(test))]
-        {
-            let loaded = self
-                .csv
-                .get(&path)
-                .unwrap_or_else(|| panic!("could not get wallpaper info for {path:?}"));
-            self.source = loaded.clone();
-            self.current = loaded.clone();
-            self.path = path;
-        }
+        let info = self
+            .csv
+            .get(&path)
+            .unwrap_or_else(|| panic!("could not get wallpaper info for {path:?}"));
 
-        #[cfg(test)]
-        {
-            let loaded = WallInfo {
-                filename: filename(&path),
-                ..WallInfo::default()
-            };
-            self.source = loaded.clone();
-            self.current = loaded;
-            self.path = path;
-        }
+        Wall::new(info, path, &self.resolutions)
     }
 
     pub fn prev_wall(&mut self) {
@@ -188,8 +154,6 @@ impl Wallpapers {
         } else {
             self.index - 1
         };
-
-        self.load_from_csv();
     }
 
     pub fn next_wall(&mut self) {
@@ -199,8 +163,6 @@ impl Wallpapers {
         } else {
             self.index + 1
         };
-
-        self.load_from_csv();
     }
 
     /// removes the current wallpaper from the list
@@ -214,91 +176,14 @@ impl Wallpapers {
         }
 
         self.files.retain(|f| f != &current_file);
-        self.load_from_csv();
     }
 
     pub fn set_from_filename(&mut self, fname: &str) {
-        let loaded = self
-            .csv
-            .get(fname)
-            .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"))
-            .clone();
-        self.source = loaded.clone();
-        self.current = loaded;
         self.index = self
             .files
             .iter()
             .position(|f| filename(f) == fname)
             .unwrap_or_else(|| panic!("could not find wallpaper: {}", fname));
-    }
-
-    /// gets geometry for current aspect ratio
-    pub fn get_geometry(&self) -> Geometry {
-        self.current.get_geometry(&self.ratio)
-    }
-
-    /// sets the geometry for current aspect ratio
-    pub fn set_geometry(&mut self, geom: &Geometry) {
-        self.current.set_geometry(&self.ratio, geom);
-    }
-
-    /// returns crop candidates for current ratio and image
-    pub fn crop_candidates(&self) -> Vec<Geometry> {
-        self.current.cropper().crop_candidates(&self.ratio)
-    }
-
-    /// returns cropping ratios for resolution buttons
-    pub fn image_ratios(&self) -> Vec<(String, AspectRatio)> {
-        self.resolutions
-            .clone()
-            .into_iter()
-            .filter(|(_, ratio)| {
-                // do not show resolution if aspect ratio of image is the same,
-                // as there is only a single possible crop
-                (self.current.ratio() - f64::from(ratio)).abs() > f64::EPSILON
-            })
-            .collect()
-    }
-
-    /// returns the candidate geometries for candidate buttons
-    pub fn candidate_geometries(&self) -> Vec<Geometry> {
-        self.crop_candidates().into_iter().unique().collect()
-    }
-
-    /// moves the crop area of the current wallpaper based on its direction
-    pub fn move_geometry_by(&self, delta: f64) -> Geometry {
-        let current_geom = self.get_geometry();
-
-        let negative_delta = delta.is_sign_negative();
-        let delta = (if negative_delta { -delta } else { delta }) as u32;
-
-        match self.current.direction(&current_geom) {
-            Direction::X => Geometry {
-                x: if negative_delta {
-                    current_geom.x.max(delta) - delta
-                } else {
-                    (current_geom.x + delta).min(self.current.width - current_geom.w)
-                },
-                ..current_geom
-            },
-            Direction::Y => Geometry {
-                y: if negative_delta {
-                    current_geom.y.max(delta) - delta
-                } else {
-                    (current_geom.y + delta).min(self.current.height - current_geom.h)
-                },
-                ..current_geom
-            },
-        }
-    }
-
-    // returns the full path of the current wallpaper
-    pub fn full_path(&self) -> String {
-        self.wall_dir
-            .join(&self.current.filename)
-            .to_str()
-            .expect("could not convert full image path to string")
-            .to_string()
     }
 
     // inserts a wallinfo into the csv
@@ -328,21 +213,13 @@ impl Wallpapers {
             files.push(PathBuf::from(format!("{}", i)));
         }
 
-        let current = WallInfo {
-            filename: "0".to_string(),
-            ..WallInfo::default()
-        };
-
         Self {
             files,
             csv: WallpapersCsv::default(),
             index,
-            source: current.clone(),
-            current,
-            path: PathBuf::default(),
             ratio: AspectRatio { w: 16, h: 9 },
-            resolutions: Vec::new(),
-            wall_dir: PathBuf::new(),
+            resolutions: IndexMap::default(),
+            wall_dir: PathBuf::default(),
         }
     }
 }
@@ -389,7 +266,6 @@ mod tests {
         let mut walls = Wallpapers::create_mock(LEN, 0);
         walls.remove();
         assert_eq!(walls.index, 0, "remove index 0");
-        assert_eq!(walls.current.filename, "1", "remove index 0");
         assert_eq!(walls.files.len(), LEN - 1, "remove index 0");
     }
 
@@ -400,7 +276,6 @@ mod tests {
         let mut walls = Wallpapers::create_mock(LEN, 2);
         walls.remove();
         assert_eq!(walls.index, 2, "remove index 2");
-        assert_eq!(walls.current.filename, "3", "remove index 2");
         assert_eq!(walls.files.len(), LEN - 1, "remove index 2");
     }
 
@@ -411,12 +286,10 @@ mod tests {
         let mut walls = Wallpapers::create_mock(LEN, LEN - 1);
         walls.remove();
         assert_eq!(walls.index, 0, "remove index {}", LEN - 1);
-        assert_eq!(walls.current.filename, "0", "remove index {}", LEN - 1);
         assert_eq!(walls.files.len(), LEN - 1, "remove index {}", LEN - 1);
 
         walls.prev_wall();
         assert_eq!(walls.index, LEN - 1 - 1, "prev after remove last");
-        assert_eq!(walls.current.filename, "3", "prev after remove last");
         assert_eq!(walls.files.len(), LEN - 1, "prev after remove last");
     }
 

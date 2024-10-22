@@ -2,9 +2,11 @@ use std::path::PathBuf;
 
 use wallfacer::geometry::Geometry;
 
+mod wall;
 mod wallpapers;
 
 // re-export
+pub use wall::Wall;
 pub use wallpapers::Wallpapers;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use thiserror::Error;
 
+use indexmap::IndexMap;
 use ini::Ini;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
@@ -23,7 +24,7 @@ pub struct WallpaperConfig {
     pub min_width: u32,
     pub min_height: u32,
     pub show_faces: bool,
-    pub resolutions: Vec<(String, AspectRatio)>,
+    pub resolutions: IndexMap<String, AspectRatio>,
     pub wallpaper_command: Option<String>,
 }
 
@@ -40,7 +41,7 @@ impl Default for WallpaperConfig {
             min_width: 1920,
             min_height: 1080,
             show_faces: false,
-            resolutions: vec![("HD".into(), AspectRatio::new(1920, 1080))],
+            resolutions: [("HD".into(), AspectRatio::new(1920, 1080))].into(),
             wallpaper_command: None,
         }
     }
@@ -120,7 +121,7 @@ impl WallpaperConfig {
         self.resolutions
             .iter()
             .min_by_key(|(_, res)| {
-                let diff = OrderedFloat((f64::from(res) - f64::from(new_res)).abs());
+                let diff = OrderedFloat((f64::from(*res) - f64::from(new_res)).abs());
                 // ignore if aspect ratio already exists in config
                 if diff == 0.0 {
                     f64::INFINITY.into()
@@ -133,8 +134,9 @@ impl WallpaperConfig {
 
     /// adds a resolution in sorted order
     pub fn add_resolution(&mut self, res_name: &str, res: AspectRatio) {
-        self.resolutions.push((res_name.to_string(), res));
-        self.resolutions.sort_by_key(|(_, r)| r.clone());
+        self.resolutions.insert(res_name.to_string(), res);
+        // TODO: order the resolutions?
+        // self.resolutions.sort_by_key(|(_, r)| r.clone());
     }
 
     /// saves the current configuration

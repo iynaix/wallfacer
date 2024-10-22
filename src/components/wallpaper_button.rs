@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::md_device_icons::MdWallpaper, Icon};
 
-use crate::components::{use_ui, use_wallpapers};
+use crate::{components::use_ui, state::Wall};
 
 pub fn apply_wallpaper(wallpaper_cmd: &str, wall_path: &str) {
     let mut ui = use_ui();
@@ -25,9 +25,8 @@ pub fn apply_wallpaper(wallpaper_cmd: &str, wall_path: &str) {
 }
 
 #[component]
-pub fn WallpaperButton(wallpaper_cmd: String) -> Element {
+pub fn WallpaperButton(wall: Signal<Wall>, wallpaper_cmd: String) -> Element {
     let mut ui = use_ui();
-    let wall_path = use_wallpapers()().full_path();
     let clicked = ui().is_applying_wallpaper;
 
     use_future(move || async move {
@@ -52,7 +51,7 @@ pub fn WallpaperButton(wallpaper_cmd: String) -> Element {
             class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
             class: btn_color,
             onclick: move |_| {
-                apply_wallpaper(&wallpaper_cmd, &wall_path);
+                apply_wallpaper(&wallpaper_cmd, wall().path());
             },
             Icon { fill: "white", icon: MdWallpaper }
         }

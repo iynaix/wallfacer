@@ -1,16 +1,10 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
-use crate::components::{button::PreviewableButton, use_wallpapers};
+use crate::{components::button::PreviewableButton, state::Wall};
 
-pub fn prev_candidate() {
-    let mut wallpapers = use_wallpapers();
-
-    let walls = wallpapers();
-    let current_geom = walls.get_geometry();
-
-    let candidates_geom = walls.candidate_geometries();
-
+pub fn prev_candidate(wall: &mut Signal<Wall>) {
+    let candidates_geom = wall().candidate_geometries();
     if candidates_geom.len() <= 1 {
         return;
     }
@@ -24,50 +18,44 @@ pub fn prev_candidate() {
         }
     };
 
+    let current_geom = wall().get_geometry();
     let idx = candidates_geom
         .binary_search(&current_geom)
         .map_or_else(decrement, decrement);
 
-    wallpapers.with_mut(|wallpapers| {
-        wallpapers.set_geometry(&candidates_geom[idx as usize]);
+    wall.with_mut(|wall| {
+        wall.set_geometry(&candidates_geom[idx]);
     });
 }
 
-pub fn next_candidate() {
-    let mut wallpapers = use_wallpapers();
-
-    let walls = wallpapers();
-    let current_geom = walls.get_geometry();
-
-    let candidates_geom = walls.candidate_geometries();
-
+pub fn next_candidate(wall: &mut Signal<Wall>) {
+    let candidates_geom = wall().candidate_geometries();
     if candidates_geom.len() <= 1 {
         return;
     }
 
+    let current_geom = wall().get_geometry();
     let idx = candidates_geom
         .binary_search(&current_geom)
         .map_or_else(|inserted| inserted, |found| found + 1)
         // handle wraparound
         % candidates_geom.len();
 
-    wallpapers.with_mut(|wallpapers| {
-        wallpapers.set_geometry(&candidates_geom[idx]);
+    wall.with_mut(|wall| {
+        wall.set_geometry(&candidates_geom[idx]);
     });
 }
 
 #[component]
-pub fn Candidates(class: Option<String>) -> Element {
-    let mut wallpapers = use_wallpapers();
+pub fn Candidates(wall: Signal<Wall>, class: Option<String>) -> Element {
+    let info = wall().current;
+    let current_geom = wall().get_geometry();
 
-    let walls = wallpapers();
-    let current_geom = walls.get_geometry();
-
-    if walls.current.faces.len() <= 1 {
+    if info.faces.len() <= 1 {
         return None;
     }
 
-    let candidates_geom = walls.candidate_geometries();
+    let candidates_geom = wall().candidate_geometries();
     if candidates_geom.len() <= 1 {
         return None;
     }
@@ -89,8 +77,8 @@ pub fn Candidates(class: Option<String>) -> Element {
                         geom: geom.clone(),
                         class: "flex-1 justify-center text-sm {btn_cls}",
                         onclick: move |_| {
-                            wallpapers.with_mut(|wallpapers| {
-                                wallpapers.set_geometry(&geom);
+                            wall.with_mut(|wall| {
+                                wall.set_geometry(&geom);
                             });
                         },
                         {(i + 1).to_string()}

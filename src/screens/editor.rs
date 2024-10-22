@@ -1,16 +1,17 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 use std::time::Instant;
+use wallfacer::geometry::Geometry;
 
 use crate::{
     components::{
-        align_buttons::{set_align, AlignButtons},
+        align_buttons::AlignButtons,
         app_header::{next_image, prev_image},
         candidates::{next_candidate, prev_candidate, Candidates},
         preview::Previewer,
         ratio_buttons::{change_ratio, RatioButtons},
     },
-    state::{UiState, Wallpapers},
+    state::{UiState, Wall, Wallpapers},
 };
 
 pub fn handle_arrow_keys_keyup(_arrow_key: &Key, ui: &mut Signal<UiState>) {
@@ -19,11 +20,7 @@ pub fn handle_arrow_keys_keyup(_arrow_key: &Key, ui: &mut Signal<UiState>) {
     });
 }
 
-pub fn handle_arrows_keydown(
-    arrow_key: &Key,
-    wallpapers: &mut Signal<Wallpapers>,
-    ui: &mut Signal<UiState>,
-) {
+pub fn handle_arrows_keydown(arrow_key: &Key, wall: &mut Signal<Wall>, ui: &mut Signal<UiState>) {
     let start_time_ms = ui()
         .arrow_key_start
         .map_or(0, |start_time| start_time.elapsed().as_millis());
@@ -39,9 +36,9 @@ pub fn handle_arrows_keydown(
                 });
             }
 
-            let new_geom = wallpapers().move_geometry_by(-delta);
-            wallpapers.with_mut(|wallpapers| {
-                wallpapers.set_geometry(&new_geom);
+            let new_geom = wall().move_geometry_by(-delta);
+            wall.with_mut(|wall| {
+                wall.set_geometry(&new_geom);
             });
         }
 
@@ -52,9 +49,9 @@ pub fn handle_arrows_keydown(
                 });
             }
 
-            let new_geom = wallpapers().move_geometry_by(delta);
-            wallpapers.with_mut(|wallpapers| {
-                wallpapers.set_geometry(&new_geom);
+            let new_geom = wall().move_geometry_by(delta);
+            wall.with_mut(|wall| {
+                wall.set_geometry(&new_geom);
             });
         }
 
@@ -64,10 +61,18 @@ pub fn handle_arrows_keydown(
 
 pub fn handle_editor_shortcuts(
     evt: &Event<KeyboardData>,
+    wall: &mut Signal<Wall>,
     wallpapers: &mut Signal<Wallpapers>,
     ui: &mut Signal<UiState>,
 ) {
-    let walls = wallpapers();
+    let Wall {
+        current,
+        source,
+        ratio,
+        ..
+    } = wall();
+    let geom = wall().get_geometry();
+    let mut set_geom = |geom: Geometry| wall.with_mut(|wall| wall.set_geometry(&geom));
 
     match evt.key() {
         Key::Character(shortcut) => {
@@ -81,93 +86,77 @@ pub fn handle_editor_shortcuts(
                 }
 
                 "h" => {
-                    prev_image();
+                    prev_image(wallpapers);
                 }
 
                 "l" => {
-                    next_image();
+                    next_image(wallpapers);
                 }
 
                 "0" => {
-                    set_align(
-                        &walls
-                            .get_geometry()
-                            .align_start(walls.current.width, walls.current.height),
-                    );
+                    set_geom(geom.align_start(current.width, current.height));
                 }
 
                 "m" => {
-                    set_align(
-                        &walls
-                            .get_geometry()
-                            .align_center(walls.current.width, walls.current.height),
-                    );
+                    set_geom(geom.align_center(current.width, current.height));
                 }
 
                 "p" => {
-                    prev_candidate();
+                    prev_candidate(wall);
                 }
 
                 "n" => {
-                    next_candidate();
+                    next_candidate(wall);
                 }
 
                 "$" => {
-                    set_align(
-                        &walls
-                            .get_geometry()
-                            .align_end(walls.current.width, walls.current.height),
-                    );
+                    set_geom(geom.align_end(current.width, current.height));
                 }
 
                 "u" => {
-                    set_align(&walls.source.get_geometry(&walls.ratio));
+                    set_geom(source.get_geometry(&ratio));
                 }
 
                 "d" => {
-                    set_align(&walls.current.cropper().crop(&walls.ratio));
+                    set_geom(current.cropper().crop(&ratio));
                 }
 
                 // tab through ratios
                 "t" => {
-                    let ratios = walls
-                        .image_ratios()
-                        .into_iter()
-                        .map(|(_, r)| r)
-                        .collect::<Vec<_>>();
+                    let ratios: Vec<_> = wall().ratios.into_values().collect();
 
-                    if let Some(pos) = ratios.iter().position(|r| *r == walls.ratio) {
+                    if let Some(pos) = ratios.iter().position(|r| *r == ratio) {
                         let next = (pos + 1) % ratios.len();
-                        change_ratio(&ratios[next]);
+                        change_ratio(wall, &ratios[next]);
                     }
                 }
                 _ => {}
             }
         }
 
-        key => handle_arrows_keydown(&key, wallpapers, ui),
+        key => handle_arrows_keydown(&key, wall, ui),
     };
 }
 
 #[component]
-pub fn Editor() -> Element {
+pub fn Editor(wall: Signal<Wall>) -> Element {
     rsx! {
         div {
             class: "flex flex-col gap-4 w-full h-full",
 
             div {
                 class:"flex flex-row justify-between",
-                RatioButtons { },
+                RatioButtons { wall },
 
                 div{
                     class: "flex justify-end",
-                    AlignButtons { },
+                    AlignButtons { wall },
                 }
             }
 
-            Previewer { }
+            Previewer { wall }
 
-            Candidates { }
+            Candidates { wall }
         }
     }
 }

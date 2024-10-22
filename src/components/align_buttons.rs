@@ -6,20 +6,13 @@ use dioxus_free_icons::icons::md_editor_icons::{
 };
 use dioxus_free_icons::Icon;
 
-use crate::components::{button::PreviewableButton, use_wallpapers};
+use crate::components::button::PreviewableButton;
+use crate::state::Wall;
 use wallfacer::{cropper::Direction, geometry::Geometry};
 
-pub fn set_align(geom: &Geometry) {
-    let mut wallpapers = use_wallpapers();
-
-    wallpapers.with_mut(|wallpapers| {
-        wallpapers.set_geometry(geom);
-    });
-}
-
 #[component]
-fn AlignButton(class: String, geom: Geometry, children: Element) -> Element {
-    let current_geom = use_wallpapers()().get_geometry();
+fn AlignButton(wall: Signal<Wall>, class: String, geom: Geometry, children: Element) -> Element {
+    let current_geom = wall().get_geometry();
 
     rsx! {
         PreviewableButton {
@@ -27,7 +20,7 @@ fn AlignButton(class: String, geom: Geometry, children: Element) -> Element {
             geom: geom.clone(),
             active: current_geom == geom,
             onclick: move |_| {
-                set_align(&geom);
+                wall.with_mut(|wall| wall.set_geometry(&geom));
             },
             {children}
         }
@@ -35,25 +28,29 @@ fn AlignButton(class: String, geom: Geometry, children: Element) -> Element {
 }
 
 #[component]
-pub fn AlignButtons(class: Option<String>) -> Element {
-    let walls = &use_wallpapers()();
-    let info = &walls.current;
-    let ratio = &walls.ratio;
-    let geom = &walls.get_geometry();
-    let dir = info.direction(geom);
+pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
+    let Wall {
+        current: info,
+        ratio,
+        ..
+    } = wall();
+    let geom = wall().get_geometry();
+    let dir = info.direction(&geom);
 
     rsx! {
         div { class: "flex gap-x-6",
             span {
                 class: "isolate inline-flex rounded-md shadow-sm",
                 AlignButton {
+                    wall,
                     class: "text-sm rounded-l-md",
-                    geom: walls.source.get_geometry(ratio),
+                    geom: wall().source.get_geometry(&ratio),
                     "Source"
                 }
                 AlignButton {
+                    wall,
                     class: "text-sm rounded-r-md",
-                    geom: info.cropper().crop(ratio),
+                    geom: info.cropper().crop(&ratio),
                     "Default"
                 }
             }
@@ -62,6 +59,7 @@ pub fn AlignButtons(class: Option<String>) -> Element {
                 class: "isolate inline-flex rounded-md shadow-sm",
                 class: class.unwrap_or_default(),
                 AlignButton {
+                    wall,
                     class: "text-sm rounded-l-md",
                     geom: geom.align_start(info.width, info.height),
                     if dir == Direction::X {
@@ -71,6 +69,7 @@ pub fn AlignButtons(class: Option<String>) -> Element {
                     }
                 }
                 AlignButton {
+                    wall,
                     class: "text-sm -ml-px",
                     geom: geom.align_center(info.width, info.height),
                     if dir == Direction::X {
@@ -80,6 +79,7 @@ pub fn AlignButtons(class: Option<String>) -> Element {
                     }
                }
                 AlignButton {
+                    wall,
                     class: "text-sm rounded-r-md",
                     geom: geom.align_end(info.width, info.height),
                     if dir == Direction::X {

@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
-use crate::components::{use_ui, use_wallpapers};
+use crate::{components::use_ui, state::Wallpapers};
 use wallfacer::filename;
 
 #[component]
@@ -42,8 +42,7 @@ fn WallpaperFile(filename: String, bytes: u64, onclick: EventHandler<MouseEvent>
 }
 
 #[component]
-pub fn FileList(class: Option<String>) -> Element {
-    let mut wallpapers = use_wallpapers();
+pub fn FileList(wallpapers: Signal<Wallpapers>, class: Option<String>) -> Element {
     let mut ui = use_ui();
 
     let mut search = use_signal(String::new);
