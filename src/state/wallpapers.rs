@@ -15,46 +15,6 @@ use wallfacer::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum UiMode {
-    Editor,
-    FileList,
-    Palette,
-    Adding(Vec<PathBuf>),
-}
-
-impl Default for UiMode {
-    fn default() -> Self {
-        Self::Editor
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct UiState {
-    pub mode: UiMode,
-    pub show_faces: bool,
-    pub is_saving: bool,
-    pub is_applying_wallpaper: bool,
-    pub arrow_key_start: Option<std::time::Instant>,
-    pub mouseover_geom: Option<Geometry>,
-}
-
-impl UiState {
-    pub fn toggle_filelist(&mut self) {
-        self.mode = match self.mode {
-            UiMode::FileList => UiMode::Editor,
-            _ => UiMode::FileList,
-        };
-    }
-
-    pub fn toggle_palette(&mut self) {
-        self.mode = match self.mode {
-            UiMode::Palette => UiMode::Editor,
-            _ => UiMode::Palette,
-        };
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Wallpapers {
     pub files: Vec<PathBuf>,
     csv: WallpapersCsv,
@@ -172,14 +132,10 @@ impl Wallpapers {
         });
         all_files.reverse();
 
-        let fname = filename(
-            all_files
-                .first()
-                .unwrap_or_else(|| panic!("no wallpapers found")),
-        );
+        let first = all_files.first().expect("no wallpapers provided");
         let loaded = wallpapers_csv
-            .get(&fname)
-            .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
+            .get(first)
+            .unwrap_or_else(|| panic!("could not get wallpaper info for {first:?}"));
 
         Self {
             index: Default::default(),
@@ -287,13 +243,6 @@ impl Wallpapers {
         self.current.cropper().crop_candidates(&self.ratio)
     }
 
-    pub fn has_candidates(&self) -> bool {
-        let cropper = self.current.cropper();
-        self.image_ratios()
-            .iter()
-            .any(|(_, ratio)| cropper.crop_candidates(ratio).len() > 1)
-    }
-
     /// returns cropping ratios for resolution buttons
     pub fn image_ratios(&self) -> Vec<(String, AspectRatio)> {
         self.resolutions
@@ -350,7 +299,7 @@ impl Wallpapers {
 
     // inserts a wallinfo into the csv
     pub fn insert_csv(&mut self, info: &WallInfo) {
-        self.csv.insert(info.filename.to_string(), info.clone());
+        self.csv.insert(info.clone());
     }
 
     /// saves the csv

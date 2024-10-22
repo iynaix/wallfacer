@@ -9,12 +9,11 @@ use wallfacer::config::WallpaperConfig;
 
 pub mod add_resolution;
 pub mod add_wallpapers;
-pub mod app_state;
 pub mod components;
 pub mod screens;
+pub mod state;
 
 use crate::{
-    app_state::{UiMode, UiState, Wallpapers},
     components::{app_header::AppHeader, save_button::save_image},
     screens::{
         adding::Adding,
@@ -22,6 +21,7 @@ use crate::{
         filelist::FileList,
         palette::Palette,
     },
+    state::{UiMode, UiState, Wallpapers},
 };
 
 #[derive(ValueEnum, Debug, Clone)]
@@ -181,13 +181,13 @@ fn handle_shortcuts(
 
             match shortcut {
                 "/" => {
-                    ui.with_mut(app_state::UiState::toggle_filelist);
+                    ui.with_mut(state::UiState::toggle_filelist);
                 }
 
                 // ctrl+f
                 "f" => {
                     if evt.modifiers().ctrl() {
-                        ui.with_mut(app_state::UiState::toggle_filelist);
+                        ui.with_mut(state::UiState::toggle_filelist);
                     }
                 }
 

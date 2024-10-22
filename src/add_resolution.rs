@@ -102,7 +102,7 @@ pub fn main(args: AddResolutionArgs) {
         .collect();
 
     for updated_info in updated_infos {
-        wallpapers_csv.insert(updated_info.filename.clone(), updated_info);
+        wallpapers_csv.insert(updated_info);
     }
 
     // update the csv

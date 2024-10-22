@@ -3,7 +3,9 @@ use serde::{
     de::{self},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
+
+use crate::filename;
 
 use super::{
     aspect_ratio::AspectRatio,
@@ -232,10 +234,6 @@ impl WallpapersCsv {
         })
     }
 
-    pub fn get(&self, filename: &str) -> Option<&WallInfo> {
-        self.wallpapers.get(filename)
-    }
-
     pub fn find_duplicates(&self) {
         let mut groups: HashMap<_, Vec<_>> = HashMap::new();
 
@@ -274,8 +272,16 @@ impl WallpapersCsv {
         }
     }
 
-    pub fn insert(&mut self, filename: String, wall_info: WallInfo) {
-        self.wallpapers.insert(filename, wall_info);
+    pub fn get<P>(&self, fname: P) -> Option<&WallInfo>
+    where
+        P: AsRef<Path> + std::fmt::Debug,
+    {
+        self.wallpapers.get(&filename(fname))
+    }
+
+    pub fn insert(&mut self, wall_info: WallInfo) {
+        self.wallpapers
+            .insert(wall_info.filename.clone(), wall_info);
     }
 
     pub fn header(&self, ratios: &[AspectRatio]) -> Vec<String> {

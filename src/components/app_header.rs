@@ -7,10 +7,10 @@ use dioxus_free_icons::icons::{
 use dioxus_free_icons::Icon;
 
 use crate::{
-    app_state::UiMode,
     components::{
         save_button::SaveButton, use_ui, use_wallpapers, wallpaper_button::WallpaperButton,
     },
+    state::UiMode,
 };
 use wallfacer::config::WallpaperConfig;
 

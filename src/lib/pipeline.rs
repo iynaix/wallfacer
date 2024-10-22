@@ -94,7 +94,7 @@ impl WallpaperPipeline {
 
         // add images from wallpapers dir that are not in the csv
         let orphan_wallpapers = filter_images(&wall_dir)
-            .filter(|img| wallpapers_csv.get(&filename(img)).is_none())
+            .filter(|img| wallpapers_csv.get(img).is_none())
             .collect_vec();
 
         if !orphan_wallpapers.is_empty() {
@@ -129,7 +129,7 @@ impl WallpaperPipeline {
         let scale = get_scale(width, height, self.config.min_width, self.config.min_height);
         if out_path.exists() && !force {
             // check if corresponding WallInfo exists
-            if let Some(info) = self.wallpapers_csv.get(&filename(&out_path)) {
+            if let Some(info) = self.wallpapers_csv.get(&out_path) {
                 // image has been edited, re-process the image
                 if info.width / width != info.height / height {
                     match scale {
@@ -245,7 +245,7 @@ impl WallpaperPipeline {
         // create WallInfo and save it
         let resolutions = self.config.sorted_resolutions();
         let wall_info = WallInfo {
-            filename: fname.clone(),
+            filename: fname,
             width,
             height,
             faces,
@@ -262,7 +262,7 @@ impl WallpaperPipeline {
                 .push(img.with_directory(&self.config.wallpapers_dir));
         }
 
-        self.wallpapers_csv.insert(fname, wall_info);
+        self.wallpapers_csv.insert(wall_info);
         self.wallpapers_csv.save(&resolutions);
     }
 

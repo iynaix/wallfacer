@@ -3,7 +3,6 @@ use dioxus::prelude::*;
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
-    app_state::{UiState, Wallpapers},
     components::{
         align_buttons::{set_align, AlignButtons},
         app_header::{next_image, prev_image},
@@ -11,6 +10,7 @@ use crate::{
         preview::Previewer,
         ratio_buttons::{change_ratio, RatioButtons},
     },
+    state::{UiState, Wallpapers},
 };
 
 pub fn handle_arrow_keys_keyup(_arrow_key: &Key, ui: &mut Signal<UiState>) {

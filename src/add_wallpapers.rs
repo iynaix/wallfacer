@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{builder::PossibleValuesParser, Args};
 use wallfacer::{
-    config::WallpaperConfig, filename, filter_images, is_image, pipeline::WallpaperPipeline,
+    config::WallpaperConfig, filter_images, is_image, pipeline::WallpaperPipeline,
     wallpapers::WallpapersCsv, PathBufExt,
 };
 
@@ -37,7 +37,7 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &WallpaperConfig) -> Vec<Pa
         } else if p == cfg.wallpapers_dir {
             let wallpapers_csv = WallpapersCsv::open(cfg).unwrap_or_default();
             let new_files = filter_images(&p)
-                .filter(|p| wallpapers_csv.get(&filename(p)).is_none())
+                .filter(|p| wallpapers_csv.get(p).is_none())
                 .map(|p| {
                     // copy to /tmp so pipeline can work on the copy instead of the original
                     let target = p.with_directory("/tmp");
