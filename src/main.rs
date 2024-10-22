@@ -264,7 +264,7 @@ fn App() -> Element {
                 } else if ui().mode == UiMode::Palette {
                     Palette { }
                 } else if ui().mode == UiMode::Editor {
-                    Editor { wallpapers_path: config().wallpapers_dir }
+                    Editor { }
                 } else if let UiMode::Adding(images) = ui().mode {
                     Adding { images }
                 }

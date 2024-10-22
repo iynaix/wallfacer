@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use std::{path::PathBuf, time::Instant};
+use std::time::Instant;
 
 use crate::{
     components::{
@@ -150,7 +150,7 @@ pub fn handle_editor_shortcuts(
 }
 
 #[component]
-pub fn Editor(wallpapers_path: PathBuf) -> Element {
+pub fn Editor() -> Element {
     rsx! {
         div {
             class: "flex flex-col gap-4 w-full h-full",
@@ -165,7 +165,7 @@ pub fn Editor(wallpapers_path: PathBuf) -> Element {
                 }
             }
 
-            Previewer { wallpapers_path }
+            Previewer { }
 
             Candidates { }
         }

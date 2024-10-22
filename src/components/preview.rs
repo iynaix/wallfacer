@@ -1,6 +1,4 @@
 #![allow(non_snake_case)]
-use std::path::PathBuf;
-
 use crate::components::{drag_overlay::DragOverlay, use_ui, use_wallpapers};
 use dioxus::prelude::*;
 use dioxus_sdk::utils::window::{use_window_size, WindowSize};
@@ -63,7 +61,7 @@ fn get_preview_size(min_y: f64, win_size: WindowSize, img: (f64, f64)) -> (f64, 
 }
 
 #[component]
-pub fn Previewer(wallpapers_path: PathBuf) -> Element {
+pub fn Previewer() -> Element {
     let mut wallpapers = use_wallpapers();
     let info = wallpapers().current;
     let image_dimensions = info.dimensions_f64();
@@ -91,7 +89,7 @@ pub fn Previewer(wallpapers_path: PathBuf) -> Element {
 
     let ui = ui();
 
-    let path = wallpapers_path.join(&info.filename);
+    let path = wallpapers().path;
     let path = path
         .to_str()
         .unwrap_or_else(|| panic!("could not convert {path:?} to str"));

@@ -21,6 +21,7 @@ pub struct Wallpapers {
     // the original wallinfo before any modifications
     pub source: WallInfo,
     pub current: WallInfo,
+    pub path: PathBuf,
     pub index: usize,
     pub ratio: AspectRatio,
     pub resolutions: Vec<(String, AspectRatio)>,
@@ -132,9 +133,9 @@ impl Wallpapers {
         });
         all_files.reverse();
 
-        let first = all_files.first().expect("no wallpapers provided");
+        let first = all_files.first().expect("no wallpapers provided").clone();
         let loaded = wallpapers_csv
-            .get(first)
+            .get(&first)
             .unwrap_or_else(|| panic!("could not get wallpaper info for {first:?}"));
 
         Self {
@@ -143,6 +144,7 @@ impl Wallpapers {
             csv: wallpapers_csv.clone(),
             source: loaded.clone(),
             current: loaded.clone(),
+            path: first,
             ratio: resolutions[0].clone(),
             resolutions: resolution_pairs.clone(),
             wall_dir: wall_dir.clone(),
@@ -155,25 +157,27 @@ impl Wallpapers {
             return;
         }
 
-        let fname = filename(&self.files[self.index]);
+        let path = self.files[self.index].clone();
         #[cfg(not(test))]
         {
             let loaded = self
                 .csv
-                .get(&fname)
-                .unwrap_or_else(|| panic!("could not get wallpaper info for {fname}"));
+                .get(&path)
+                .unwrap_or_else(|| panic!("could not get wallpaper info for {path:?}"));
             self.source = loaded.clone();
             self.current = loaded.clone();
+            self.path = path;
         }
 
         #[cfg(test)]
         {
             let loaded = WallInfo {
-                filename: fname,
+                filename: filename(&path),
                 ..WallInfo::default()
             };
             self.source = loaded.clone();
             self.current = loaded;
+            self.path = path;
         }
     }
 
@@ -335,6 +339,7 @@ impl Wallpapers {
             index,
             source: current.clone(),
             current,
+            path: PathBuf::default(),
             ratio: AspectRatio { w: 16, h: 9 },
             resolutions: Vec::new(),
             wall_dir: PathBuf::new(),
