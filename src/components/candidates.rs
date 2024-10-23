@@ -74,6 +74,7 @@ pub fn Candidates(wall: Signal<Wall>, class: Option<String>) -> Element {
 
                 rsx! {
                     PreviewableButton {
+                        wall,
                         geom: geom.clone(),
                         class: "flex-1 justify-center text-sm {btn_cls}",
                         onclick: move |_| {

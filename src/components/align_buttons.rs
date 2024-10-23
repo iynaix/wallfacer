@@ -16,8 +16,9 @@ fn AlignButton(wall: Signal<Wall>, class: String, geom: Geometry, children: Elem
 
     rsx! {
         PreviewableButton {
-            class,
+            wall,
             geom: geom.clone(),
+            class,
             active: current_geom == geom,
             onclick: move |_| {
                 wall.with_mut(|wall| wall.set_geometry(&geom));

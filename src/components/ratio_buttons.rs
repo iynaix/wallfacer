@@ -37,6 +37,7 @@ pub fn RatioButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
             PreviewableButton {
                 class: "text-sm {cls}",
                 geom: current_geom,
+                wall,
                 active: wall().ratio == res,
                 onclick: move |_| {
                     change_ratio(&mut wall, &res);

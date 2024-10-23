@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use wallfacer::geometry::Geometry;
-
 mod wall;
 mod wallpapers;
 
@@ -30,7 +28,6 @@ pub struct UiState {
     pub is_saving: bool,
     pub is_applying_wallpaper: bool,
     pub arrow_key_start: Option<std::time::Instant>,
-    pub mouseover_geom: Option<Geometry>,
 }
 
 impl UiState {

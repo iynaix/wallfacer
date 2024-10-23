@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 use wallfacer::geometry::Geometry;
 
-use crate::components::use_ui;
+use crate::state::Wall;
 
 #[component]
 pub fn Button(
@@ -74,54 +74,52 @@ pub fn PreviewableButton(
     class: Option<String>,
     active: Option<bool>,
     geom: Geometry,
+    wall: Signal<Wall>,
     onclick: Option<EventHandler<MouseEvent>>,
     onmouseenter: Option<EventHandler<MouseEvent>>,
     onmouseleave: Option<EventHandler<MouseEvent>>,
     children: Element,
 ) -> Element {
     const PREVIEW_DELAY: u64 = 300;
-    let mut ui = use_ui();
     // only show preview after the user has hovered over the button for a short period
     let mut is_hovering = use_signal(|| false);
+
+    use_effect(move || {
+        if !is_hovering() {
+            wall.with_mut(|wall| {
+                wall.mouseover_geom = None;
+            });
+        }
+    });
 
     rsx! {
         Button {
             class,
             active,
-            onclick: {
+            onclick: move |evt| {
                 is_hovering.set(false);
 
-                move |evt| {
-                    ui.with_mut(|ui| {
-                        ui.mouseover_geom = None;
-                    });
-                    if let Some(handler) = &onclick {
-                        handler.call(evt);
-                    }
+                if let Some(handler) = &onclick {
+                    handler.call(evt);
                 }
             },
-            onmouseenter: {
-                move |_| {
-                    let geom = geom.clone();
-                    is_hovering.set(true);
+            onmouseenter: move |_| {
+                let geom = geom.clone();
+                is_hovering.set(true);
 
-                    spawn(async move {
-                        tokio::time::sleep(std::time::Duration::from_millis(PREVIEW_DELAY)).await;
-                        // only proceed if user is still hovering over the button
-                        if is_hovering() {
-                            ui.with_mut(|ui| {
-                                ui.mouseover_geom = Some(geom);
-                            });
-                        }
-                    });
-                }
+                spawn(async move {
+                    tokio::time::sleep(std::time::Duration::from_millis(PREVIEW_DELAY)).await;
+                    // only proceed if user is still hovering over the button
+                    if is_hovering() {
+                        wall.with_mut(|wall| {
+                            println!("hover mouseover: {geom:?}");
+                            wall.mouseover_geom = Some(geom);
+                        });
+                    }
+                });
             },
             onmouseleave: move |_| {
                 is_hovering.set(false);
-
-                ui.with_mut(|ui| {
-                    ui.mouseover_geom = None;
-                });
             },
             {children}
         }

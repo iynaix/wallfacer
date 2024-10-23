@@ -16,6 +16,7 @@ pub struct Wall {
     path: PathBuf,
     /// possible ratios for this image
     pub ratios: IndexMap<String, AspectRatio>,
+    pub mouseover_geom: Option<Geometry>,
 }
 
 impl Wall {
@@ -27,16 +28,30 @@ impl Wall {
         let ratios: IndexMap<_, _> = resolutions
             .into_iter()
             .filter(|(_, ratio)| {
-                // do not show resolution if aspect ratio of image is the same,
-                // as there is only a single possible crop
+                const THRESHOLD: f64 = 1.0 / 100.0;
 
-                // TODO: don't show if it is within 5 pixels?
-                (info.ratio() - f64::from(*ratio)).abs() > f64::EPSILON
+                // don't show resolution if aspect ratio of image is within a percentage threshold
+                let ratio = f64::from(*ratio);
+
+                let (w, h) = info.dimensions_f64();
+                let lower_w = (w * (1.0 - THRESHOLD)) / h;
+                let upper_w = (w * (1.0 + THRESHOLD)) / h;
+
+                if lower_w <= ratio && ratio <= upper_w {
+                    return false;
+                }
+
+                let lower_h = w / (h * (1.0 - THRESHOLD));
+                let upper_h = w / (h * (1.0 + THRESHOLD));
+
+                if lower_h <= ratio && ratio <= upper_h {
+                    return false;
+                }
+
+                true
             })
             .map(|(name, ratio)| (name.clone(), ratio.clone()))
             .collect();
-
-        // TODO: reuse ratio from previous wallpaper?
 
         Self {
             source: info.clone(),
@@ -44,6 +59,7 @@ impl Wall {
             path,
             ratio: ratios.first().expect("no resolutions provided").1.clone(),
             ratios,
+            mouseover_geom: None,
         }
     }
 

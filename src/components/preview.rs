@@ -92,7 +92,9 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
     let ui = ui();
 
     // preview geometry takes precedence
-    let geom = ui.mouseover_geom.unwrap_or_else(|| wall().get_geometry());
+    let geom = wall()
+        .mouseover_geom
+        .unwrap_or_else(|| wall().get_geometry());
 
     rsx! {
         div {
