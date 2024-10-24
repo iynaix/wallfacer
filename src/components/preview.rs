@@ -65,8 +65,6 @@ fn get_preview_size(min_y: f64, win_size: WindowSize, img: (f64, f64)) -> (f64, 
 
 #[component]
 pub fn Previewer(wall: Signal<Wall>) -> Element {
-    let info = wall().current;
-    let image_dimensions = info.dimensions_f64();
     let ui = use_ui();
 
     // store y coordinate of the previewer
@@ -75,15 +73,20 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
     // calculate the preview size of the image
     // only needs to change when the window resizes
     let mut dragger = use_signal(|| {
-        let wh = get_preview_size(preview_y(), window_size(), image_dimensions);
-        Dragger::new(image_dimensions, wh)
+        let (image_w, image_h) = wall().current.dimensions_f64();
+        let wh = get_preview_size(preview_y(), window_size(), (image_w, image_h));
+        Dragger::new((image_w, image_h), wh)
     });
 
     // update dragger on resize
     use_effect(move || {
-        let (w, h) = get_preview_size(preview_y(), window_size(), image_dimensions);
+        // use wall() to initiate a refresh
+        let (image_w, image_h) = wall().current.dimensions_f64();
+        let (w, h) = get_preview_size(preview_y(), window_size(), wall().current.dimensions_f64());
 
         dragger.with_mut(|dragger| {
+            dragger.image_w = image_w;
+            dragger.image_h = image_h;
             dragger.preview_w = w;
             dragger.preview_h = h;
         });
@@ -146,7 +149,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
             }
 
             if ui.show_faces {
-                FacesOverlay { info }
+                FacesOverlay { info: wall().current }
             }
 
             DragOverlay {

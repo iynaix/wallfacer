@@ -112,7 +112,6 @@ pub fn PreviewableButton(
                     // only proceed if user is still hovering over the button
                     if is_hovering() {
                         wall.with_mut(|wall| {
-                            println!("hover mouseover: {geom:?}");
                             wall.mouseover_geom = Some(geom);
                         });
                     }

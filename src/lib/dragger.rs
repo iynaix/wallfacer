@@ -8,8 +8,8 @@ pub struct Dragger {
     pub y: f64,
     pub preview_w: f64,
     pub preview_h: f64,
-    image_w: f64,
-    image_h: f64,
+    pub image_w: f64,
+    pub image_h: f64,
 }
 
 impl Dragger {

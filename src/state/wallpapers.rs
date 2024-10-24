@@ -20,7 +20,6 @@ pub struct Wallpapers {
     pub index: usize,
     pub ratio: AspectRatio,
     pub resolutions: IndexMap<String, AspectRatio>,
-    wall_dir: PathBuf,
 }
 
 impl Wallpapers {
@@ -133,7 +132,6 @@ impl Wallpapers {
             csv: wallpapers_csv.clone(),
             ratio: resolutions[0].clone(),
             resolutions: cfg.resolutions.clone(),
-            wall_dir: wall_dir.clone(),
         }
     }
 
@@ -219,7 +217,6 @@ impl Wallpapers {
             index,
             ratio: AspectRatio { w: 16, h: 9 },
             resolutions: IndexMap::default(),
-            wall_dir: PathBuf::default(),
         }
     }
 }
