@@ -1,5 +1,6 @@
 use clap::Parser;
 use indexmap::IndexMap;
+use itertools::Itertools;
 use std::path::PathBuf;
 
 use crate::{FacesFilter, WallfacerArgs};
@@ -44,7 +45,7 @@ impl Wallpapers {
     pub fn from_args(cfg: &WallpaperConfig) -> Self {
         let args = WallfacerArgs::parse();
         let wall_dir = &cfg.wallpapers_dir;
-        let resolutions: Vec<_> = cfg.resolutions.clone().into_values().collect();
+        let resolutions = cfg.resolutions.clone().into_values().collect_vec();
 
         let mut modified_filters = Self::resolution_arg(args.modified.as_deref(), &resolutions);
         if !modified_filters.is_empty() {
@@ -191,13 +192,7 @@ impl Wallpapers {
 
     /// saves the csv
     pub fn save_csv(&mut self) {
-        let resolutions: Vec<_> = self
-            .resolutions
-            .iter()
-            .map(|(_, ratio)| ratio.clone())
-            .collect();
-
-        self.csv.save(&resolutions);
+        self.csv.save();
     }
 }
 

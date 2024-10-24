@@ -10,11 +10,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1728180107,
-        "narHash": "sha256-0V1GZH0Bq6wE7qpwad+Q0SZLxE2mfF29A6vPEvP0XJ8=",
+        "lastModified": 1729915729,
+        "narHash": "sha256-7xJom27dQTYiJBV0taq0yYa/gVHTOA7C3/kCXlt7H5I=",
         "owner": "iynaix",
         "repo": "anime-face-detector",
-        "rev": "b21199333a14676581d7745f0b0b9b39fb53040a",
+        "rev": "6e90a3319594c3cad6fb965477b37b4191ad8d62",
         "type": "github"
       },
       "original": {
@@ -266,11 +266,11 @@
         "pre-commit-hooks": "pre-commit-hooks_4"
       },
       "locked": {
-        "lastModified": 1729681848,
-        "narHash": "sha256-9PKexVMEAyElpL1mB9iZShnZjWvCTfsm8pDbVQDAIRA=",
+        "lastModified": 1729857292,
+        "narHash": "sha256-+uYhri8aC9Jdu6fSfjkFOmBIYVWYQnF6mdFj+ophud0=",
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "2634c4c9e9226a3fb54550ad4115df1992d502c5",
+        "rev": "d9156ba99fed6f4bc4d84b8ff1b442f04a98210a",
         "type": "github"
       },
       "original": {
@@ -1167,17 +1167,17 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1701496878,
-        "narHash": "sha256-wl0KdIYnO55NeP4Gu+eeIfHO8FAbgVrEkUu89whMMDk=",
+        "lastModified": 1720535198,
+        "narHash": "sha256-zwVvxrdIzralnSbcpghA92tWu2DV2lwv89xZc8MTrbg=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "5c8fdfb488c68699e49633aae5173adbf4090562",
+        "rev": "205fd4226592cc83fd4c0885a3e4c9c400efabb5",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
+        "ref": "nixos-23.11",
         "repo": "nixpkgs",
-        "rev": "5c8fdfb488c68699e49633aae5173adbf4090562",
         "type": "github"
       }
     },

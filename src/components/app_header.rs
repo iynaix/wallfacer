@@ -80,7 +80,7 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
                             multiple: true,
                             onchange: move |evt| {
                                 if let Some(file_engine) = &evt.files() {
-                                    let selected_paths: Vec<_> = file_engine.files().iter().map(std::path::PathBuf::from).collect();
+                                    let selected_paths = file_engine.files().iter().map(std::path::PathBuf::from).collect_vec();
                                     let all_files = crate::add_wallpapers::wallpapers_from_paths(&selected_paths, &cfg());
 
                                     ui.with_mut(|ui| {

@@ -1,4 +1,5 @@
 use clap::Args;
+use itertools::Itertools;
 use wallfacer::{
     aspect_ratio::AspectRatio,
     config::WallpaperConfig,
@@ -68,7 +69,7 @@ pub fn main(args: AddResolutionArgs) {
     let mut to_process: Vec<String> = Vec::new();
     let mut wallpapers_csv = WallpapersCsv::load(&cfg);
 
-    let updated_infos: Vec<WallInfo> = wallpapers_csv
+    let updated_infos = wallpapers_csv
         .iter()
         .map(|(fname, info)| {
             if info.geometries.contains_key(&new_res) {
@@ -99,18 +100,18 @@ pub fn main(args: AddResolutionArgs) {
                 }
             }
         })
-        .collect();
+        .collect_vec();
 
     for updated_info in updated_infos {
         wallpapers_csv.insert(updated_info);
     }
 
     // update the csv
-    wallpapers_csv.save(&cfg.sorted_resolutions());
+    wallpapers_csv.save();
 
     // open in wallfacer
     to_process.sort();
-    let images: Vec<_> = to_process
+    let images = to_process
         .into_iter()
         .map(|fname| {
             println!("{fname}");
@@ -121,7 +122,7 @@ pub fn main(args: AddResolutionArgs) {
                 .expect("could not convert path to str")
                 .to_string()
         })
-        .collect();
+        .collect_vec();
 
     // process the images in wallfacer
     run_wallfacer(images);

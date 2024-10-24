@@ -1,4 +1,5 @@
-use serde::Serialize;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// euclid's algorithm to find the greatest common divisor
@@ -53,7 +54,10 @@ impl TryFrom<&str> for AspectRatio {
     type Error = AspectRatioError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let parts: Vec<_> = s.split('x').filter_map(|s| s.parse::<u32>().ok()).collect();
+        let parts = s
+            .split('x')
+            .filter_map(|s| s.parse::<u32>().ok())
+            .collect_vec();
 
         if parts.len() != 2 {
             return Err(AspectRatioError::InvalidAspectRatio);
@@ -69,6 +73,16 @@ impl Serialize for AspectRatio {
         S: serde::ser::Serializer,
     {
         serializer.serialize_str(&format!("{}", self))
+    }
+}
+
+impl<'de> Deserialize<'de> for AspectRatio {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Self::try_from(s.as_str()).map_err(serde::de::Error::custom)
     }
 }
 

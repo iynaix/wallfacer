@@ -17,11 +17,11 @@ fn FacesOverlay(info: WallInfo) -> Element {
 
     rsx! {
         {info.faces.iter().map(|face| {
-            let start_x = f64::from(face.xmin) / img_w * 100.0;
-            let start_y = f64::from(face.ymin) / img_h * 100.0;
+            let start_x = f64::from(face.x) / img_w * 100.0;
+            let start_y = f64::from(face.y) / img_h * 100.0;
 
-            let w = f64::from(face.xmax - face.xmin) / img_w * 100.0;
-            let h = f64::from(face.ymax - face.ymin) / img_h * 100.0;
+            let w = f64::from(face.w) / img_w * 100.0;
+            let h = f64::from(face.h) / img_h * 100.0;
 
             rsx! {
                 div {

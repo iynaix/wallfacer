@@ -1,9 +1,9 @@
+use geometry::Geometry;
 use serde::Deserialize;
 use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use wallpapers::Face;
 
 pub mod aspect_ratio;
 pub mod config;
@@ -84,20 +84,20 @@ where
 }
 
 #[derive(Debug, Deserialize)]
-pub struct FaceJson {
+pub struct Bbox {
     pub xmin: u32,
     pub xmax: u32,
     pub ymin: u32,
     pub ymax: u32,
 }
 
-impl FaceJson {
-    pub const fn to_face(&self) -> Face {
-        Face {
-            xmin: self.xmin,
-            xmax: self.xmax,
-            ymin: self.ymin,
-            ymax: self.ymax,
+impl Bbox {
+    pub const fn to_face(&self) -> Geometry {
+        Geometry {
+            x: self.xmin,
+            y: self.ymin,
+            w: self.xmax - self.xmin,
+            h: self.ymax - self.ymin,
         }
     }
 }

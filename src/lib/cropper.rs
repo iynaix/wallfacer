@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 
-use super::{aspect_ratio::AspectRatio, geometry::Geometry, wallpapers::Face};
+use super::{aspect_ratio::AspectRatio, geometry::Geometry};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
@@ -22,22 +22,22 @@ struct FaceArea {
 }
 
 pub struct Cropper {
-    pub faces: Vec<Face>,
+    pub faces: Vec<Geometry>,
     pub width: u32,
     pub height: u32,
 }
 
-fn sort_faces_by_direction(faces: Vec<Face>, direction: Direction) -> Vec<Face> {
+fn sort_faces_by_direction(faces: Vec<Geometry>, direction: Direction) -> Vec<Geometry> {
     let mut faces = faces;
     faces.sort_by_key(|face| match direction {
-        Direction::X => face.xmin,
-        Direction::Y => face.ymin,
+        Direction::X => face.x,
+        Direction::Y => face.y,
     });
     faces
 }
 
 impl Cropper {
-    pub fn new(faces: &[Face], width: u32, height: u32) -> Self {
+    pub fn new(faces: &[Geometry], width: u32, height: u32) -> Self {
         Self {
             faces: faces.to_vec(),
             width,
@@ -103,8 +103,8 @@ impl Cropper {
     ) -> Geometry {
         let face = &self.faces[0];
         let mid = match direction {
-            Direction::X => (f64::from(face.xmin + face.xmax) - f64::from(target_width)) / 2.0,
-            Direction::Y => (f64::from(face.ymin + face.ymax) - f64::from(target_height)) / 2.0,
+            Direction::X => (f64::from(face.x + face.xmax()) - f64::from(target_width)) / 2.0,
+            Direction::Y => (f64::from(face.y + face.ymax()) - f64::from(target_height)) / 2.0,
         };
         self.clamp(mid, direction, target_width, target_height)
     }
@@ -151,7 +151,7 @@ impl Cropper {
     /// creates a range for a sliding window of target geometry to check for face intersections
     fn sliding_window_range(
         &self,
-        faces: &[Face],
+        faces: &[Geometry],
         direction: Direction,
         target: u32,
     ) -> impl Iterator<Item = (u32, u32)> {
@@ -162,7 +162,7 @@ impl Cropper {
         };
 
         // the min can only be first face - half of target width
-        let (first_min, first_max) = faces[0].dir_bounds(direction);
+        let (first_min, first_max) = faces[0].direction_bounds(direction);
         let start = {
             // prevent subtract overflow
             let tmp = first_min + first_max;
@@ -175,7 +175,7 @@ impl Cropper {
         let start = std::cmp::min(start, img_max);
 
         // the max can only be last face + half of target width
-        let (last_min, last_max) = faces[faces.len() - 1].dir_bounds(direction);
+        let (last_min, last_max) = faces[faces.len() - 1].direction_bounds(direction);
         let end = std::cmp::min((last_min + last_max + target) / 2, img_max);
 
         (start..=end).map(move |rect_start| (rect_start, rect_start + target))
@@ -205,7 +205,7 @@ impl Cropper {
 
             for face in &faces {
                 // check number of faces in decimal within enclosed within larger rectangle
-                let (min_, max_) = face.dir_bounds(direction);
+                let (min_, max_) = face.direction_bounds(direction);
 
                 // no intersection, we overshot the final box
                 if min_ > rect_end {
@@ -227,8 +227,8 @@ impl Cropper {
                     num_faces += (rect_end - min_) as f32 / (max_ - min_) as f32;
                     faces_area += (rect_end - min_)
                         * match direction {
-                            Direction::X => face.ymax - face.ymin,
-                            Direction::Y => face.xmax - face.xmin,
+                            Direction::X => face.h,
+                            Direction::Y => face.w,
                         };
                     continue;
                 }
@@ -284,7 +284,7 @@ impl Cropper {
         for (rect_start, rect_end) in self.sliding_window_range(&faces, direction, target) {
             // check number of faces in decimal within enclosed within larger rectangle
             for face in &faces {
-                let (min_, max_) = face.dir_bounds(direction);
+                let (min_, max_) = face.direction_bounds(direction);
 
                 // no intersection, we overshot the final box
                 if min_ > rect_end {

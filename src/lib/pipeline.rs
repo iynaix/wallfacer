@@ -10,7 +10,7 @@ use super::{
     cropper::Cropper,
     filename, filter_images, run_wallfacer,
     wallpapers::{WallInfo, WallpapersCsv},
-    FaceJson, PathBufExt,
+    Bbox, PathBufExt,
 };
 
 /// waits for the images to be written to disk
@@ -113,7 +113,7 @@ impl WallpaperPipeline {
     }
 
     pub fn save_csv(&mut self) {
-        self.wallpapers_csv.save(&self.config.sorted_resolutions());
+        self.wallpapers_csv.save();
     }
 
     pub fn add_image(&mut self, img: &PathBuf, force: bool) {
@@ -231,12 +231,8 @@ impl WallpaperPipeline {
             .unwrap_or_default()
             .to_string();
 
-        let faces: Vec<FaceJson> =
-            serde_json::from_str(&line).expect("could not deserialize faces");
-        let faces: Vec<_> = faces
-            .into_iter()
-            .map(|f: FaceJson| FaceJson::to_face(&f))
-            .collect();
+        let faces: Vec<Bbox> = serde_json::from_str(&line).expect("could not deserialize faces");
+        let faces = faces.iter().map(|f: &Bbox| Bbox::to_face(f)).collect_vec();
 
         let (width, height) = image::image_dimensions(img)
             .unwrap_or_else(|_| panic!("could not get image dimensions: {img:?}"));
@@ -263,7 +259,7 @@ impl WallpaperPipeline {
         }
 
         self.wallpapers_csv.insert(wall_info);
-        self.wallpapers_csv.save(&resolutions);
+        self.wallpapers_csv.save();
     }
 
     pub fn preview(self) {

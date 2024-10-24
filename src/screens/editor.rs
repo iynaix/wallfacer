@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
+use itertools::Itertools;
 use std::time::Instant;
 use wallfacer::geometry::Geometry;
 
@@ -123,7 +124,7 @@ pub fn handle_editor_shortcuts(
 
                 // tab through ratios
                 "t" => {
-                    let ratios: Vec<_> = wall().ratios.into_values().collect();
+                    let ratios = wall().ratios.into_values().collect_vec();
 
                     if let Some(pos) = ratios.iter().position(|r| *r == ratio) {
                         let next = (pos + 1) % ratios.len();

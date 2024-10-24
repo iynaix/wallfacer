@@ -1,5 +1,8 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use crate::cropper::Direction;
 
 #[derive(Error, Debug)]
 pub enum GeometryError {
@@ -34,14 +37,14 @@ impl std::cmp::PartialOrd for Geometry {
     }
 }
 
-impl TryFrom<String> for Geometry {
+impl TryFrom<&str> for Geometry {
     type Error = GeometryError;
 
-    fn try_from(s: String) -> Result<Self, Self::Error> {
-        let geometry: Vec<_> = s
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let geometry = s
             .split(['x', '+'])
             .filter_map(|s| s.parse::<u32>().ok())
-            .collect();
+            .collect_vec();
 
         if geometry.len() != 4 {
             return Err(GeometryError::InvalidCoordinate);
@@ -61,7 +64,7 @@ impl Serialize for Geometry {
     where
         S: serde::Serializer,
     {
-        Some(format!("{}+{}", self.x, self.y)).serialize(serializer)
+        Some(format!("{}x{}+{}+{}", self.w, self.h, self.x, self.y)).serialize(serializer)
     }
 }
 
@@ -71,11 +74,33 @@ impl<'de> Deserialize<'de> for Geometry {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Self::try_from(s).map_err(serde::de::Error::custom)
+        Self::try_from(s.as_str()).map_err(serde::de::Error::custom)
     }
 }
 
 impl Geometry {
+    #[inline]
+    pub const fn xmax(&self) -> u32 {
+        self.x + self.w
+    }
+
+    #[inline]
+    pub const fn ymax(&self) -> u32 {
+        self.y + self.h
+    }
+
+    #[inline]
+    pub const fn area(&self) -> u32 {
+        self.w * self.h
+    }
+
+    pub const fn direction_bounds(&self, direction: Direction) -> (u32, u32) {
+        match direction {
+            Direction::X => (self.x, self.xmax()),
+            Direction::Y => (self.y, self.ymax()),
+        }
+    }
+
     #[must_use]
     pub fn align_start(&self, _img_width: u32, _img_height: u32) -> Self {
         Self {

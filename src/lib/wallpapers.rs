@@ -1,7 +1,8 @@
 use indexmap::IndexMap;
+use itertools::Itertools;
 use serde::{
     de::{self},
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize, Deserializer,
 };
 use std::{collections::HashMap, path::Path};
 
@@ -14,64 +15,13 @@ use super::{
     geometry::Geometry,
 };
 
-#[derive(Debug, Default, Clone, Deserialize, PartialEq, Eq)]
-pub struct Face {
-    pub xmin: u32,
-    pub xmax: u32,
-    pub ymin: u32,
-    pub ymax: u32,
-}
-
-impl Face {
-    pub const fn dir_bounds(&self, direction: Direction) -> (u32, u32) {
-        match direction {
-            Direction::X => (self.xmin, self.xmax),
-            Direction::Y => (self.ymin, self.ymax),
-        }
-    }
-
-    #[inline]
-    pub const fn area(&self) -> u32 {
-        (self.xmax - self.xmin) * (self.ymax - self.ymin)
-    }
-
-    pub const fn geometry(&self) -> Geometry {
-        Geometry {
-            w: self.xmax - self.xmin,
-            h: self.ymax - self.ymin,
-            x: self.xmin,
-            y: self.ymin,
-        }
-    }
-
-    pub fn geometry_str(&self) -> String {
-        format!(
-            "{}x{}+{}+{}",
-            self.xmax - self.xmin,
-            self.ymax - self.ymin,
-            self.xmin,
-            self.ymin
-        )
-    }
-}
-
-impl Serialize for Face {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // required for setting order
-        Some(vec![self.xmin, self.xmax, self.ymin, self.ymax]).serialize(serializer)
-    }
-}
-
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct WallInfo {
     pub filename: String,
     pub width: u32,
     pub height: u32,
-    pub faces: Vec<Face>,
-    pub geometries: HashMap<AspectRatio, Geometry>,
+    pub faces: Vec<Geometry>,
+    pub geometries: IndexMap<AspectRatio, Geometry>,
     pub wallust: String,
 }
 
@@ -106,7 +56,7 @@ impl<'de> Deserialize<'de> for WallInfo {
                 let mut width = None;
                 let mut height = None;
                 let mut faces = None;
-                let mut geometries: HashMap<AspectRatio, Geometry> = HashMap::new();
+                let mut geometries: IndexMap<AspectRatio, Geometry> = IndexMap::new();
                 let mut wallust = None;
 
                 while let Some((key, value)) = map.next_entry::<&str, String>()? {
@@ -121,10 +71,20 @@ impl<'de> Deserialize<'de> for WallInfo {
                             height = Some(value.parse::<u32>().map_err(de::Error::custom)?);
                         }
                         "faces" => {
-                            faces =
-                                Some(serde_json::from_str::<Vec<Face>>(&value).unwrap_or_else(
-                                    |_| panic!("could not parse faces: {:?}", &value),
-                                ));
+                            faces = if value.is_empty() {
+                                Some(Vec::new())
+                            } else {
+                                Some(
+                                    value
+                                        .split(',')
+                                        .map(|face| {
+                                            face.try_into().unwrap_or_else(|_| {
+                                                panic!("could not convert face {face} into string")
+                                            })
+                                        })
+                                        .collect_vec(),
+                                )
+                            }
                         }
                         "wallust" => {
                             wallust = Some(value);
@@ -135,6 +95,7 @@ impl<'de> Deserialize<'de> for WallInfo {
                                     panic!("could not convert aspect ratio {key} into string")
                                 }),
                                 value
+                                    .as_str()
                                     .try_into()
                                     .expect("could not convert geometry into string"),
                             );
@@ -248,10 +209,10 @@ impl WallpapersCsv {
                 .push(wall_info);
         }
 
-        let duplicates: Vec<_> = groups
+        let duplicates = groups
             .into_iter()
             .filter_map(|(_, v)| if v.len() > 1 { Some(v) } else { None })
-            .collect();
+            .collect_vec();
 
         if !duplicates.is_empty() {
             for infos in duplicates {
@@ -296,7 +257,7 @@ impl WallpapersCsv {
         header
     }
 
-    pub fn save(&mut self, ratios: &[AspectRatio]) {
+    fn save_with_ratios(&mut self, ratios: &[AspectRatio]) {
         let writer = std::io::BufWriter::new(
             std::fs::File::create(&self.config.csv_path).expect("could not create wallpapers.csv"),
         );
@@ -319,7 +280,10 @@ impl WallpapersCsv {
                     wall.filename.to_string(),
                     width.to_string(),
                     height.to_string(),
-                    serde_json::to_string(&wall.faces).expect("could not serialize faces"),
+                    wall.faces
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .join(","),
                 ];
                 for resolution in ratios {
                     record.push(wall.get_geometry(resolution).to_string());
@@ -339,6 +303,10 @@ impl WallpapersCsv {
         for r in removed {
             self.wallpapers.shift_remove(&r);
         }
+    }
+
+    pub fn save(&mut self) {
+        self.save_with_ratios(&self.config.sorted_resolutions());
     }
 }
 
