@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{builder::PossibleValuesParser, Args};
+use itertools::Itertools;
 use wallfacer::{
     config::WallpaperConfig, filter_images, is_image, pipeline::WallpaperPipeline,
     wallpapers::WallInfo, PathBufExt,
@@ -56,6 +57,23 @@ pub fn main(args: AddWallpaperArgs) {
     let cfg = WallpaperConfig::new();
     let mut all_files = wallpapers_from_paths(&args.paths, &cfg);
     all_files.sort();
+
+    // check that all the files meet the minimum size requirement
+    let too_small = all_files
+        .iter()
+        .filter(|img| {
+            let (width, height) = image::image_dimensions(img)
+                .unwrap_or_else(|_| panic!("could not get image dimensions for {img:?}"));
+            width * 4 < cfg.min_width || height * 4 < cfg.min_height
+        })
+        .collect_vec();
+
+    if !too_small.is_empty() {
+        for img in too_small {
+            eprintln!("{img:?} is too small!");
+        }
+        std::process::exit(1);
+    }
 
     let mut pipeline = WallpaperPipeline::new(&cfg, args.format);
     for img in all_files {

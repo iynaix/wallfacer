@@ -134,17 +134,16 @@ impl WallpaperPipeline {
             // re-preview if no / multiple faces detected and still using default crop
             if info.faces.len() != 1 && info.is_default_crops(&self.config.sorted_resolutions()) {
                 self.to_preview.push(out_path);
-                return;
+            };
+        } else {
+            match scale {
+                None => {
+                    eprintln!("{img:?} is too small to be upscaled!");
+                    std::process::exit(1);
+                }
+                Some(1) => self.optimize(img),
+                Some(scale) => self.upscale(img, scale),
             }
-        }
-
-        match scale {
-            None => {
-                eprintln!("{img:?} is too small to be upscaled!");
-                std::process::exit(1);
-            }
-            Some(1) => self.optimize(img),
-            Some(scale) => self.upscale(img, scale),
         }
     }
 

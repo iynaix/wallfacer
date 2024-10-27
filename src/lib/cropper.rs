@@ -102,11 +102,14 @@ impl Cropper {
         target_height: u32,
     ) -> Geometry {
         let face = &self.faces[0];
-        let mid = match direction {
+        let target = match direction {
             Direction::X => (f64::from(face.x + face.xmax()) - f64::from(target_width)) / 2.0,
-            Direction::Y => (f64::from(face.y + face.ymax()) - f64::from(target_height)) / 2.0,
+            Direction::Y => {
+                // top of face - 15% of image height
+                f64::from(self.height).mul_add(-0.15, f64::from(face.y))
+            }
         };
-        self.clamp(mid, direction, target_width, target_height)
+        self.clamp(target, direction, target_width, target_height)
     }
 
     /// trivial crops, either same aspect ratio (entire image), no facec or single face
