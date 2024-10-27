@@ -6,10 +6,8 @@ use std::path::PathBuf;
 use crate::{FacesFilter, WallfacerArgs};
 
 use wallfacer::{
-    aspect_ratio::AspectRatio,
-    config::WallpaperConfig,
-    filename, filter_images, is_image,
-    wallpapers::{WallInfo, WallpapersCsv},
+    aspect_ratio::AspectRatio, config::WallpaperConfig, filename, filter_images, is_image,
+    wallpapers::WallInfo,
 };
 
 use super::Wall;
@@ -17,7 +15,6 @@ use super::Wall;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Wallpapers {
     pub files: Vec<PathBuf>,
-    csv: WallpapersCsv,
     pub index: usize,
     pub ratio: AspectRatio,
     pub resolutions: IndexMap<String, AspectRatio>,
@@ -81,41 +78,36 @@ impl Wallpapers {
             all_files.extend(filter_images(&wall_dir));
         }
 
-        let wallpapers_csv = WallpapersCsv::load(cfg);
-
         // filter only wallpapers that still use the default crops if needed
         all_files.retain(|f| {
-            let fname = filename(f);
-            if let Some(info) = wallpapers_csv.get(&fname) {
-                if args.filter.is_some()
-                    && !fname.to_lowercase().contains(
-                        &args
-                            .filter
-                            .as_ref()
-                            .expect("no --filter provided")
-                            .to_lowercase(),
-                    )
-                {
-                    return false;
-                }
-
-                // check if wallpaper uses default crop for a resolution / all resolutions
-                if !modified_filters.is_empty() {
-                    return info.is_default_crops(&modified_filters);
-                }
-
-                if !unmodified_filters.is_empty() {
-                    return info.is_default_crops(&unmodified_filters);
-                }
-
-                return match args.faces {
-                    FacesFilter::All => true,
-                    FacesFilter::Zero | FacesFilter::None => info.faces.is_empty(),
-                    FacesFilter::One | FacesFilter::Single => info.faces.len() == 1,
-                    FacesFilter::Many | FacesFilter::Multiple => info.faces.len() > 1,
-                };
+            let info = WallInfo::new_from_file(f);
+            if args.filter.is_some()
+                && !filename(f).to_lowercase().contains(
+                    &args
+                        .filter
+                        .as_ref()
+                        .expect("no --filter provided")
+                        .to_lowercase(),
+                )
+            {
+                return false;
             }
-            true
+
+            // check if wallpaper uses default crop for a resolution / all resolutions
+            if !modified_filters.is_empty() {
+                return info.is_default_crops(&modified_filters);
+            }
+
+            if !unmodified_filters.is_empty() {
+                return info.is_default_crops(&unmodified_filters);
+            }
+
+            match args.faces {
+                FacesFilter::All => true,
+                FacesFilter::Zero | FacesFilter::None => info.faces.is_empty(),
+                FacesFilter::One | FacesFilter::Single => info.faces.len() == 1,
+                FacesFilter::Many | FacesFilter::Multiple => info.faces.len() > 1,
+            }
         });
 
         // order by reverse chronological order
@@ -130,7 +122,6 @@ impl Wallpapers {
         Self {
             index: Default::default(),
             files: all_files,
-            csv: wallpapers_csv.clone(),
             ratio: resolutions[0].clone(),
             resolutions: cfg.resolutions.clone(),
         }
@@ -138,12 +129,8 @@ impl Wallpapers {
 
     pub fn current(&self) -> Wall {
         let path = self.files[self.index].clone();
-        let info = self
-            .csv
-            .get(&path)
-            .unwrap_or_else(|| panic!("could not get wallpaper info for {path:?}"));
-
-        Wall::new(info, path, &self.resolutions)
+        let info = WallInfo::new_from_file(&path);
+        Wall::new(&info, path, &self.resolutions)
     }
 
     pub fn prev_wall(&mut self) {
@@ -184,16 +171,6 @@ impl Wallpapers {
             .position(|f| filename(f) == fname)
             .unwrap_or_else(|| panic!("could not find wallpaper: {}", fname));
     }
-
-    // inserts a wallinfo into the csv
-    pub fn insert_csv(&mut self, info: &WallInfo) {
-        self.csv.insert(info.clone());
-    }
-
-    /// saves the csv
-    pub fn save_csv(&mut self) {
-        self.csv.save();
-    }
 }
 
 #[cfg(test)]
@@ -208,7 +185,6 @@ impl Wallpapers {
 
         Self {
             files,
-            csv: WallpapersCsv::default(),
             index,
             ratio: AspectRatio { w: 16, h: 9 },
             resolutions: IndexMap::default(),

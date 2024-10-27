@@ -10,7 +10,7 @@ use crate::{
     components::{save_button::SaveButton, use_ui, wallpaper_button::WallpaperButton},
     state::{UiMode, Wall, Wallpapers},
 };
-use wallfacer::config::WallpaperConfig;
+use wallfacer::{config::WallpaperConfig, filename};
 
 pub fn prev_image(wallpapers: &mut Signal<Wallpapers>) {
     let mut ui = use_ui();
@@ -113,7 +113,7 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
                                 ui.toggle_filelist();
                             });
                         },
-                        {wallpapers().current().current.filename}
+                        {filename(wallpapers().current().current.path)}
                     }
                     a { class: pagination_cls,
                         onclick: move |_| {

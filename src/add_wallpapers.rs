@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::{builder::PossibleValuesParser, Args};
 use wallfacer::{
     config::WallpaperConfig, filter_images, is_image, pipeline::WallpaperPipeline,
-    wallpapers::WallpapersCsv, PathBufExt,
+    wallpapers::WallInfo, PathBufExt,
 };
 
 #[derive(Args, Debug)]
@@ -17,11 +17,7 @@ pub struct AddWallpaperArgs {
     )]
     pub format: Option<String>,
 
-    #[arg(
-        long,
-        action,
-        help = "Reprocess the image even if it already exists in the csv"
-    )]
+    #[arg(long, action, help = "Reprocess the image even if it already exists")]
     pub force: bool,
 
     // required positional argument for input directory
@@ -35,9 +31,9 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &WallpaperConfig) -> Vec<Pa
         if let Some(p) = is_image(&p) {
             all_files.push(p);
         } else if p == cfg.wallpapers_dir {
-            let wallpapers_csv = WallpapersCsv::open(cfg).unwrap_or_default();
+            // add images from wallpapers_dir if they aren't processed yet
             let new_files = filter_images(&p)
-                .filter(|p| wallpapers_csv.get(p).is_none())
+                .filter(|p| !WallInfo::has_metadata(p))
                 .map(|p| {
                     // copy to /tmp so pipeline can work on the copy instead of the original
                     let target = p.with_directory("/tmp");
@@ -59,18 +55,9 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &WallpaperConfig) -> Vec<Pa
 pub fn main(args: AddWallpaperArgs) {
     let cfg = WallpaperConfig::new();
     let mut all_files = wallpapers_from_paths(&args.paths, &cfg);
-
-    // allow loading and cleaning of wallpapers.csv
-    let mut pipeline = WallpaperPipeline::new(&cfg, args.format);
-
-    if all_files.is_empty() {
-        pipeline.save_csv();
-
-        eprintln!("No files found in input paths.");
-        std::process::exit(1);
-    }
-
     all_files.sort();
+
+    let mut pipeline = WallpaperPipeline::new(&cfg, args.format);
     for img in all_files {
         println!("Processing: {img:?}");
         pipeline.add_image(&img, args.force);

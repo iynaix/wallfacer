@@ -20,7 +20,6 @@ pub type Result<T> = WallpaperConfigResult<T>;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WallpaperConfig {
     pub wallpapers_dir: PathBuf,
-    pub csv_path: PathBuf,
     pub min_width: u32,
     pub min_height: u32,
     pub show_faces: bool,
@@ -30,14 +29,8 @@ pub struct WallpaperConfig {
 
 impl Default for WallpaperConfig {
     fn default() -> Self {
-        let wallpapers_dir = full_path("~/Pictures/Wallpapers");
-        let config_dir = dirs::config_dir()
-            .expect("could not get xdg config directory")
-            .join("wallfacer");
-
         Self {
-            wallpapers_dir,
-            csv_path: config_dir.join("wallpapers.csv"),
+            wallpapers_dir: full_path("~/Pictures/Wallpapers"),
             min_width: 1920,
             min_height: 1080,
             show_faces: false,
@@ -78,9 +71,6 @@ impl WallpaperConfig {
                 wallpapers_dir: general
                     .get("wallpapers_dir")
                     .map_or_else(|| default_cfg.wallpapers_dir, full_path),
-                csv_path: general
-                    .get("csv_path")
-                    .map_or_else(|| default_cfg.csv_path, full_path),
                 min_width: general.get("min_width").map_or_else(
                     || default_cfg.min_width,
                     |v| {
@@ -133,10 +123,8 @@ impl WallpaperConfig {
     }
 
     /// adds a resolution in sorted order
-    pub fn add_resolution(&mut self, res_name: &str, res: AspectRatio) {
-        self.resolutions.insert(res_name.to_string(), res);
-        // TODO: order the resolutions?
-        // self.resolutions.sort_by_key(|(_, r)| r.clone());
+    pub fn add_resolution(&mut self, res_name: &str, res: &AspectRatio) {
+        self.resolutions.insert(res_name.to_string(), res.clone());
     }
 
     /// saves the current configuration
@@ -144,7 +132,6 @@ impl WallpaperConfig {
         let mut conf = Ini::new();
         conf.with_general_section()
             .set("wallpapers_dir", self.wallpapers_dir.to_string_lossy())
-            .set("csv_path", self.csv_path.to_string_lossy())
             .set("min_width", self.min_width.to_string())
             .set("min_height", self.min_height.to_string())
             .set("show_faces", self.show_faces.to_string());

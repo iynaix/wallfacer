@@ -1,22 +1,23 @@
+use rexiv2::Metadata;
+use std::path::PathBuf;
+
 use clap::Args;
 use itertools::Itertools;
 use wallfacer::{
-    aspect_ratio::AspectRatio,
-    config::WallpaperConfig,
-    cropper::Direction,
-    geometry::Geometry,
-    run_wallfacer,
-    wallpapers::{WallInfo, WallpapersCsv},
+    aspect_ratio::AspectRatio, config::WallpaperConfig, cropper::Direction, filter_images,
+    geometry::Geometry, run_wallfacer, wallpapers::WallInfo,
 };
 
-pub fn add_geometry(info: &WallInfo, ratio: &AspectRatio, geom: Geometry) -> WallInfo {
-    let mut new_geometries = info.geometries.clone();
-    new_geometries.insert(ratio.clone(), geom);
+/// adds and saves the new crop geometry
+pub fn add_geometry(info: &WallInfo, aspect: &AspectRatio, geom: &Geometry) {
+    let meta = Metadata::new_from_path(&info.path).expect("could not init new metadata");
 
-    WallInfo {
-        geometries: new_geometries,
-        ..info.clone()
-    }
+    // save the new crop metadata directly
+    let crop_key = format!("Xmp.wallfacer.crop.{}", aspect);
+    meta.set_tag_string(&crop_key, &geom.to_string())
+        .unwrap_or_else(|_| panic!("could not set {crop_key}: {geom}"));
+    meta.save_to_file(&info.path)
+        .unwrap_or_else(|_| panic!("could not save metadata for {:?}", info.path));
 }
 
 /// centers the new crop based on the old crop
@@ -59,69 +60,52 @@ pub fn main(args: AddResolutionArgs) {
 
     // save the updated config
     if !cfg.resolutions.iter().any(|(_, res)| res == &new_res) {
-        cfg.add_resolution(&name, new_res.clone());
+        cfg.add_resolution(&name, &new_res);
         cfg.save().unwrap_or_else(|_| {
-            eprintln!("Could not save config to {:?}!", cfg.csv_path);
             std::process::exit(1);
         });
     }
 
-    let mut to_process: Vec<String> = Vec::new();
-    let mut wallpapers_csv = WallpapersCsv::load(&cfg);
+    let mut to_process: Vec<PathBuf> = Vec::new();
 
-    let updated_infos = wallpapers_csv
-        .iter()
-        .map(|(fname, info)| {
-            if info.geometries.contains_key(&new_res) {
-                return info.clone();
-            }
+    for path in filter_images(&cfg.wallpapers_dir) {
+        let info = WallInfo::new_from_file(&path);
 
-            let cropper = info.cropper();
-            let default_crop = cropper.crop(&new_res);
-            let updated_default_info = add_geometry(info, &new_res, default_crop.clone());
+        if info.geometries.contains_key(&new_res) {
+            continue;
+        }
 
-            match &closest_res {
-                None => updated_default_info,
-                Some(closest) => {
-                    let closest_default_crop = cropper.crop(closest);
+        let cropper = info.cropper();
+        let default_crop = cropper.crop(&new_res);
 
-                    if info.direction(&default_crop) != info.direction(&closest_default_crop) {
-                        return updated_default_info;
-                    }
+        match &closest_res {
+            None => add_geometry(&info, &new_res, &default_crop),
+            Some(closest) => {
+                let closest_default_crop = cropper.crop(closest);
 
-                    if info.get_geometry(closest) == closest_default_crop {
-                        return updated_default_info;
-                    }
-
-                    // center new crop based on previous default crop
-                    let new_geom = center_new_crop(&closest_default_crop, &default_crop, info);
-                    to_process.push(fname.clone());
-                    add_geometry(info, &new_res, new_geom)
+                if info.direction(&default_crop) != info.direction(&closest_default_crop) {
+                    add_geometry(&info, &new_res, &default_crop);
+                    continue;
                 }
+
+                if info.get_geometry(closest) == closest_default_crop {
+                    add_geometry(&info, &new_res, &default_crop);
+                    continue;
+                }
+
+                // center new crop based on previous default crop
+                let new_geom = center_new_crop(&closest_default_crop, &default_crop, &info);
+                to_process.push(path);
+                add_geometry(&info, &new_res, &new_geom);
             }
-        })
-        .collect_vec();
-
-    for updated_info in updated_infos {
-        wallpapers_csv.insert(updated_info);
+        }
     }
-
-    // update the csv
-    wallpapers_csv.save();
 
     // open in wallfacer
     to_process.sort();
     let images = to_process
         .into_iter()
-        .map(|fname| {
-            println!("{fname}");
-
-            cfg.wallpapers_dir
-                .join(&fname)
-                .to_str()
-                .expect("could not convert path to str")
-                .to_string()
-        })
+        .map(|path| path.display().to_string())
         .collect_vec();
 
     // process the images in wallfacer

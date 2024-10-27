@@ -5,12 +5,11 @@ use std::{
 
 use itertools::Itertools;
 
+use crate::filter_images;
+
 use super::{
-    config::WallpaperConfig,
-    cropper::Cropper,
-    filename, filter_images, run_wallfacer,
-    wallpapers::{WallInfo, WallpapersCsv},
-    Bbox, PathBufExt,
+    config::WallpaperConfig, cropper::Cropper, run_wallfacer, wallpapers::WallInfo, Bbox,
+    PathBufExt,
 };
 
 /// waits for the images to be written to disk
@@ -78,23 +77,16 @@ pub fn optimize_png(infile: &PathBuf, outfile: &PathBuf) {
 pub struct WallpaperPipeline {
     config: WallpaperConfig,
     format: Option<String>,
-    wallpapers_csv: WallpapersCsv,
     to_preview: Vec<PathBuf>,
 }
 
 impl WallpaperPipeline {
     pub fn new(cfg: &WallpaperConfig, format: Option<String>) -> Self {
-        // create the csv if it doesn't exist
-        let wallpapers_csv = WallpapersCsv::open(cfg).unwrap_or_default();
-
-        // do a check for duplicates
-        wallpapers_csv.find_duplicates();
-
         let wall_dir = &cfg.wallpapers_dir;
 
-        // add images from wallpapers dir that are not in the csv
+        // check that images from wallpapers dir all have metadata
         let orphan_wallpapers = filter_images(&wall_dir)
-            .filter(|img| wallpapers_csv.get(img).is_none())
+            .filter(|img| !WallInfo::has_metadata(img))
             .collect_vec();
 
         if !orphan_wallpapers.is_empty() {
@@ -107,13 +99,8 @@ impl WallpaperPipeline {
         Self {
             format,
             config: cfg.clone(),
-            wallpapers_csv,
             to_preview: Vec::new(),
         }
-    }
-
-    pub fn save_csv(&mut self) {
-        self.wallpapers_csv.save();
     }
 
     pub fn add_image(&mut self, img: &PathBuf, force: bool) {
@@ -129,32 +116,26 @@ impl WallpaperPipeline {
         let scale = get_scale(width, height, self.config.min_width, self.config.min_height);
         if out_path.exists() && !force {
             // check if corresponding WallInfo exists
-            if let Some(info) = self.wallpapers_csv.get(&out_path) {
-                // image has been edited, re-process the image
-                if info.width / width != info.height / height {
-                    match scale {
-                        None => {
-                            eprintln!("{img:?} is too small to be upscaled!");
-                            std::process::exit(1);
-                        }
-                        Some(1) => self.optimize(img),
-                        Some(scale) => self.upscale(img, scale),
-                    }
-                    return;
-                }
+            let info = WallInfo::new_from_file(&out_path);
 
-                // re-preview if no / multiple faces detected and still using default crop
-                if info.faces.len() != 1 && info.is_default_crops(&self.config.sorted_resolutions())
-                {
-                    self.to_preview.push(out_path);
-                    return;
+            // image has been edited (different aspect ratio), re-process the image
+            if info.width / width != info.height / height {
+                match scale {
+                    None => {
+                        eprintln!("{img:?} is too small to be upscaled!");
+                        std::process::exit(1);
+                    }
+                    Some(1) => self.optimize(img),
+                    Some(scale) => self.upscale(img, scale),
                 }
-            // no WallInfo, redetect faces to write to csv
-            } else {
-                self.detect(&out_path);
                 return;
             }
-            return;
+
+            // re-preview if no / multiple faces detected and still using default crop
+            if info.faces.len() != 1 && info.is_default_crops(&self.config.sorted_resolutions()) {
+                self.to_preview.push(out_path);
+                return;
+            }
         }
 
         match scale {
@@ -199,7 +180,7 @@ impl WallpaperPipeline {
             .format
             .as_ref()
             .map_or_else(|| img.clone(), |format| img.with_extension(format))
-            .with_directory(self.config.wallpapers_dir.clone());
+            .with_directory("/tmp");
 
         if let Some(ext) = out_img.extension() {
             match ext.to_str().expect("could not convert extension to str") {
@@ -215,8 +196,6 @@ impl WallpaperPipeline {
 
     pub fn detect(&mut self, img: &PathBuf) {
         wait_for_image(img);
-
-        let fname = filename(img);
 
         // get output of anime face detector
         let child = Command::new("anime-face-detector")
@@ -241,7 +220,7 @@ impl WallpaperPipeline {
         // create WallInfo and save it
         let resolutions = self.config.sorted_resolutions();
         let wall_info = WallInfo {
-            filename: fname,
+            path: img.clone(),
             width,
             height,
             faces,
@@ -251,15 +230,17 @@ impl WallpaperPipeline {
                 .collect(),
             wallust: String::new(),
         };
+        wall_info.save();
+
+        // copy final image with metadata to wallpapers dir
+        std::fs::copy(img, img.with_directory(&self.config.wallpapers_dir))
+            .unwrap_or_else(|_| panic!("could not copy {img:?} to wallpapers dir"));
 
         // preview both multiple faces and no faces
         if wall_info.faces.len() != 1 {
             self.to_preview
                 .push(img.with_directory(&self.config.wallpapers_dir));
         }
-
-        self.wallpapers_csv.insert(wall_info);
-        self.wallpapers_csv.save();
     }
 
     pub fn preview(self) {

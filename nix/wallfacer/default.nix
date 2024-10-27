@@ -16,6 +16,7 @@
   tailwindcss,
   webkitgtk_4_1,
   xdotool,
+  gexiv2,
   stdenv,
   darwin,
   realcugan-ncnn-vulkan,
@@ -77,6 +78,7 @@ rustPlatform.buildRustPackage {
       pango
       webkitgtk_4_1
       xdotool
+      gexiv2 # for reading metadata
     ]
     ++ lib.optionals stdenv.isDarwin [
       darwin.apple_sdk.frameworks.AppKit

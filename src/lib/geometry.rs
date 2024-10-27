@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::cropper::Direction;
@@ -56,25 +55,6 @@ impl TryFrom<&str> for Geometry {
             x: geometry[2],
             y: geometry[3],
         })
-    }
-}
-
-impl Serialize for Geometry {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        Some(format!("{}x{}+{}+{}", self.w, self.h, self.x, self.y)).serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Geometry {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Self::try_from(s.as_str()).map_err(serde::de::Error::custom)
     }
 }
 

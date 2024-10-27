@@ -52,8 +52,6 @@
                 realcugan-ncnn-vulkan
                 anime-face-detector
                 gexiv2 # for reading metadata
-              ]
-              ++ [
                 pkg-config
                 tailwindcss-with-catppuccin
                 dioxus-cli

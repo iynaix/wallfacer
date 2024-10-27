@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// euclid's algorithm to find the greatest common divisor
@@ -64,25 +63,6 @@ impl TryFrom<&str> for AspectRatio {
         }
 
         Ok(Self::new(parts[0], parts[1]))
-    }
-}
-
-impl Serialize for AspectRatio {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        serializer.serialize_str(&format!("{}", self))
-    }
-}
-
-impl<'de> Deserialize<'de> for AspectRatio {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Self::try_from(s.as_str()).map_err(serde::de::Error::custom)
     }
 }
 
