@@ -43,7 +43,7 @@
           devenv.shells.default = {
             packages =
               with pkgs;
-              # pipeline dependencies
+              # wallfacer specific dependencies
               [
                 cargo-edit
                 oxipng
@@ -51,6 +51,7 @@
                 libwebp
                 realcugan-ncnn-vulkan
                 anime-face-detector
+                gexiv2 # for reading metadata
               ]
               ++ [
                 pkg-config

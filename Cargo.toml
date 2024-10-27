@@ -38,6 +38,7 @@ async-process = "2.3.0"
 rust-ini = "0.21.1"
 ordered-float = "4.4.0"
 wallust = "3.1.0"
+rexiv2 = "0.10.0"
 
 [features]
 default = ["adding"]
