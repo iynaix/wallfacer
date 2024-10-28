@@ -5077,6 +5077,7 @@ dependencies = [
  "indexmap 2.6.0",
  "itertools 0.13.0",
  "ordered-float 4.4.0",
+ "rayon",
  "rexiv2",
  "rust-ini",
  "serde",

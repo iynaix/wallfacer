@@ -48,9 +48,8 @@ impl Dragger {
             )
         };
 
-        // better perf? will-change: clip-path; transform: translateZ(0);
         format!(
-            "height: {}px; clip-path: {clip_path}; transition: clip-path 150ms ease",
+            "height: {}px; clip-path: {clip_path}; will-change: clip-path; transform: translateZ(0); transition: clip-path 150ms ease",
             self.preview_h
         )
     }

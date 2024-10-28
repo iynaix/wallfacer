@@ -11,6 +11,7 @@ pub mod add_wallpapers;
 pub mod components;
 pub mod screens;
 pub mod state;
+pub mod trimmer;
 
 #[derive(ValueEnum, Debug, Clone)]
 pub enum FacesFilter {
@@ -41,6 +42,10 @@ pub enum Commands {
 
     #[command(name = "resolution", about = "Adds a new resolution for cropping")]
     AddResolution(add_resolution::AddResolutionArgs),
+
+    #[cfg(feature = "trimmer")]
+    #[command(name = "trimmer", about = "Trims images")]
+    Trim(trimmer::TrimmerArgs),
 }
 
 #[allow(clippy::struct_excessive_bools)]
@@ -133,6 +138,7 @@ fn main() {
     match args.command {
         Some(Commands::Add(args)) => add_wallpapers::main(args),
         Some(Commands::AddResolution(args)) => add_resolution::main(args),
+        Some(Commands::Trim(args)) => trimmer::main(args),
         _ => {
             // use a custom index.html to set the height of body to the full height of the window
             LaunchBuilder::desktop()
