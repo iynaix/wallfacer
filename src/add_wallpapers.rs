@@ -53,7 +53,7 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &WallpaperConfig) -> Vec<Pa
     all_files
 }
 
-pub fn main(args: AddWallpaperArgs) {
+pub fn main(args: &AddWallpaperArgs) {
     let cfg = WallpaperConfig::new();
     let mut all_files = wallpapers_from_paths(&args.paths, &cfg);
     all_files.sort();
@@ -75,7 +75,7 @@ pub fn main(args: AddWallpaperArgs) {
         std::process::exit(1);
     }
 
-    let mut pipeline = WallpaperPipeline::new(&cfg, args.format);
+    let mut pipeline = WallpaperPipeline::new(&cfg, &args.format);
     for img in all_files {
         println!("Processing: {img:?}");
         pipeline.add_image(&img, args.force);

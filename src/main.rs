@@ -44,7 +44,7 @@ pub enum Commands {
     AddResolution(add_resolution::AddResolutionArgs),
 
     #[cfg(feature = "trimmer")]
-    #[command(name = "trimmer", about = "Trims images")]
+    #[command(name = "trim", about = "Trims images")]
     Trim(trimmer::TrimmerArgs),
 }
 
@@ -136,9 +136,9 @@ fn main() {
     }
 
     match args.command {
-        Some(Commands::Add(args)) => add_wallpapers::main(args),
-        Some(Commands::AddResolution(args)) => add_resolution::main(args),
-        Some(Commands::Trim(args)) => trimmer::main(args),
+        Some(Commands::Add(args)) => add_wallpapers::main(&args),
+        Some(Commands::AddResolution(args)) => add_resolution::main(&args),
+        Some(Commands::Trim(args)) => trimmer::main(&args),
         _ => {
             // use a custom index.html to set the height of body to the full height of the window
             LaunchBuilder::desktop()

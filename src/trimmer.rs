@@ -180,9 +180,9 @@ pub struct TrimmerArgs {
     pub output: PathBuf,
 }
 
-pub fn main(args: TrimmerArgs) {
+pub fn main(args: &TrimmerArgs) {
     let mut all_files = Vec::new();
-    std::fs::canonicalize(args.input).map_or_else(
+    std::fs::canonicalize(&args.input).map_or_else(
         |_| {
             eprintln!("Could not find input file /directory");
             std::process::exit(1);
@@ -195,6 +195,7 @@ pub fn main(args: TrimmerArgs) {
             }
         },
     );
+    all_files.sort();
 
     std::fs::canonicalize(&args.output).map_or_else(
         |_| std::fs::create_dir_all(&args.output).expect("Unable to create output directory"),

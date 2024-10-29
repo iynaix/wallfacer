@@ -110,7 +110,7 @@ impl Wallpapers {
             }
         });
 
-        // order by reverse chronological order
+        // sort by reverse chronological order
         all_files.sort_by_key(|f| {
             f.metadata()
                 .unwrap_or_else(|_| panic!("could not get file metadata: {:?}", f))

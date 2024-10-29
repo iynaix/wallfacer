@@ -4,7 +4,6 @@ use thiserror::Error;
 use indexmap::IndexMap;
 use ini::Ini;
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
 
 use super::{aspect_ratio::AspectRatio, full_path};
 
@@ -104,22 +103,6 @@ impl WallpaperConfig {
 
     pub fn sorted_resolutions(&self) -> Vec<AspectRatio> {
         self.resolutions.iter().map(|(_, v)| v.clone()).collect()
-    }
-
-    /// finds the closest resolution
-    pub fn closest_resolution(&self, new_res: &AspectRatio) -> Option<AspectRatio> {
-        self.resolutions
-            .iter()
-            .min_by_key(|(_, res)| {
-                let diff = OrderedFloat((f64::from(*res) - f64::from(new_res)).abs());
-                // ignore if aspect ratio already exists in config
-                if diff == 0.0 {
-                    f64::INFINITY.into()
-                } else {
-                    diff
-                }
-            })
-            .map(|(_, res)| res.clone())
     }
 
     /// adds a resolution in sorted order
