@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use clap::{builder::PossibleValuesParser, Args};
 use itertools::Itertools;
 use wallfacer::{
-    config::WallpaperConfig, filter_images, is_image, pipeline::WallpaperPipeline,
-    wallpapers::WallInfo, PathBufExt,
+    config::Config, filter_images, is_image, pipeline::WallpaperPipeline, wallpapers::WallInfo,
+    PathBufExt,
 };
 
 #[derive(Args, Debug)]
@@ -26,7 +26,7 @@ pub struct AddWallpaperArgs {
     pub paths: Vec<PathBuf>,
 }
 
-pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &WallpaperConfig) -> Vec<PathBuf> {
+pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
     let mut all_files = Vec::new();
     for p in paths.iter().flat_map(std::fs::canonicalize) {
         if let Some(p) = is_image(&p) {
@@ -54,7 +54,7 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &WallpaperConfig) -> Vec<Pa
 }
 
 pub fn main(args: &AddWallpaperArgs) {
-    let cfg = WallpaperConfig::new();
+    let cfg = Config::new();
     let mut all_files = wallpapers_from_paths(&args.paths, &cfg);
     all_files.sort();
 

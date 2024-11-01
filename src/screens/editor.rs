@@ -124,7 +124,11 @@ pub fn handle_editor_shortcuts(
 
                 // tab through ratios
                 "t" => {
-                    let ratios = wall().ratios.into_values().collect_vec();
+                    let ratios = wall()
+                        .ratios
+                        .into_iter()
+                        .map(|r| r.resolution)
+                        .collect_vec();
 
                     if let Some(pos) = ratios.iter().position(|r| *r == ratio) {
                         let next = (pos + 1) % ratios.len();

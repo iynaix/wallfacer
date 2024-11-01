@@ -1,9 +1,9 @@
-use indexmap::IndexMap;
 use itertools::Itertools;
 use std::path::PathBuf;
 
 use wallfacer::{
-    aspect_ratio::AspectRatio, cropper::Direction, geometry::Geometry, wallpapers::WallInfo,
+    aspect_ratio::AspectRatio, config::ConfigResolution, cropper::Direction, geometry::Geometry,
+    wallpapers::WallInfo,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,23 +15,19 @@ pub struct Wall {
     pub ratio: AspectRatio,
     path: PathBuf,
     /// possible ratios for this image
-    pub ratios: IndexMap<String, AspectRatio>,
+    pub ratios: Vec<ConfigResolution>,
     pub mouseover_geom: Option<Geometry>,
 }
 
 impl Wall {
-    pub fn new(
-        info: &WallInfo,
-        path: PathBuf,
-        resolutions: &IndexMap<String, AspectRatio>,
-    ) -> Self {
-        let ratios: IndexMap<_, _> = resolutions
-            .into_iter()
-            .filter(|(_, ratio)| {
+    pub fn new(info: &WallInfo, path: PathBuf, resolutions: &[ConfigResolution]) -> Self {
+        let ratios = resolutions
+            .iter()
+            .filter(|res| {
                 const THRESHOLD: f64 = 1.0 / 100.0;
 
                 // don't show resolution if aspect ratio of image is within a percentage threshold
-                let ratio = f64::from(*ratio);
+                let ratio = f64::from(&res.resolution);
 
                 let (w, h) = info.dimensions_f64();
                 let lower_w = (w * (1.0 - THRESHOLD)) / h;
@@ -50,14 +46,18 @@ impl Wall {
 
                 true
             })
-            .map(|(name, ratio)| (name.clone(), ratio.clone()))
-            .collect();
+            .cloned()
+            .collect_vec();
 
         Self {
             source: info.clone(),
             current: info.clone(),
             path,
-            ratio: ratios.first().expect("no resolutions provided").1.clone(),
+            ratio: ratios
+                .first()
+                .expect("no resolutions provided")
+                .resolution
+                .clone(),
             ratios,
             mouseover_geom: None,
         }

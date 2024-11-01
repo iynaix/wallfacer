@@ -1,12 +1,13 @@
 use clap::Parser;
-use indexmap::IndexMap;
 use itertools::Itertools;
 use std::path::PathBuf;
 
 use crate::{FacesFilter, WallfacerArgs};
 
 use wallfacer::{
-    aspect_ratio::AspectRatio, config::WallpaperConfig, filename, filter_images, is_image,
+    aspect_ratio::AspectRatio,
+    config::{Config, ConfigResolution},
+    filename, filter_images, is_image,
     wallpapers::WallInfo,
 };
 
@@ -17,7 +18,7 @@ pub struct Wallpapers {
     pub files: Vec<PathBuf>,
     pub index: usize,
     pub ratio: AspectRatio,
-    pub resolutions: IndexMap<String, AspectRatio>,
+    pub resolutions: Vec<ConfigResolution>,
 }
 
 impl Wallpapers {
@@ -39,10 +40,14 @@ impl Wallpapers {
         }
     }
 
-    pub fn from_args(cfg: &WallpaperConfig) -> Self {
+    pub fn from_args(cfg: &Config) -> Self {
         let args = WallfacerArgs::parse();
         let wall_dir = &cfg.wallpapers_dir;
-        let resolutions = cfg.resolutions.clone().into_values().collect_vec();
+        let resolutions = cfg
+            .resolutions
+            .iter()
+            .map(|res| res.resolution.clone())
+            .collect_vec();
 
         let mut modified_filters = Self::resolution_arg(args.modified.as_deref(), &resolutions);
         if !modified_filters.is_empty() {
@@ -187,7 +192,7 @@ impl Wallpapers {
             files,
             index,
             ratio: AspectRatio { w: 16, h: 9 },
-            resolutions: IndexMap::default(),
+            resolutions: Vec::new(),
         }
     }
 }

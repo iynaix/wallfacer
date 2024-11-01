@@ -7,6 +7,7 @@ use crate::state::Wall;
 #[component]
 pub fn Button(
     class: Option<String>,
+    title: Option<String>,
     active: Option<bool>,
     spin: Option<bool>,
     onclick: Option<EventHandler<MouseEvent>>,
@@ -24,6 +25,7 @@ pub fn Button(
         button {
             r#type: "button",
             class: "relative inline-flex items-center px-3 py-2 font-semibold text-text ring-1 ring-inset ring-surface1 hover:bg-crust focus:z-10 {active_cls} {class.unwrap_or_default()}",
+            title,
             disabled: spin.unwrap_or_default(),
             onclick: move |evt| {
                 if !spin.unwrap_or_default() {
@@ -74,6 +76,7 @@ pub fn PreviewableButton(
     class: Option<String>,
     active: Option<bool>,
     geom: Geometry,
+    title: Option<String>,
     wall: Signal<Wall>,
     onclick: Option<EventHandler<MouseEvent>>,
     onmouseenter: Option<EventHandler<MouseEvent>>,
@@ -96,6 +99,7 @@ pub fn PreviewableButton(
         Button {
             class,
             active,
+            title,
             onclick: move |evt| {
                 is_hovering.set(false);
 

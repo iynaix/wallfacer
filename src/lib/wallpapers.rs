@@ -86,12 +86,6 @@ impl WallInfo {
     pub fn save(&self) {
         let meta = Metadata::new_from_path(&self.path).expect("could not init new metadata");
 
-        let _face_arr = self
-            .faces
-            .iter()
-            .map(std::string::ToString::to_string)
-            .collect_vec();
-
         // set face metadata
         let face_strings = if self.faces.is_empty() {
             "[]".to_string()

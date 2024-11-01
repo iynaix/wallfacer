@@ -8,7 +8,7 @@ use itertools::Itertools;
 use crate::filter_images;
 
 use super::{
-    config::WallpaperConfig, cropper::Cropper, run_wallfacer, wallpapers::WallInfo, Bbox,
+    config::Config, cropper::Cropper, run_wallfacer, wallpapers::WallInfo, Bbox,
     PathBufExt,
 };
 
@@ -75,13 +75,13 @@ pub fn optimize_png(infile: &PathBuf, outfile: &PathBuf) {
 
 #[derive(Default)]
 pub struct WallpaperPipeline {
-    config: WallpaperConfig,
+    config: Config,
     format: Option<String>,
     to_preview: Vec<PathBuf>,
 }
 
 impl WallpaperPipeline {
-    pub fn new(cfg: &WallpaperConfig, format: &Option<String>) -> Self {
+    pub fn new(cfg: &Config, format: &Option<String>) -> Self {
         let wall_dir = &cfg.wallpapers_dir;
 
         // check that images from wallpapers dir all have metadata

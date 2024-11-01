@@ -17,7 +17,7 @@ pub fn RatioButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
 
     let len = ratios.len();
 
-    let buttons = ratios.into_iter().enumerate().map(|(i, (res_name, res))| {
+    let buttons = ratios.into_iter().enumerate().map(|(i, res)| {
         let cls = if i == 0 {
             "rounded-l-md"
         } else if i == len - 1 {
@@ -26,8 +26,8 @@ pub fn RatioButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
             "-ml-px"
         };
 
-        let current_geom = wall().current.get_geometry(&res);
-        let dirty_marker = if current_geom == wall().source.get_geometry(&res) {
+        let current_geom = wall().current.get_geometry(&res.resolution);
+        let dirty_marker = if current_geom == wall().source.get_geometry(&res.resolution) {
             " "
         } else {
             "*"
@@ -38,13 +38,14 @@ pub fn RatioButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
                 class: "text-sm {cls}",
                 geom: current_geom,
                 wall,
-                active: wall().ratio == res,
+                title: res.description,
+                active: wall().ratio == res.resolution,
                 onclick: move |_| {
-                    change_ratio(&mut wall, &res);
+                    change_ratio(&mut wall, &res.resolution);
                 },
                 span {
                     class: "whitespace-pre",
-                    "  {res_name} {dirty_marker}"
+                    "  {res.name} {dirty_marker}"
                 }
             }
         }

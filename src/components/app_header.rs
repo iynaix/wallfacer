@@ -10,7 +10,7 @@ use crate::{
     components::{save_button::SaveButton, use_ui, wallpaper_button::WallpaperButton},
     state::{UiMode, Wall, Wallpapers},
 };
-use wallfacer::{config::WallpaperConfig, filename};
+use wallfacer::{config::Config, filename};
 
 pub fn prev_image(wallpapers: &mut Signal<Wallpapers>) {
     let mut ui = use_ui();
@@ -41,7 +41,7 @@ pub fn next_image(wallpapers: &mut Signal<Wallpapers>) {
 #[component]
 pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element {
     let mut ui = use_ui();
-    let cfg = use_context::<Signal<WallpaperConfig>>();
+    let cfg = use_context::<Signal<Config>>();
 
     let supports_wallust = use_signal(|| {
         std::process::Command::new("rustc")

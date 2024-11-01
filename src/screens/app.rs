@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
 
-use wallfacer::config::WallpaperConfig;
+use wallfacer::config::Config;
 
 use crate::{
     components::{app_header::AppHeader, save_button::save_image},
@@ -65,7 +65,7 @@ fn handle_shortcuts(
 }
 
 pub fn App() -> Element {
-    let config = use_context_provider(|| Signal::new(WallpaperConfig::new()));
+    let config = use_context_provider(|| Signal::new(Config::new()));
     let wallpapers = use_signal(|| Wallpapers::from_args(&config()));
 
     if wallpapers().files.is_empty() {
@@ -87,7 +87,7 @@ pub fn App() -> Element {
 }
 
 #[component]
-fn Main(config: Signal<WallpaperConfig>, wallpapers: Signal<Wallpapers>) -> Element {
+fn Main(config: Signal<Config>, wallpapers: Signal<Wallpapers>) -> Element {
     let mut wall = use_signal(|| wallpapers().current());
     let mut ui = use_context_provider(|| {
         Signal::new(UiState {
@@ -100,11 +100,11 @@ fn Main(config: Signal<WallpaperConfig>, wallpapers: Signal<Wallpapers>) -> Elem
         let mut new_wall = wallpapers().current();
         let prev_ratio = wall.peek().ratio.clone();
 
-        let mut new_ratios = new_wall.ratios.values();
+        let mut new_ratios = new_wall.ratios.iter().map(|r| r.resolution.clone());
 
         // prev ratio doesn't exist, just use first ratio returned by current()
-        if !new_ratios.any(|r| *r == prev_ratio) {
-            wall.set(new_wall);
+        if !new_ratios.any(|r| r == prev_ratio) {
+            wall.set(new_wall.clone());
             return;
         }
 

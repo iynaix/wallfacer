@@ -1,4 +1,6 @@
 use itertools::Itertools;
+use serde::de::{self, Visitor};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// euclid's algorithm to find the greatest common divisor
@@ -21,6 +23,43 @@ pub enum AspectRatioError {
 pub struct AspectRatio {
     pub w: u32,
     pub h: u32,
+}
+
+impl<'de> Deserialize<'de> for AspectRatio {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        // Create a visitor to handle the deserialization
+        struct AspectRatioVisitor;
+
+        impl<'de> Visitor<'de> for AspectRatioVisitor {
+            type Value = AspectRatio;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string in the format 'WxH'")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<AspectRatio, E>
+            where
+                E: de::Error,
+            {
+                AspectRatio::try_from(value).map_err(de::Error::custom)
+            }
+        }
+
+        // Use the visitor to deserialize
+        deserializer.deserialize_str(AspectRatioVisitor)
+    }
+}
+
+impl Serialize for AspectRatio {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
 }
 
 impl std::fmt::Display for AspectRatio {

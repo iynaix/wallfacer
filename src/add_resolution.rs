@@ -5,8 +5,13 @@ use clap::Args;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use wallfacer::{
-    aspect_ratio::AspectRatio, config::WallpaperConfig, cropper::Direction, filter_images,
-    geometry::Geometry, run_wallfacer, wallpapers::WallInfo,
+    aspect_ratio::AspectRatio,
+    config::{Config, ConfigResolution},
+    cropper::Direction,
+    filter_images,
+    geometry::Geometry,
+    run_wallfacer,
+    wallpapers::WallInfo,
 };
 
 /// adds and saves the new crop geometry
@@ -54,13 +59,13 @@ pub fn main(args: &AddResolutionArgs) {
     let new_res = std::convert::TryInto::<AspectRatio>::try_into(args.resolution.as_str())
         .unwrap_or_else(|_| panic!("invalid aspect ratio: {} into string", args.resolution));
 
-    let mut cfg = WallpaperConfig::new();
+    let mut cfg = Config::new();
     // finds the closest resolution to an existing one
     let closest_res = cfg
         .resolutions
         .iter()
-        .min_by_key(|(_, res)| {
-            let diff = OrderedFloat((f64::from(*res) - f64::from(&new_res)).abs());
+        .min_by_key(|res| {
+            let diff = OrderedFloat((f64::from(&res.resolution) - f64::from(&new_res)).abs());
             // ignore if aspect ratio already exists in config
             if diff == 0.0 {
                 f64::INFINITY.into()
@@ -68,11 +73,15 @@ pub fn main(args: &AddResolutionArgs) {
                 diff
             }
         })
-        .map(|(_, res)| res.clone());
+        .map(|res| res.resolution.clone());
 
     // save the updated config
-    if !cfg.resolutions.iter().any(|(_, res)| res == &new_res) {
-        cfg.add_resolution(&args.name, &new_res);
+    if !cfg.resolutions.iter().any(|res| res.resolution == new_res) {
+        cfg.resolutions.push(ConfigResolution {
+            name: args.name.clone(),
+            description: Some(args.name.clone()),
+            resolution: new_res.clone(),
+        });
         cfg.save().unwrap_or_else(|_| {
             eprintln!("Unable to add resolution to existing config, please do so manually.");
             std::process::exit(1);
