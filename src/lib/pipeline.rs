@@ -8,8 +8,7 @@ use itertools::Itertools;
 use crate::filter_images;
 
 use super::{
-    config::Config, cropper::Cropper, run_wallfacer, wallpapers::WallInfo, Bbox,
-    PathBufExt,
+    config::Config, cropper::Cropper, run_wallfacer, wallpapers::WallInfo, Bbox, PathBufExt,
 };
 
 /// waits for the images to be written to disk
@@ -24,7 +23,10 @@ fn get_scale(width: u32, height: u32, min_width: u32, min_height: u32) -> Option
     (1..=4).find(|&scale| width * scale >= min_width && height * scale >= min_height)
 }
 
-pub fn optimize_webp(infile: &PathBuf, outfile: &PathBuf) {
+pub fn optimize_webp(
+    infile: &PathBuf,
+    outfile: &PathBuf,
+) -> Result<std::process::ExitStatus, std::io::Error> {
     Command::new("cwebp")
         .args(["-q", "100", "-m", "6", "-mt", "-af"])
         .arg(infile)
@@ -34,12 +36,13 @@ pub fn optimize_webp(infile: &PathBuf, outfile: &PathBuf) {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("could not spawn cwebp")
-        .wait()
-        .expect("could not wait for cwebp");
+        .and_then(|mut c| c.wait())
 }
 
-pub fn optimize_jpg(infile: &PathBuf, outfile: &Path) {
+pub fn optimize_jpg(
+    infile: &PathBuf,
+    outfile: &Path,
+) -> Result<std::process::ExitStatus, std::io::Error> {
     Command::new("jpegoptim")
         .arg("--strip-all")
         .arg(infile)
@@ -53,12 +56,13 @@ pub fn optimize_jpg(infile: &PathBuf, outfile: &Path) {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("could not spawn jpegoptim")
-        .wait()
-        .expect("could not wait for jpegoptim");
+        .and_then(|mut c| c.wait())
 }
 
-pub fn optimize_png(infile: &PathBuf, outfile: &PathBuf) {
+pub fn optimize_png(
+    infile: &PathBuf,
+    outfile: &PathBuf,
+) -> Result<std::process::ExitStatus, std::io::Error> {
     Command::new("oxipng")
         .args(["--opt", "max"])
         .arg(infile)
@@ -68,9 +72,7 @@ pub fn optimize_png(infile: &PathBuf, outfile: &PathBuf) {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("could not spawn oxipng")
-        .wait()
-        .expect("could not wait for oxipng");
+        .and_then(|mut c| c.wait())
 }
 
 #[derive(Default)]
@@ -165,9 +167,8 @@ impl WallpaperPipeline {
             // silence output
             .stderr(Stdio::null())
             .spawn()
-            .expect("could not spawn realcugan-ncnn-vulkan")
-            .wait()
-            .expect("could not wait for realcugan-ncnn-vulkan");
+            .and_then(|mut c| c.wait())
+            .expect("could not run realcugan-ncnn-vulkan");
 
         self.optimize(&dest);
     }
@@ -181,13 +182,14 @@ impl WallpaperPipeline {
             .map_or_else(|| img.clone(), |format| img.with_extension(format))
             .with_directory("/tmp");
 
-        if let Some(ext) = out_img.extension() {
-            match ext.to_str().expect("could not convert extension to str") {
+        if let Some(ext) = out_img.extension().and_then(|ext| ext.to_str()) {
+            (match ext {
                 "jpg" | "jpeg" => optimize_jpg(img, &out_img),
                 "png" => optimize_png(img, &out_img),
                 "webp" => optimize_webp(img, &out_img),
                 _ => panic!("unsupported image format: {ext:?}"),
-            }
+            })
+            .expect("could not optimize {img:?}");
         };
 
         self.detect(&out_img);
@@ -218,7 +220,7 @@ impl WallpaperPipeline {
 
         // create WallInfo and save it
         let resolutions = self.config.sorted_resolutions();
-        let wall_info = WallInfo {
+        let info = WallInfo {
             path: img.clone(),
             width,
             height,
@@ -229,14 +231,15 @@ impl WallpaperPipeline {
                 .collect(),
             wallust: String::new(),
         };
-        wall_info.save();
+        info.save()
+            .unwrap_or_else(|_| panic!("could not save {}", info.path.display()));
 
         // copy final image with metadata to wallpapers dir
         std::fs::copy(img, img.with_directory(&self.config.wallpapers_dir))
             .unwrap_or_else(|_| panic!("could not copy {img:?} to wallpapers dir"));
 
         // preview both multiple faces and no faces
-        if wall_info.faces.len() != 1 {
+        if info.faces.len() != 1 {
             self.to_preview
                 .push(img.with_directory(&self.config.wallpapers_dir));
         }

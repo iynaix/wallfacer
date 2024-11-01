@@ -6,6 +6,8 @@ use toml;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
+    #[error("No config file found")]
+    NotFound,
     #[error("Invalid config")]
     InvalidConfig,
 }
@@ -48,15 +50,15 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self> {
         let cfg_file = dirs::config_dir()
             .expect("could not get xdg config directory")
             .join("wallfacer/wallfacer.toml");
 
-        let contents = std::fs::read_to_string(cfg_file).expect("unable to read config file");
-        let mut cfg: Self = toml::from_str(&contents).expect("invalid config file");
+        let contents = std::fs::read_to_string(cfg_file).map_err(|_| ConfigError::NotFound)?;
+        let mut cfg: Self = toml::from_str(&contents).map_err(|_| ConfigError::InvalidConfig)?;
         cfg.resolutions.sort_by_key(|res| res.resolution.clone());
-        cfg
+        Ok(cfg)
     }
 
     pub fn sorted_resolutions(&self) -> Vec<AspectRatio> {

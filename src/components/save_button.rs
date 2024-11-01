@@ -10,7 +10,9 @@ pub fn save_image(wall: &Wall, wallpapers: &mut Signal<Wallpapers>) {
     let mut ui = use_ui();
 
     wallpapers.with_mut(|wallpapers| {
-        wall.current.save();
+        wall.current
+            .save()
+            .unwrap_or_else(|_| panic!("could not save {}", wall.current.path.display()));
         wallpapers.remove();
     });
     ui.with_mut(|ui| {

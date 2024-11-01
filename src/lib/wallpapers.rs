@@ -83,8 +83,12 @@ impl WallInfo {
         }
     }
 
-    pub fn save(&self) {
-        let meta = Metadata::new_from_path(&self.path).expect("could not init new metadata");
+    pub fn save(&self) -> rexiv2::Result<()> {
+        let prev_modified = std::fs::metadata(&self.path)
+            .and_then(|metadata| metadata.modified())
+            .ok();
+
+        let meta = Metadata::new_from_path(&self.path)?;
 
         // set face metadata
         let face_strings = if self.faces.is_empty() {
@@ -96,18 +100,30 @@ impl WallInfo {
                 .join(",")
         };
 
-        meta.set_tag_string("Xmp.wallfacer.faces", &face_strings)
-            .unwrap_or_else(|_| panic!("could not set Xmp.wallfacer.faces: {face_strings:?}"));
+        meta.set_tag_string("Xmp.wallfacer.faces", &face_strings)?;
 
         // set crop data
         for (aspect, geom) in &self.geometries {
             let crop_key = format!("Xmp.wallfacer.crop.{}", aspect);
-            meta.set_tag_string(&crop_key, &geom.to_string())
-                .unwrap_or_else(|_| panic!("could not set {crop_key}: {geom}"));
+            meta.set_tag_string(&crop_key, &geom.to_string())?;
         }
 
-        meta.save_to_file(&self.path)
-            .unwrap_or_else(|_| panic!("could not save metadata for {:?}", self.path));
+        if !self.wallust.is_empty() {
+            meta.set_tag_string("Xmp.wallfacer.wallust", &self.wallust)?;
+        }
+
+        meta.save_to_file(&self.path)?;
+
+        // reset the modified time to maintain sort order
+        if let Some(prev_modified) = prev_modified {
+            std::fs::OpenOptions::new()
+                .write(true)
+                .open(&self.path)
+                .and_then(|f| f.set_modified(prev_modified))
+                .ok();
+        }
+
+        Ok(())
     }
 
     pub fn dimensions_f64(&self) -> (f64, f64) {

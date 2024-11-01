@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use clap::Parser;
 use image::{GenericImageView, ImageBuffer, ImageReader, Rgb};
 use rayon::prelude::*;
-use wallfacer::{filter_images, is_image};
+use wallfacer::{filename, filter_images, is_image};
 
 #[allow(clippy::cast_lossless)]
 fn mean(data: &[i32]) -> f64 {
@@ -142,15 +142,8 @@ impl Trimmer {
         // }
 
         let cropped = img.view(x, y, width, height).to_image();
-
-        let fname = wall
-            .file_name()
-            .expect("could not get filename")
-            .to_str()
-            .expect("could not convert filename to str")
-            .replace(".jpg", ".png");
         cropped
-            .save(&output.join(fname))
+            .save(&output.join(filename(wall)))
             .unwrap_or_else(|_| panic!("could not save trimmed image for {wall:?}"));
     }
 }

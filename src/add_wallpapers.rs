@@ -54,7 +54,7 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
 }
 
 pub fn main(args: &AddWallpaperArgs) {
-    let cfg = Config::new();
+    let cfg = Config::new().expect("failed to load config");
     let mut all_files = wallpapers_from_paths(&args.paths, &cfg);
     all_files.sort();
 

@@ -30,10 +30,9 @@ where
 {
     path.as_ref()
         .file_name()
-        .unwrap_or_else(|| panic!("could not get filename: {:?}", path))
-        .to_str()
-        .unwrap_or_else(|| panic!("could not convert filename to str: {:?}", path))
-        .to_string()
+        .and_then(|f| f.to_str())
+        .map(std::string::ToString::to_string)
+        .expect("could not get filename")
 }
 
 // extend PathBuf with utility methods
@@ -112,9 +111,8 @@ where
         .args(["run", "--bin", "wallfacer", "--"])
         .args(args)
         .spawn()
-        .expect("could not spawn wallfacer")
-        .wait()
-        .expect("could not wait for wallfacer");
+        .and_then(|mut c| c.wait())
+        .expect("could not run wallfacer");
 }
 
 #[cfg(not(debug_assertions))]

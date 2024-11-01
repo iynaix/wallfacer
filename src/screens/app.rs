@@ -65,7 +65,8 @@ fn handle_shortcuts(
 }
 
 pub fn App() -> Element {
-    let config = use_context_provider(|| Signal::new(Config::new()));
+    let config =
+        use_context_provider(|| Signal::new(Config::new().expect("failed to load config")));
     let wallpapers = use_signal(|| Wallpapers::from_args(&config()));
 
     if wallpapers().files.is_empty() {

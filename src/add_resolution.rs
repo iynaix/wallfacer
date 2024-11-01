@@ -1,4 +1,3 @@
-use rexiv2::Metadata;
 use std::path::PathBuf;
 
 use clap::Args;
@@ -15,15 +14,10 @@ use wallfacer::{
 };
 
 /// adds and saves the new crop geometry
-pub fn add_geometry(info: &WallInfo, aspect: &AspectRatio, geom: &Geometry) {
-    // save the new crop metadata directly
-    let crop_key = format!("Xmp.wallfacer.crop.{}", aspect);
-
-    let meta = Metadata::new_from_path(&info.path).expect("could not init new metadata");
-    meta.set_tag_string(&crop_key, &geom.to_string())
-        .unwrap_or_else(|_| panic!("could not set {crop_key}: {geom}"));
-    meta.save_to_file(&info.path)
-        .unwrap_or_else(|_| panic!("could not save metadata for {:?}", info.path));
+pub fn add_geometry(info: &mut WallInfo, aspect: &AspectRatio, geom: &Geometry) {
+    info.geometries.insert(aspect.clone(), geom.clone());
+    info.save()
+        .unwrap_or_else(|_| panic!("could not save {}", info.path.display()));
 }
 
 /// centers the new crop based on the old crop
@@ -59,7 +53,7 @@ pub fn main(args: &AddResolutionArgs) {
     let new_res = std::convert::TryInto::<AspectRatio>::try_into(args.resolution.as_str())
         .unwrap_or_else(|_| panic!("invalid aspect ratio: {} into string", args.resolution));
 
-    let mut cfg = Config::new();
+    let mut cfg = Config::new().expect("failed to load config");
     // finds the closest resolution to an existing one
     let closest_res = cfg
         .resolutions
@@ -93,26 +87,26 @@ pub fn main(args: &AddResolutionArgs) {
     let all_files = filter_images(&cfg.wallpapers_dir).sorted();
     for path in all_files {
         println!("Processing {}", path.display());
-        let info = WallInfo::new_from_file(&path);
+        let mut info = WallInfo::new_from_file(&path);
 
         let cropper = info.cropper();
         let new_default_crop = cropper.crop(&new_res);
 
         match &closest_res {
-            None => add_geometry(&info, &new_res, &new_default_crop),
+            None => add_geometry(&mut info, &new_res, &new_default_crop),
             Some(closest) => {
                 let closest_default_crop = cropper.crop(closest);
 
                 // different direction
                 if info.direction(&new_default_crop) != info.direction(&closest_default_crop) {
-                    add_geometry(&info, &new_res, &new_default_crop);
+                    add_geometry(&mut info, &new_res, &new_default_crop);
                     to_process.push(path);
                     continue;
                 }
 
                 // the previous closest crop was not changed, just use the default
                 if info.get_geometry(closest) == closest_default_crop {
-                    add_geometry(&info, &new_res, &new_default_crop);
+                    add_geometry(&mut info, &new_res, &new_default_crop);
                     continue;
                 }
 
@@ -124,7 +118,7 @@ pub fn main(args: &AddResolutionArgs) {
                 }
 
                 to_process.push(path);
-                add_geometry(&info, &new_res, &new_geom);
+                add_geometry(&mut info, &new_res, &new_geom);
             }
         }
     }
