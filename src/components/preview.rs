@@ -101,9 +101,11 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
 
     rsx! {
         div {
-            class: "relative m-auto",
-            style: "width: {dragger().preview_w}px; height: {dragger().preview_h}px;",
+            class: "m-auto transform-gpu isolate",
             img {
+                width: dragger().preview_w,
+                height: dragger().preview_h,
+                class: "transform-gpu",
                 class: match dragger().direction(&geom) {
                     Direction::X => "cursor-ew-resize",
                     Direction::Y => "cursor-ns-resize",

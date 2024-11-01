@@ -9,7 +9,7 @@ use crate::state::Wall;
 pub fn DragOverlay(wall: Signal<Wall>, geom: Geometry, dragger: Signal<Dragger>) -> Element {
     rsx! {
         div {
-            class: "absolute bg-black bg-opacity-60 inset-0",
+            class: "absolute bg-black bg-opacity-60 inset-0 transform-gpu",
             style: dragger().overlay_style(&geom),
             onmouseup: move |_| {
                 dragger.with_mut(|dragger| {
