@@ -2,10 +2,11 @@ use clap::Parser;
 use itertools::Itertools;
 use std::path::PathBuf;
 
-use crate::{FacesFilter, WallfacerArgs};
+use crate::WallfacerArgs;
 
 use wallfacer::{
     aspect_ratio::AspectRatio,
+    cli::FacesFilter,
     config::{Config, ConfigResolution},
     filename, filter_images, is_image,
     wallpapers::WallInfo,

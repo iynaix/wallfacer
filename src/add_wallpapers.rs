@@ -1,30 +1,10 @@
 use std::path::PathBuf;
 
-use clap::{builder::PossibleValuesParser, Args};
 use itertools::Itertools;
 use wallfacer::{
-    config::Config, filter_images, is_image, pipeline::WallpaperPipeline, wallpapers::WallInfo,
-    PathBufExt,
+    cli::AddWallpaperArgs, config::Config, filter_images, is_image, pipeline::WallpaperPipeline,
+    wallpapers::WallInfo, PathBufExt,
 };
-
-#[derive(Args, Debug)]
-pub struct AddWallpaperArgs {
-    #[arg(
-        long,
-        action,
-        value_name = "FORMAT",
-        value_parser = PossibleValuesParser::new(["jpg", "png", "webp"]),
-        help = "Optional format to convert the images to"
-    )]
-    pub format: Option<String>,
-
-    #[arg(long, action, help = "Reprocess the image even if it already exists")]
-    pub force: bool,
-
-    // required positional argument for input directory
-    /// directories or images to add
-    pub paths: Vec<PathBuf>,
-}
 
 pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
     let mut all_files = Vec::new();

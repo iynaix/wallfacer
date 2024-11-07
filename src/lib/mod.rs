@@ -6,6 +6,7 @@ use std::{
 };
 
 pub mod aspect_ratio;
+pub mod cli;
 pub mod config;
 pub mod cropper;
 pub mod dragger;

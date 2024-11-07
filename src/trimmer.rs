@@ -2,10 +2,9 @@
 
 use std::path::{Path, PathBuf};
 
-use clap::Parser;
 use image::{GenericImageView, ImageBuffer, ImageReader, Rgb};
 use rayon::prelude::*;
-use wallfacer::{filename, filter_images, is_image};
+use wallfacer::{cli::TrimmerArgs, filename, filter_images, is_image};
 
 #[allow(clippy::cast_lossless)]
 fn mean(data: &[i32]) -> f64 {
@@ -143,34 +142,9 @@ impl Trimmer {
 
         let cropped = img.view(x, y, width, height).to_image();
         cropped
-            .save(&output.join(filename(wall)))
+            .save(&output.join(filename(wall).replace("jpeg", "jpg").replace("jpg", "png")))
             .unwrap_or_else(|_| panic!("could not save trimmed image for {wall:?}"));
     }
-}
-
-#[derive(Parser)]
-#[command(
-    name = "trimmer",
-    about = "Automatic trimming of images",
-    version = env!("CARGO_PKG_VERSION")
-)]
-pub struct TrimmerArgs {
-    #[arg(
-        long,
-        action,
-        default_value = "false",
-        help = "Trim the image horizontally"
-    )]
-    pub horizontal: bool,
-
-    #[arg(long, action, default_value = "5.0", help = "Threshold for trimming")]
-    pub threshold: f64,
-
-    #[arg(help = "Directory or image to be trimmed", value_name = "INPUT_DIR")]
-    pub input: PathBuf,
-
-    #[arg(help = "Directory to output trimmed images", value_name = "OUTPUT_DIR")]
-    pub output: PathBuf,
 }
 
 pub fn main(args: &TrimmerArgs) {

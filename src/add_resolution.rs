@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use clap::Args;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use wallfacer::{
     aspect_ratio::AspectRatio,
+    cli::AddResolutionArgs,
     config::{Config, ConfigResolution},
     cropper::Direction,
     filter_images,
@@ -36,15 +36,6 @@ fn center_new_crop(closest_crop: &Geometry, new_crop: &Geometry, info: &WallInfo
 
     info.cropper()
         .clamp(new_start, direction, new_crop.w, new_crop.h)
-}
-
-#[derive(Args, Debug)]
-pub struct AddResolutionArgs {
-    /// name of the new resolution
-    pub name: String,
-
-    /// the new resolution, in the format <width>x<height>
-    pub resolution: String,
 }
 
 // needed for parity with add_wallpapers in a match {}

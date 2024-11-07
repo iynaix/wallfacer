@@ -93,6 +93,8 @@ rustPlatform.buildRustPackage {
       --fish <($out/bin/wallfacer --generate fish) \
       --zsh <($out/bin/wallfacer --generate zsh)
 
+    installManPage target/man/*
+
     # FIXME: GDK_BACKEND=x11 is required for keyboard shortcuts to work?
     wrapProgram $out/bin/wallfacer \
       --set WEBKIT_DISABLE_COMPOSITING_MODE 1 \

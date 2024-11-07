@@ -113,7 +113,7 @@
                   ;
               };
               wallfacer = default;
-              with-cuda = pkgs.callPackage ./nix/wallfacer-with-cuda {
+              with-cuda = pkgs.callPackage ./nix/wallfacer {
                 inherit realcugan-ncnn-vulkan tailwindcss version;
                 anime-face-detector = inputs.anime-face-detector.packages.${system}.with-cuda;
               };
