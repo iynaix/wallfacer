@@ -7,32 +7,27 @@ use crate::state::Wall;
 
 #[component]
 pub fn DragOverlay(wall: Signal<Wall>, geom: Geometry, dragger: Signal<Dragger>) -> Element {
+    let dragger = dragger();
+    let (start_style, end_style) = dragger.overlay_styles(&geom);
+    let pointer_cls = if dragger.is_dragging {
+        "pointer-events-none"
+    } else {
+        ""
+    };
+
+    let overlay_cls =
+        "absolute bg-black bg-opacity-60 inset-0 transform-gpu isolate transition will-change-transform {}";
+
     rsx! {
         div {
-            class: "absolute bg-black bg-opacity-60 inset-0 transform-gpu",
-            style: dragger().overlay_style(&geom),
-            onmouseup: move |_| {
-                dragger.with_mut(|dragger| {
-                    dragger.is_dragging = true;
-                });
-            },
-            onmousemove: {
-                move |evt| {
-                    if dragger().is_dragging && evt.held_buttons().contains(dioxus::html::input_data::MouseButton::Primary) {
-                        let (new_x, new_y) = evt.element_coordinates().into();
-
-                        wall.with_mut(|wall| {
-                            let new_geom = dragger().update((new_x, new_y), &geom);
-                            wall.set_geometry(&new_geom);
-                        });
-
-                        dragger.with_mut(|dragger| {
-                            dragger.x = new_x;
-                            dragger.y = new_y;
-                        });
-                    }
-                }
-            },
+            class: overlay_cls,
+            class: pointer_cls,
+            style: start_style,
+        }
+        div {
+            class: overlay_cls,
+            class: pointer_cls,
+            style: end_style,
         }
     }
 }

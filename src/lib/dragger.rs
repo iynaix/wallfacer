@@ -31,27 +31,27 @@ impl Dragger {
         }
     }
 
-    pub fn overlay_style(&self, geom: &Geometry) -> String {
-        let outer_rect = "0 0, 100% 0, 100% 100%, 0 100%, 0 0";
+    pub fn overlay_styles(&self, geom: &Geometry) -> (String, String) {
+        match self.direction(geom) {
+            Direction::X => {
+                let start = f64::from(geom.x) / self.image_w;
+                let end = 1.0 - (f64::from(geom.x + geom.w) / self.image_w);
 
-        // inner rect format is: top left, bottom left, bottom right, top right, back to top left
-        let clip_path = match self.direction(geom) {
-            Direction::X => format!(
-                "polygon({outer_rect}, {start:.2}% 0, {start:.2}% 100%, {end:.2}% 100%, {end:.2}% 0, {start:.2}% 0)",
-                start = f64::from(geom.x) / self.image_w * 100.0,
-                end = f64::from(geom.x + geom.w) / self.image_w * 100.0
-            ),
-            Direction::Y => format!(
-                "polygon({outer_rect}, 0 {start:.2}%, 0 {end:.2}%, 100% {end:.2}%, 100% {start:.2}%, 0 {start:.2}%)",
-                start = f64::from(geom.y) / self.image_h * 100.0,
-                end = f64::from(geom.y + geom.h) / self.image_h * 100.0,
-            )
-        };
+                (
+                    format!("transform-origin: left; transform: scaleX({start})"),
+                    format!("transform-origin: right; transform: scaleX({end})"),
+                )
+            }
+            Direction::Y => {
+                let start = f64::from(geom.y) / self.image_h;
+                let end = 1.0 - (f64::from(geom.y + geom.h) / self.image_h);
 
-        format!(
-            "height: {}px; clip-path: {clip_path}; will-change: clip-path; transition: clip-path 150ms ease",
-            self.preview_h
-        )
+                (
+                    format!("transform-origin: top; transform: scaleY({start})"),
+                    format!("transform-origin: bottom; transform: scaleY({end})"),
+                )
+            }
+        }
     }
 
     pub fn update(&mut self, (new_x, new_y): (f64, f64), geom: &Geometry) -> Geometry {

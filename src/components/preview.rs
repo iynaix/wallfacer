@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+
 use crate::{
     components::{drag_overlay::DragOverlay, use_ui},
     state::Wall,
@@ -8,26 +9,29 @@ use dioxus_sdk::utils::window::{use_window_size, WindowSize};
 use wallfacer::{cropper::Direction, dragger::Dragger, wallpapers::WallInfo};
 
 #[component]
-fn FacesOverlay(info: WallInfo) -> Element {
+fn FacesOverlay(info: WallInfo, dragger: Signal<Dragger>) -> Element {
     if info.faces.is_empty() {
         return None;
     }
 
     let (img_w, img_h) = info.dimensions_f64();
+    let dragger = dragger();
+    let preview_w = dragger.preview_w;
+    let preview_h = dragger.preview_h;
 
     rsx! {
         {info.faces.iter().map(|face| {
-            let start_x = f64::from(face.x) / img_w * 100.0;
-            let start_y = f64::from(face.y) / img_h * 100.0;
+            let start_x = f64::from(face.x) / img_w * preview_w;
+            let start_y = f64::from(face.y) / img_h * preview_h;
 
-            let w = f64::from(face.w) / img_w * 100.0;
-            let h = f64::from(face.h) / img_h * 100.0;
+            let w = f64::from(face.w) / img_w * preview_w;
+            let h = f64::from(face.h) / img_h * preview_h;
 
             rsx! {
                 div {
-                    class: "absolute border-2 border-red-500",
                     // pointer-events: none to allow mouse events to pass through
-                    style: "top: {start_y}%; left: {start_x}%; width: {w}%; height: {h}%; pointer-events: none;",
+                    class: "absolute border-2 bg-transparent border-red-500 inset-0 pointer-events-none transform-gpu origin-top-left",
+                    style: format!("width: {w}px; height: {h}px; transform: translate({start_x}px, {start_y}px);"),
                 }
             }
         })}
@@ -101,10 +105,8 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
 
     rsx! {
         div {
-            class: "m-auto transform-gpu isolate",
+            class: "m-auto transform-gpu",
             img {
-                width: dragger().preview_w,
-                height: dragger().preview_h,
                 class: "transform-gpu",
                 class: match dragger().direction(&geom) {
                     Direction::X => "cursor-ew-resize",
@@ -151,7 +153,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
             }
 
             if ui.show_faces {
-                FacesOverlay { info: wall().current }
+                FacesOverlay { info: wall().current, dragger }
             }
 
             DragOverlay {
