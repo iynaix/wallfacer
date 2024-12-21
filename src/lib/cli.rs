@@ -55,11 +55,8 @@ pub struct TrimmerArgs {
     #[arg(long, action, default_value = "5.0", help = "Threshold for trimming")]
     pub threshold: f64,
 
-    #[arg(help = "Directory or image to be trimmed", value_name = "INPUT_DIR")]
-    pub input: PathBuf,
-
-    #[arg(help = "Directory to output trimmed images", value_name = "OUTPUT_DIR")]
-    pub output: PathBuf,
+    #[arg(help = "Directory or image to be trimmed", value_name = "DIR")]
+    pub path: PathBuf,
 }
 
 #[derive(ValueEnum, Debug, Clone)]
@@ -93,6 +90,7 @@ pub enum Commands {
 #[derive(Parser)]
 #[command(
     name = "wallfacer",
+    infer_subcommands = true,
     about = "A GUI for selecting wallpaper cropping regions for multiple monitor resolutions, based on anime face detection.",
     version = env!("CARGO_PKG_VERSION")
 )]

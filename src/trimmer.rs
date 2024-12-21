@@ -1,6 +1,6 @@
 // trimming images
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use image::{GenericImageView, ImageBuffer, ImageReader, Rgb};
 use rayon::prelude::*;
@@ -118,7 +118,7 @@ impl Trimmer {
         (x_start, y_start, x_end - x_start, y_end - y_start)
     }
 
-    fn trim(&self, wall: &PathBuf, output: &Path) {
+    fn trim(&self, wall: &PathBuf) {
         println!("Processing: {wall:?}");
 
         let img = ImageReader::open(wall)
@@ -129,27 +129,32 @@ impl Trimmer {
 
         let (x, y, width, height) = self.trimmed_area(&img);
 
-        // let (img_width, img_height) = img.dimensions();
-        // if img_width != width || img_height != height {
-        //     println!("{wall:?} {img_width}x{img_height} -> {width}x{height}");
-        // }
-
         // nothing to trim
-        // if width == img.width() && height == img.height() {
-        //     std::fs::copy(wall, out).expect("could not copy file");
-        //     return;
-        // }
+        if width == img.width() && height == img.height() {
+            return;
+        }
 
         let cropped = img.view(x, y, width, height).to_image();
+        let tmp_file =
+            PathBuf::from("/tmp").join(filename(wall).replace("jpeg", "jpg").replace("jpg", "png"));
         cropped
-            .save(&output.join(filename(wall).replace("jpeg", "jpg").replace("jpg", "png")))
+            .save(&tmp_file)
             .unwrap_or_else(|_| panic!("could not save trimmed image for {wall:?}"));
+
+        // copy trimmed file to replace original
+        std::fs::remove_file(wall).unwrap_or_else(|_| panic!("could not remove {wall:?}"));
+        std::fs::copy(
+            &tmp_file,
+            wall.parent()
+                .expect("could not get parent directory of original file"),
+        )
+        .unwrap_or_else(|_| panic!("could not copy {tmp_file:?} to {wall:?}"));
     }
 }
 
 pub fn main(args: &TrimmerArgs) {
     let mut all_files = Vec::new();
-    std::fs::canonicalize(&args.input).map_or_else(
+    std::fs::canonicalize(&args.path).map_or_else(
         |_| {
             eprintln!("Could not find input file /directory");
             std::process::exit(1);
@@ -164,21 +169,9 @@ pub fn main(args: &TrimmerArgs) {
     );
     all_files.sort();
 
-    std::fs::canonicalize(&args.output).map_or_else(
-        |_| std::fs::create_dir_all(&args.output).expect("Unable to create output directory"),
-        |p| {
-            if !p.is_dir() {
-                eprintln!("Output is not a directory");
-                std::process::exit(1);
-            }
-        },
-    );
-
     let trimmer = Trimmer {
         threshold: args.threshold,
         horizontal: args.horizontal,
     };
-    all_files
-        .par_iter()
-        .for_each(|p| trimmer.trim(p, &args.output));
+    all_files.par_iter().for_each(|p| trimmer.trim(p));
 }
