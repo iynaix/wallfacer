@@ -48,8 +48,7 @@ pub fn WallpaperButton(wall: Signal<Wall>, wallpaper_cmd: String) -> Element {
 
     rsx! {
         a {
-            class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
-            class: btn_color,
+            class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer {btn_color}",
             onclick: move |_| {
                 apply_wallpaper(&wallpaper_cmd, wall().path());
             },

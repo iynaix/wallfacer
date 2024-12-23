@@ -11,7 +11,7 @@ use wallfacer::{cropper::Direction, dragger::Dragger, wallpapers::WallInfo};
 #[component]
 fn FacesOverlay(info: WallInfo, dragger: Signal<Dragger>) -> Element {
     if info.faces.is_empty() {
-        return None;
+        return rsx! {};
     }
 
     let (img_w, img_h) = info.dimensions_f64();
@@ -103,15 +103,16 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
         .mouseover_geom
         .unwrap_or_else(|| wall().get_geometry());
 
+    let cursor_cls = match dragger().direction(&geom) {
+        Direction::X => "cursor-ew-resize",
+        Direction::Y => "cursor-ns-resize",
+    };
+
     rsx! {
         div {
-            class: "m-auto transform-gpu",
+            class: "m-auto transform-gpu {cursor_cls}",
             img {
                 class: "transform-gpu",
-                class: match dragger().direction(&geom) {
-                    Direction::X => "cursor-ew-resize",
-                    Direction::Y => "cursor-ns-resize",
-                },
                 src: wall().path(),
                 // store the final rendered width and height of the image
                 onmounted: move |evt| {

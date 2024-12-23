@@ -16,12 +16,12 @@ use wallust::{
     args::Globals,
     backends::Backend,
     colorspaces::{ColorSpace, FallbackGenerator},
-    palettes::Palette,
+    palettes::Palette as WallustPalette,
 };
 
 #[derive(Debug, Clone, PartialEq)]
 struct WallustConfig {
-    palette: Palette,
+    palette: WallustPalette,
     backend: Backend,
     colorspace: ColorSpace,
     fallback_generator: FallbackGenerator,
@@ -149,12 +149,12 @@ pub fn Palette(wall: Signal<Wall>) -> Element {
     ]);
 
     let palettes = DropdownOptions::new(vec![
-        Palette::Dark16,
-        Palette::DarkComp16,
-        Palette::HardDark16,
-        Palette::HardDarkComp16,
-        Palette::SoftDark16,
-        Palette::SoftDarkComp16,
+        WallustPalette::Dark16,
+        WallustPalette::DarkComp16,
+        WallustPalette::HardDark16,
+        WallustPalette::HardDarkComp16,
+        WallustPalette::SoftDark16,
+        WallustPalette::SoftDarkComp16,
     ])
     .to_label(|v| v.to_string().replace("16", ""));
 

@@ -52,19 +52,17 @@ pub fn Candidates(wall: Signal<Wall>, class: Option<String>) -> Element {
     let current_geom = wall().get_geometry();
 
     if info.faces.len() <= 1 {
-        return None;
+        return rsx! {};
     }
 
     let candidates_geom = wall().candidate_geometries();
     if candidates_geom.len() <= 1 {
-        return None;
+        return rsx! {};
     }
 
     rsx! {
         div {
-            class: "flex",
-            class: class.unwrap_or_default(),
-
+            class: format!("flex {}", class.unwrap_or_default()),
             {candidates_geom.into_iter().enumerate().map(|(i, geom)| {
                 let btn_cls = if geom == current_geom {
                     "!bg-indigo-600"

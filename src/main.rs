@@ -57,19 +57,7 @@ fn main() {
                         .with_menu(None)
                         // disable on release builds
                         .with_disable_context_menu(!cfg!(debug_assertions))
-                        .with_custom_index(
-                            r#"<!DOCTYPE html>
-                                <html>
-                                    <head>
-                                        <title>Wallfacer</title>
-                                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                        <link rel="stylesheet" href="public/tailwind.css">
-                                    </head>
-                                    <body>
-                                        <div id="main" style="height: 100vh;"></div>
-                                    </body>
-                                </html>"#.to_string(),
-                        ),
+                        .with_custom_head("<style> #main { height: 100vh; } </style>".to_string()),
                 )
                 .launch(App);
         }

@@ -45,8 +45,7 @@ pub fn SaveButton(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element
 
     rsx! {
         a {
-            class: "rounded-md px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer",
-            class: btn_color,
+            class: "rounded-md px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer {btn_color}",
             onclick: move |_| {
                 save_image(&wall(), &mut wallpapers);
             },

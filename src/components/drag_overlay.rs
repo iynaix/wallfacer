@@ -16,17 +16,15 @@ pub fn DragOverlay(wall: Signal<Wall>, geom: Geometry, dragger: Signal<Dragger>)
     };
 
     let overlay_cls =
-        "absolute bg-black bg-opacity-60 inset-0 transform-gpu isolate transition will-change-transform {}";
+        "absolute bg-black bg-opacity-60 inset-0 transform-gpu isolate transition will-change-transform";
 
     rsx! {
         div {
-            class: overlay_cls,
-            class: pointer_cls,
+            class: "{overlay_cls} {pointer_cls}",
             style: start_style,
         }
         div {
-            class: overlay_cls,
-            class: pointer_cls,
+            class: "{overlay_cls} {pointer_cls}",
             style: end_style,
         }
     }

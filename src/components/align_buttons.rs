@@ -57,8 +57,7 @@ pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
             }
 
             span {
-                class: "isolate inline-flex rounded-md shadow-sm",
-                class: class.unwrap_or_default(),
+                class: format!("isolate inline-flex rounded-md shadow-sm {}", class.unwrap_or_default()),
                 AlignButton {
                     wall,
                     class: "text-sm rounded-l-md",

@@ -10,7 +10,7 @@ path = "src/lib/mod.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus-free-icons = { version = "0.8.6", features = [
+dioxus-free-icons = { version = "0.9.0", features = [
     "lucide",
     "material-design-icons-action",
     "material-design-icons-device",
@@ -18,32 +18,30 @@ dioxus-free-icons = { version = "0.8.6", features = [
     "material-design-icons-image",
     "material-design-icons-navigation",
 ] }
-clap = { version = "4.5.21", features = ["derive", "string"] }
-clap_complete = "4.5.38"
+clap = { version = "4.5.23", features = ["derive", "string"] }
+clap_complete = "4.5.40"
 clap_mangen = "0.2.24"
-dioxus = { version = "0.5.6", features = ["desktop"] }
-dioxus-sdk = { git = "https://github.com/DioxusLabs/sdk.git", branch = "master", features = [
-    "window_size",
-] }
+dioxus = { version = "0.6.1", features = ["desktop"] }
+dioxus-sdk = { version = "0.6.0", features = ["window_size"] }
 # manganis = "0.2.1"
 async-process = "2.3.0"
 dirs = "5.0.1"
 image = "0.25.5"
-indexmap = "2.6.0"
+indexmap = "2.7.0"
 itertools = "0.13.0"
-ordered-float = "4.5.0"
+ordered-float = "4.6.0"
 rexiv2 = "0.10.0"
-serde = "1.0.215"
-serde_json = "1.0.132"
-thiserror = "2.0.3"
-tokio = { version = "1.41.1", features = ["process"] }
+serde = "1.0.216"
+serde_json = "1.0.134"
+thiserror = "2.0.9"
+tokio = { version = "1.42.0", features = ["process"] }
 wallust = "3.1.0"
 rayon = "1.10.0"
 toml = "0.8.19"
 
 [build-dependencies]
-clap = { version = "4.5.21", features = ["derive", "string"] }
-clap_complete = "4.5.38"
+clap = { version = "4.5.23", features = ["derive", "string"] }
+clap_complete = "4.5.40"
 clap_mangen = "0.2.24"
 
 [features]
@@ -78,3 +76,13 @@ codegen-units = 1
 panic = "abort"
 strip = true
 incremental = false
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"

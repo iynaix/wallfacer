@@ -71,7 +71,7 @@ pub fn FileList(wallpapers: Signal<Wallpapers>, class: Option<String>) -> Elemen
 
     rsx! {
         div {
-            class: "flex flex-col flex-1 max-h-full gap-4 {class.unwrap_or_default()}",
+            class: format!("flex flex-col flex-1 max-h-full gap-4 {}", class.unwrap_or_default()),
             // onkeydown: handle_key_down_event,
 
             // filter input

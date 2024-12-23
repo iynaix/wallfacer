@@ -8,5 +8,5 @@ use dioxus::prelude::*;
 pub fn Adding(images: Vec<PathBuf>) -> Element {
     println!("images: {:?}", images);
 
-    return None;
+    return rsx! {};
 }

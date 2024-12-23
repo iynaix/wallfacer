@@ -71,6 +71,10 @@ pub fn App() -> Element {
 
     if wallpapers().files.is_empty() {
         rsx! {
+            document::Stylesheet {
+                href: asset!("/public/tailwind.css")
+            }
+
             main {
                 class: "dark flex items-center h-full justify-center bg-base overflow-hidden",
                 div {
@@ -82,6 +86,10 @@ pub fn App() -> Element {
         }
     } else {
         rsx! {
+            document::Stylesheet {
+                href: asset!("/public/tailwind.css")
+            }
+
             Main { config, wallpapers }
         }
     }
