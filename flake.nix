@@ -28,7 +28,6 @@
         let
           # custom packages here
           anime-face-detector = inputs.anime-face-detector.packages.${system}.default;
-          realcugan-ncnn-vulkan = (pkgs.callPackage ./nix/realcugan-ncnn-vulkan { });
           catppuccin-tailwindcss =
             (pkgs.callPackage ./nix/catppuccin-tailwindcss { })."@catppuccin/tailwindcss";
           # custom tailwind with prebaked catppuccin
@@ -105,16 +104,13 @@
             in
             rec {
               default = pkgs.callPackage ./nix/wallfacer {
-                inherit
-                  realcugan-ncnn-vulkan
-                  anime-face-detector
-                  tailwindcss
-                  version
-                  ;
+                inherit anime-face-detector tailwindcss version;
+                inherit (pkgs) realcugan-ncnn-vulkan;
               };
               wallfacer = default;
               with-cuda = pkgs.callPackage ./nix/wallfacer {
-                inherit realcugan-ncnn-vulkan tailwindcss version;
+                inherit tailwindcss version;
+                inherit (pkgs) realcugan-ncnn-vulkan;
                 anime-face-detector = inputs.anime-face-detector.packages.${system}.with-cuda;
               };
             };
