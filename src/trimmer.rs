@@ -134,21 +134,27 @@ impl Trimmer {
             return;
         }
 
+        let trimmed_fname = filename(wall).replace("jpeg", "jpg").replace("jpg", "png");
+        let tmp_file = PathBuf::from("/tmp").join(&trimmed_fname);
+
         let cropped = img.view(x, y, width, height).to_image();
-        let tmp_file =
-            PathBuf::from("/tmp").join(filename(wall).replace("jpeg", "jpg").replace("jpg", "png"));
         cropped
             .save(&tmp_file)
             .unwrap_or_else(|_| panic!("could not save trimmed image for {wall:?}"));
 
-        // copy trimmed file to replace original
-        std::fs::remove_file(wall).unwrap_or_else(|_| panic!("could not remove {wall:?}"));
-        std::fs::copy(
-            &tmp_file,
-            wall.parent()
-                .expect("could not get parent directory of original file"),
-        )
-        .unwrap_or_else(|_| panic!("could not copy {tmp_file:?} to {wall:?}"));
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        // replace original file if it is not a jpeg
+        let final_path = wall.with_file_name(&trimmed_fname);
+        std::fs::copy(&tmp_file, &final_path)
+            .unwrap_or_else(|_| panic!("could not copy {tmp_file:?} to {final_path:?}"));
+
+        if filename(wall) != trimmed_fname {
+            std::fs::remove_file(wall).unwrap_or_else(|e| {
+                eprintln!("{e}");
+                panic!("could not remove {wall:?}");
+            });
+        }
     }
 }
 
