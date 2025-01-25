@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use clap::{CommandFactory, Parser};
 use clap_complete::{generate, Shell};
-use dioxus::desktop::Config;
+use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::prelude::*;
 use screens::app::App;
 use wallfacer::cli::{Commands, ShellCompletion, WallfacerArgs};
@@ -55,6 +55,8 @@ fn main() {
                     Config::new()
                         .with_background_color((30, 30, 46, 255))
                         .with_menu(None)
+                        // title bars suck
+                        .with_window(WindowBuilder::new().with_decorations(false))
                         // disable on release builds
                         .with_disable_context_menu(!cfg!(debug_assertions))
                         .with_custom_head("<style> #main { height: 100vh; } </style>".to_string()),

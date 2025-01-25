@@ -33,7 +33,7 @@ impl<'de> Deserialize<'de> for AspectRatio {
         // Create a visitor to handle the deserialization
         struct AspectRatioVisitor;
 
-        impl<'de> Visitor<'de> for AspectRatioVisitor {
+        impl Visitor<'_> for AspectRatioVisitor {
             type Value = AspectRatio;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

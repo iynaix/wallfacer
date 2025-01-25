@@ -17,6 +17,8 @@ pub fn apply_wallpaper(wallpaper_cmd: &str, wall_path: &str) {
         .arg("-c")
         .arg(wall_cmd)
         .spawn()
+        .expect("failed to set wallpaper")
+        .wait()
         .expect("failed to set wallpaper");
 
     ui.with_mut(|ui| {
