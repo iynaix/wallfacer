@@ -55,6 +55,16 @@ impl PathBufExt for PathBuf {
     }
 }
 
+pub trait PathBufNumericSort {
+    fn numeric_sort(&mut self);
+}
+
+impl PathBufNumericSort for Vec<PathBuf> {
+    fn numeric_sort(&mut self) {
+        self.sort_by(|a, b| human_sort::compare(&filename(a), &filename(b)));
+    }
+}
+
 pub fn is_image<P>(path: P) -> Option<PathBuf>
 where
     P: AsRef<Path>,

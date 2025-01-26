@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use image::{GenericImageView, ImageBuffer, ImageReader, Rgb};
 use rayon::prelude::*;
-use wallfacer::{cli::TrimmerArgs, filename, filter_images, is_image};
+use wallfacer::{cli::TrimmerArgs, filename, filter_images, is_image, PathBufNumericSort};
 
 #[allow(clippy::cast_lossless)]
 fn mean(data: &[i32]) -> f64 {
@@ -173,7 +173,7 @@ pub fn main(args: &TrimmerArgs) {
             }
         },
     );
-    all_files.sort();
+    all_files.numeric_sort();
 
     let trimmer = Trimmer {
         threshold: args.threshold,

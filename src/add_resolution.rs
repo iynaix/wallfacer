@@ -11,6 +11,7 @@ use wallfacer::{
     geometry::Geometry,
     run_wallfacer,
     wallpapers::WallInfo,
+    PathBufNumericSort,
 };
 
 /// adds and saves the new crop geometry
@@ -75,7 +76,9 @@ pub fn main(args: &AddResolutionArgs) {
 
     let mut to_process: Vec<PathBuf> = Vec::new();
 
-    let all_files = filter_images(&cfg.wallpapers_dir).sorted();
+    let mut all_files = filter_images(&cfg.wallpapers_dir).collect_vec();
+    all_files.numeric_sort();
+
     for path in all_files {
         println!("Processing {}", path.display());
         let mut info = WallInfo::new_from_file(&path);
@@ -115,7 +118,7 @@ pub fn main(args: &AddResolutionArgs) {
     }
 
     // open in wallfacer
-    to_process.sort();
+    to_process.numeric_sort();
     let images = to_process
         .into_iter()
         .map(|path| path.display().to_string())

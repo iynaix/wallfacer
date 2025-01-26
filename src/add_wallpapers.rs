@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use itertools::Itertools;
 use wallfacer::{
     cli::AddWallpaperArgs, config::Config, filter_images, is_image, pipeline::WallpaperPipeline,
-    wallpapers::WallInfo, PathBufExt,
+    wallpapers::WallInfo, PathBufExt, PathBufNumericSort,
 };
 
 pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
@@ -36,7 +36,7 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
 pub fn main(args: &AddWallpaperArgs) {
     let cfg = Config::new().expect("failed to load config");
     let mut all_files = wallpapers_from_paths(&args.paths, &cfg);
-    all_files.sort();
+    all_files.numeric_sort();
 
     // check that all the files meet the minimum size requirement
     let too_small = all_files
