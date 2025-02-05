@@ -55,7 +55,7 @@ pub fn main(args: &AddWallpaperArgs) {
         std::process::exit(1);
     }
 
-    let mut pipeline = WallpaperPipeline::new(&cfg, &args.format);
+    let mut pipeline = WallpaperPipeline::new(&cfg, args.format.clone());
     for img in all_files {
         println!("Processing: {img:?}");
         pipeline.add_image(&img, args.force);

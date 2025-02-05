@@ -92,10 +92,7 @@ impl TryFrom<&str> for AspectRatio {
     type Error = AspectRatioError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let parts = s
-            .split('x')
-            .filter_map(|s| s.parse::<u32>().ok())
-            .collect_vec();
+        let parts = s.split('x').flat_map(str::parse::<u32>).collect_vec();
 
         if parts.len() != 2 {
             return Err(AspectRatioError::InvalidAspectRatio);

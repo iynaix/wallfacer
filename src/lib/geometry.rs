@@ -42,7 +42,7 @@ impl TryFrom<&str> for Geometry {
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let geometry = s
             .split(['x', '+'])
-            .filter_map(|s| s.parse::<u32>().ok())
+            .flat_map(str::parse::<u32>)
             .collect_vec();
 
         if geometry.len() != 4 {

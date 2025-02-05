@@ -83,7 +83,7 @@ pub struct WallpaperPipeline {
 }
 
 impl WallpaperPipeline {
-    pub fn new(cfg: &Config, format: &Option<String>) -> Self {
+    pub fn new(cfg: &Config, format: Option<String>) -> Self {
         let wall_dir = &cfg.wallpapers_dir;
 
         // check that images from wallpapers dir all have metadata
@@ -99,7 +99,7 @@ impl WallpaperPipeline {
         }
 
         Self {
-            format: format.clone(),
+            format,
             config: cfg.clone(),
             to_preview: Vec::new(),
         }
