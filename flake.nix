@@ -1,7 +1,6 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    devenv.url = "github:cachix/devenv";
     anime-face-detector.url = "github:iynaix/anime-face-detector";
   };
 
@@ -13,7 +12,6 @@
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ inputs.devenv.flakeModule ];
       systems = nixpkgs.lib.systems.flakeExposed;
 
       perSystem =
@@ -39,7 +37,7 @@
           # Per-system attributes can be defined here. The self' and inputs'
           # module parameters provide easy access to attributes of the same
           # system.
-          devenv.shells.default = {
+          devShells.default = pkgs.mkShell {
             packages =
               with pkgs;
               # wallfacer specific dependencies
@@ -50,12 +48,41 @@
                 libwebp
                 realcugan-ncnn-vulkan
                 anime-face-detector
-                gexiv2 # for reading metadata
-                pkg-config
                 tailwindcss-with-catppuccin
                 dioxus-cli
-              ]
-              ++ [
+                # helper shell scripts
+                (writeShellScriptBin "tailwind" "tailwindcss -i ./input.css -o ./public/tailwind.css --watch")
+                (writeShellScriptBin "dev" "dx serve --platform desktop --hot-reload")
+                (writeShellScriptBin "rsx" ''dx translate --raw "$@"'')
+              ];
+
+            env =
+              {
+                # Required by rust-analyzer
+                RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+              }
+              // {
+                XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}";
+                GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
+                # FIXME: fix lag on wayland?
+                # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
+                # WEBKIT_DISABLE_COMPOSITING_MODE = 1;
+
+              };
+
+            nativeBuildInputs = with pkgs; [
+              cargo
+              rustc
+              rust-analyzer
+              rustfmt
+              clippy
+              pkg-config
+            ];
+
+            buildInputs =
+              with pkgs;
+              # dioxus dependencies
+              [
                 atk
                 cairo
                 dbus
@@ -68,29 +95,10 @@
                 pango
                 webkitgtk_4_1
                 xdotool
+              ]
+              ++ [
+                gexiv2 # for reading metadata
               ];
-
-            env = {
-              XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}";
-              GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
-              # FIXME: fix lag on wayland?
-              # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
-              # WEBKIT_DISABLE_COMPOSITING_MODE = 1;
-            };
-
-            languages.rust.enable = true;
-
-            processes = {
-              # workaround so the tailwind task doesn't exit immediately
-              tailwind.exec = "(while true; do sleep 10; done) | tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
-              # dev.exec = "dx serve --platform desktop";
-            };
-
-            scripts = {
-              tailwind.exec = "tailwindcss -i ./input.css -o ./public/tailwind.css --watch";
-              dev.exec = "dx serve --platform desktop --hot-reload";
-              rsx.exec = ''dx translate --raw "$@"'';
-            };
           };
 
           packages =
