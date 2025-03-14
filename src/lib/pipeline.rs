@@ -8,7 +8,7 @@ use itertools::Itertools;
 use crate::filter_images;
 
 use super::{
-    config::Config, cropper::Cropper, run_wallfacer, wallpapers::WallInfo, Bbox, PathBufExt,
+    Bbox, PathBufExt, config::Config, cropper::Cropper, run_wallfacer, wallpapers::WallInfo,
 };
 
 /// waits for the images to be written to disk
@@ -189,7 +189,7 @@ impl WallpaperPipeline {
                 "webp" => optimize_webp(img, &out_img),
                 _ => panic!("unsupported image format: {ext:?}"),
             })
-            .expect("could not optimize {img:?}");
+            .unwrap_or_else(|_| panic!("could not optimize {img:?}"));
         };
 
         self.detect(&out_img);
