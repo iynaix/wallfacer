@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
 use wallfacer::{
+    PathBufNumericSort,
     aspect_ratio::AspectRatio,
     cli::AddResolutionArgs,
     config::{Config, ConfigResolution},
@@ -11,7 +11,6 @@ use wallfacer::{
     geometry::Geometry,
     run_wallfacer,
     wallpapers::WallInfo,
-    PathBufNumericSort,
 };
 
 /// adds and saves the new crop geometry
@@ -50,14 +49,20 @@ pub fn main(args: &AddResolutionArgs) {
     let closest_res = cfg
         .resolutions
         .iter()
-        .min_by_key(|res| {
-            let diff = OrderedFloat((f64::from(&res.resolution) - f64::from(&new_res)).abs());
+        .min_by(|res1, res2| {
+            let diff1 = (f64::from(&res1.resolution) - f64::from(&new_res)).abs();
+            let diff2 = (f64::from(&res2.resolution) - f64::from(&new_res)).abs();
+            println!(
+                "{} diff1: {} diff2: {}",
+                f64::from(&res2.resolution),
+                diff1,
+                diff2
+            );
+
             // ignore if aspect ratio already exists in config
-            if diff == 0.0 {
-                f64::INFINITY.into()
-            } else {
-                diff
-            }
+            diff1
+                .partial_cmp(&diff2)
+                .unwrap_or(std::cmp::Ordering::Equal)
         })
         .map(|res| res.resolution.clone());
 
