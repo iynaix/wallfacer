@@ -1,9 +1,9 @@
-use std::path::PathBuf;
+use std::{io::Write, path::PathBuf};
 
 use itertools::Itertools;
 use wallfacer::{
-    cli::AddWallpaperArgs, config::Config, filter_images, is_image, pipeline::WallpaperPipeline,
-    wallpapers::WallInfo, PathBufExt, PathBufNumericSort,
+    PathBufExt, PathBufNumericSort, cli::AddWallpaperArgs, config::Config, filter_images, is_image,
+    pipeline::WallpaperPipeline, wallpapers::WallInfo,
 };
 
 pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
@@ -56,9 +56,17 @@ pub fn main(args: &AddWallpaperArgs) {
     }
 
     let mut pipeline = WallpaperPipeline::new(&cfg, args.format.clone());
-    for img in all_files {
-        println!("Processing: {img:?}");
-        pipeline.add_image(&img, args.force);
+    let img_count = all_files.len();
+    for (idx, img) in all_files.iter().enumerate() {
+        let start_time = std::time::Instant::now();
+        print!(
+            "[{:0>width$}/{img_count}] Processing: {img:?} ",
+            idx + 1,
+            width = img_count.to_string().len()
+        );
+        std::io::stdout().flush().expect("could not flush stdout");
+        pipeline.add_image(img, args.force);
+        println!("({:.3}s)", start_time.elapsed().as_secs_f64());
     }
 
     pipeline.preview();
