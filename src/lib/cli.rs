@@ -1,4 +1,4 @@
-use clap::{builder::PossibleValuesParser, Args, Parser, Subcommand, ValueEnum};
+use clap::{Args, Parser, Subcommand, ValueEnum, builder::PossibleValuesParser};
 use std::path::PathBuf;
 
 // for generating shell completions
@@ -44,6 +44,9 @@ pub struct AddResolutionArgs {
     version = env!("CARGO_PKG_VERSION")
 )]
 pub struct TrimmerArgs {
+    #[arg(long, action, help = "Perform a trial run with no changes made")]
+    pub dry_run: bool,
+
     #[arg(
         long,
         action,

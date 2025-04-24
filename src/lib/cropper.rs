@@ -169,11 +169,7 @@ impl Cropper {
         let start = {
             // prevent subtract overflow
             let tmp = first_min + first_max;
-            if tmp < target {
-                0
-            } else {
-                (tmp - target) / 2
-            }
+            if tmp < target { 0 } else { (tmp - target) / 2 }
         };
         let start = std::cmp::min(start, img_max);
 
@@ -233,7 +229,6 @@ impl Cropper {
                             Direction::X => face.h,
                             Direction::Y => face.w,
                         };
-                    continue;
                 }
             }
 
@@ -295,7 +290,6 @@ impl Cropper {
                 }
                 // no intersection
                 else if max_ < rect_start {
-                    continue;
                 }
                 // full intersection
                 else if min_ >= rect_start && max_ <= rect_end {
@@ -303,7 +297,6 @@ impl Cropper {
                         area: face.area(),
                         start: rect_start,
                     });
-                    continue;
                 }
             }
         }

@@ -8,9 +8,9 @@ use crate::{
     components::{
         align_buttons::AlignButtons,
         app_header::{next_image, prev_image},
-        candidates::{next_candidate, prev_candidate, Candidates},
+        candidates::{Candidates, next_candidate, prev_candidate},
         preview::Previewer,
-        ratio_buttons::{change_ratio, RatioButtons},
+        ratio_buttons::{RatioButtons, change_ratio},
     },
     state::{UiState, Wall, Wallpapers},
 };
@@ -140,7 +140,7 @@ pub fn handle_editor_shortcuts(
         }
 
         key => handle_arrows_keydown(&key, wall, ui),
-    };
+    }
 }
 
 #[component]

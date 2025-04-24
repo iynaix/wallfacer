@@ -2,6 +2,7 @@
 
 use clap::Parser;
 use dioxus::prelude::*;
+use std::fmt::Write;
 
 use crate::{
     components::{
@@ -64,36 +65,39 @@ impl WallustConfig {
         let mut new_args = String::new();
 
         if self.palette != base_config.palette {
-            new_args.push_str(&format!(" --palette {}", self.palette));
+            let _ = write!(new_args, " --palette {}", self.palette);
         }
 
         if self.backend != base_config.backend {
-            new_args.push_str(&format!(" --backend {}", self.backend));
+            let _ = write!(new_args, " --backend {}", self.backend);
         }
 
         if self.colorspace != base_config.color_space {
-            new_args.push_str(&format!(" --colorspace {}", self.colorspace));
+            let _ = write!(new_args, " --colorspace {}", self.colorspace);
         }
 
         if self.fallback_generator != base_config.fallback_generator.unwrap_or_default() {
-            new_args.push_str(&format!(
+            let _ = write!(
+                new_args,
                 " --fallback-generator {}",
                 self.fallback_generator
-            ));
+            );
         }
 
         if self.saturation != base_config.saturation {
-            new_args.push_str(&format!(
+            let _ = write!(
+                new_args,
                 " --saturation {}",
                 self.saturation.unwrap_or_default()
-            ));
+            );
         }
 
         if self.threshold != base_config.threshold {
-            new_args.push_str(&format!(
+            let _ = write!(
+                new_args,
                 " --threshold {}",
                 self.threshold.unwrap_or_default()
-            ));
+            );
         }
 
         new_args.trim().to_lowercase()

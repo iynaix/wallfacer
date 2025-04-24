@@ -136,7 +136,7 @@ impl WallpaperPipeline {
             // re-preview if no / multiple faces detected and still using default crop
             if info.faces.len() != 1 && info.is_default_crops(&self.config.sorted_resolutions()) {
                 self.to_preview.push(out_path);
-            };
+            }
         } else {
             match scale {
                 None => {
@@ -190,7 +190,7 @@ impl WallpaperPipeline {
                 _ => panic!("unsupported image format: {ext:?}"),
             })
             .unwrap_or_else(|_| panic!("could not optimize {img:?}"));
-        };
+        }
 
         self.detect(&out_img);
     }

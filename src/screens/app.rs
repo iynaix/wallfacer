@@ -7,7 +7,7 @@ use crate::{
     components::{app_header::AppHeader, save_button::save_image},
     screens::{
         adding::Adding,
-        editor::{handle_arrow_keys_keyup, handle_editor_shortcuts, Editor},
+        editor::{Editor, handle_arrow_keys_keyup, handle_editor_shortcuts},
         filelist::FileList,
         palette::Palette,
     },
@@ -61,7 +61,7 @@ fn handle_shortcuts(
                 handle_editor_shortcuts(evt, wall, wallpapers, ui);
             }
         }
-    };
+    }
 }
 
 pub fn App() -> Element {

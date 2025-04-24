@@ -18,7 +18,7 @@ dioxus-free-icons = { version = "0.9.0", features = [
     "material-design-icons-image",
     "material-design-icons-navigation",
 ] }
-clap = { version = "4.5.32", features = ["derive", "string"] }
+clap = { version = "4.5.37", features = ["derive", "string"] }
 clap_complete = "4.5.47"
 clap_mangen = "0.2.26"
 dioxus = { version = "0.6.3", features = ["desktop"] }
@@ -26,21 +26,21 @@ dioxus-sdk = { version = "0.6.0", features = ["window_size"] }
 # manganis = "0.2.1"
 async-process = "2.3.0"
 dirs = "6.0.0"
-image = "0.25.5"
-indexmap = "2.8.0"
+image = "0.25.6"
+indexmap = "2.9.0"
 itertools = "0.14.0"
 rexiv2 = "0.10.0"
 serde = "1.0.219"
 serde_json = "1.0.140"
 thiserror = "2.0.12"
-tokio = { version = "1.44.1", features = ["process"] }
+tokio = { version = "1.44.2", features = ["process"] }
 wallust = "3.3.0"
 rayon = "1.10.0"
 toml = "0.8.20"
 human-sort = "0.2.2"
 
 [build-dependencies]
-clap = { version = "4.5.32", features = ["derive", "string"] }
+clap = { version = "4.5.37", features = ["derive", "string"] }
 clap_complete = "4.5.47"
 clap_mangen = "0.2.26"
 

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use image::{GenericImageView, ImageBuffer, ImageReader, Rgb};
 use rayon::prelude::*;
-use wallfacer::{cli::TrimmerArgs, filename, filter_images, is_image, PathBufNumericSort};
+use wallfacer::{PathBufNumericSort, cli::TrimmerArgs, filename, filter_images, is_image};
 
 #[allow(clippy::cast_lossless)]
 fn mean(data: &[i32]) -> f64 {
@@ -119,8 +119,6 @@ impl Trimmer {
     }
 
     fn trim(&self, wall: &PathBuf) {
-        println!("Processing: {wall:?}");
-
         let img = ImageReader::open(wall)
             .expect("could not open image")
             .decode()
@@ -179,5 +177,11 @@ pub fn main(args: &TrimmerArgs) {
         threshold: args.threshold,
         horizontal: args.horizontal,
     };
-    all_files.par_iter().for_each(|p| trimmer.trim(p));
+    all_files.par_iter().for_each(|wall| {
+        println!("Processing: {wall:?}");
+
+        if !args.dry_run {
+            trimmer.trim(wall);
+        }
+    });
 }

@@ -60,7 +60,7 @@ pub fn main(args: &AddWallpaperArgs) {
     for (idx, img) in all_files.iter().enumerate() {
         let start_time = std::time::Instant::now();
         print!(
-            "[{:0>width$}/{img_count}] Processing: {img:?} ",
+            "[{:0>width$}/{img_count}] Processing: {img:?}\t",
             idx + 1,
             width = img_count.to_string().len()
         );
