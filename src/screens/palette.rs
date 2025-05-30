@@ -106,8 +106,8 @@ impl WallustConfig {
     fn preview(
         &self,
         img: &str,
-    ) -> impl std::future::Future<Output = Result<async_process::ExitStatus, std::io::Error>> {
-        async_process::Command::new("wallust")
+    ) -> impl std::future::Future<Output = Result<std::process::ExitStatus, std::io::Error>> {
+        tokio::process::Command::new("wallust")
             .arg("run")
             .args([
                 "--quiet",

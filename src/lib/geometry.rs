@@ -36,6 +36,19 @@ impl std::cmp::PartialOrd for Geometry {
     }
 }
 
+impl std::ops::Mul<u32> for Geometry {
+    type Output = Self;
+
+    fn mul(self, rhs: u32) -> Self::Output {
+        Self {
+            w: self.w * rhs,
+            h: self.h * rhs,
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+
 impl TryFrom<&str> for Geometry {
     type Error = GeometryError;
 

@@ -18,11 +18,6 @@ fn wait_for_image(path: &Path) {
     }
 }
 
-/// get scale factor for the image
-fn get_scale(width: u32, height: u32, min_width: u32, min_height: u32) -> Option<u32> {
-    (1..=4).find(|&scale| width * scale >= min_width && height * scale >= min_height)
-}
-
 pub fn optimize_webp(
     infile: &PathBuf,
     outfile: &PathBuf,
@@ -115,21 +110,14 @@ impl WallpaperPipeline {
             .map_or_else(|| img.clone(), |ext| img.with_extension(ext.as_str()))
             .with_directory(&self.config.wallpapers_dir);
 
-        let scale = get_scale(width, height, self.config.min_width, self.config.min_height);
+        // detect -> upscale -> optimize -> save
         if out_path.exists() && !force {
             // check if corresponding WallInfo exists
             let info = WallInfo::new_from_file(&out_path);
 
             // image has been edited (different aspect ratio), re-process the image
             if info.width / width != info.height / height {
-                match scale {
-                    None => {
-                        eprintln!("{img:?} is too small to be upscaled!");
-                        std::process::exit(1);
-                    }
-                    Some(1) => self.optimize(img),
-                    Some(scale) => self.upscale(img, scale),
-                }
+                self.detect(img);
                 return;
             }
 
@@ -138,66 +126,11 @@ impl WallpaperPipeline {
                 self.to_preview.push(out_path);
             }
         } else {
-            match scale {
-                None => {
-                    eprintln!("{img:?} is too small to be upscaled!");
-                    std::process::exit(1);
-                }
-                Some(1) => self.optimize(img),
-                Some(scale) => self.upscale(img, scale),
-            }
+            self.detect(img);
         }
-    }
-
-    pub fn upscale(&mut self, img: &PathBuf, scale_factor: u32) {
-        // nothing to do here
-        let mut dest = img.with_directory("/tmp");
-
-        if let Some(ext) = &self.format {
-            dest = dest.with_extension(ext);
-        }
-
-        Command::new("realcugan-ncnn-vulkan")
-            .arg("-i")
-            .arg(img)
-            .arg("-s")
-            .arg(scale_factor.to_string())
-            .arg("-o")
-            .arg(&dest)
-            // silence output
-            .stderr(Stdio::null())
-            .spawn()
-            .and_then(|mut c| c.wait())
-            .expect("could not run realcugan-ncnn-vulkan");
-
-        self.optimize(&dest);
-    }
-
-    pub fn optimize(&mut self, img: &PathBuf) {
-        wait_for_image(img);
-
-        let out_img = self
-            .format
-            .as_ref()
-            .map_or_else(|| img.clone(), |format| img.with_extension(format))
-            .with_directory("/tmp");
-
-        if let Some(ext) = out_img.extension().and_then(|ext| ext.to_str()) {
-            (match ext {
-                "jpg" | "jpeg" => optimize_jpg(img, &out_img),
-                "png" => optimize_png(img, &out_img),
-                "webp" => optimize_webp(img, &out_img),
-                _ => panic!("unsupported image format: {ext:?}"),
-            })
-            .unwrap_or_else(|_| panic!("could not optimize {img:?}"));
-        }
-
-        self.detect(&out_img);
     }
 
     pub fn detect(&mut self, img: &PathBuf) {
-        wait_for_image(img);
-
         // get output of anime face detector
         let child = Command::new("anime-face-detector")
             .arg(img)
@@ -219,29 +152,96 @@ impl WallpaperPipeline {
         let cropper = Cropper::new(&faces, width, height);
 
         // create WallInfo and save it
-        let resolutions = self.config.sorted_resolutions();
-        let info = WallInfo {
-            path: img.clone(),
-            width,
-            height,
-            faces,
-            geometries: resolutions
-                .iter()
-                .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
-                .collect(),
-            wallust: String::new(),
-        };
-        info.save()
-            .unwrap_or_else(|_| panic!("could not save {}", info.path.display()));
+        self.upscale(
+            img,
+            WallInfo {
+                path: img.clone(),
+                width,
+                height,
+                faces,
+                geometries: self
+                    .config
+                    .sorted_resolutions()
+                    .iter()
+                    .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
+                    .collect(),
+                ..Default::default()
+            },
+        );
+    }
+
+    pub fn upscale(&mut self, img: &PathBuf, info: WallInfo) {
+        let scale = info
+            .get_scale(self.config.min_width, self.config.min_height)
+            .unwrap_or_else(|| {
+                eprintln!("{img:?} is too small to be upscaled!");
+                std::process::exit(1);
+            });
+
+        if scale == 1 {
+            return self.optimize(img, &info);
+        }
+
+        let mut dest = img.with_directory("/tmp");
+
+        if let Some(ext) = &self.format {
+            dest = dest.with_extension(ext);
+        }
+
+        Command::new("realcugan-ncnn-vulkan")
+            .arg("-i")
+            .arg(img)
+            .arg("-s")
+            .arg(scale.to_string())
+            .arg("-o")
+            .arg(&dest)
+            // silence output
+            .stderr(Stdio::null())
+            .spawn()
+            .and_then(|mut c| c.wait())
+            .expect("could not run realcugan-ncnn-vulkan");
+
+        self.optimize(&dest, &(info * scale));
+    }
+
+    pub fn optimize(&mut self, img: &PathBuf, info: &WallInfo) {
+        wait_for_image(img);
+
+        let out_img = self
+            .format
+            .as_ref()
+            .map_or_else(|| img.clone(), |format| img.with_extension(format))
+            .with_directory("/tmp");
+
+        if let Some(ext) = out_img.extension().and_then(|ext| ext.to_str()) {
+            (match ext {
+                "jpg" | "jpeg" => optimize_jpg(img, &out_img),
+                "png" => optimize_png(img, &out_img),
+                "webp" => optimize_webp(img, &out_img),
+                _ => panic!("unsupported image format: {ext:?}"),
+            })
+            .unwrap_or_else(|_| panic!("could not optimize {img:?}"));
+        }
+
+        // save the image
+        (WallInfo {
+            path: out_img.clone(),
+            ..info.clone()
+        })
+        .save()
+        .unwrap_or_else(|_| panic!("could not save {out_img:?}"));
 
         // copy final image with metadata to wallpapers dir
-        std::fs::copy(img, img.with_directory(&self.config.wallpapers_dir))
-            .unwrap_or_else(|_| panic!("could not copy {img:?} to wallpapers dir"));
+        std::fs::copy(
+            &out_img,
+            out_img.with_directory(&self.config.wallpapers_dir),
+        )
+        .unwrap_or_else(|_| panic!("could not copy {out_img:?} to wallpapers dir"));
 
         // preview both multiple faces and no faces
         if info.faces.len() != 1 {
             self.to_preview
-                .push(img.with_directory(&self.config.wallpapers_dir));
+                .push(info.path.with_directory(&self.config.wallpapers_dir));
         }
     }
 
