@@ -126,6 +126,10 @@ impl WallInfo {
         Ok(())
     }
 
+    pub fn get_scale(&self, min_width: u32, min_height: u32) -> Option<u32> {
+        (1..=4).find(|&scale| self.width * scale >= min_width && self.height * scale >= min_height)
+    }
+
     pub fn dimensions_f64(&self) -> (f64, f64) {
         (f64::from(self.width), f64::from(self.height))
     }
@@ -171,5 +175,23 @@ impl WallInfo {
         resolutions
             .iter()
             .all(|ratio| self.get_geometry(ratio) == cropper.crop(ratio))
+    }
+}
+
+impl std::ops::Mul<u32> for WallInfo {
+    type Output = Self;
+
+    fn mul(self, rhs: u32) -> Self::Output {
+        Self {
+            width: self.width * rhs,
+            height: self.height * rhs,
+            faces: self.faces.into_iter().map(|face| face * rhs).collect(),
+            geometries: self
+                .geometries
+                .into_iter()
+                .map(|(ratio, geom)| (ratio, geom * rhs))
+                .collect(),
+            ..self
+        }
     }
 }
