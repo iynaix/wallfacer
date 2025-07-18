@@ -1,5 +1,6 @@
 .devenv
 .direnv
+.envrc
 __pycache__
 completions
 result
