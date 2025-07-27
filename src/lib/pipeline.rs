@@ -43,9 +43,9 @@ pub fn optimize_jpg(
         .arg(infile)
         .arg("--dest")
         .arg(
-            outfile
-                .parent()
-                .unwrap_or_else(|| panic!("could not get parent directory for {infile:?}")),
+            outfile.parent().unwrap_or_else(|| {
+                panic!("could not get parent directory for {}", infile.display())
+            }),
         )
         // silence output
         .stdout(Stdio::null())
@@ -88,7 +88,7 @@ impl WallpaperPipeline {
 
         if !orphan_wallpapers.is_empty() {
             for img in orphan_wallpapers {
-                eprintln!("orphan wallpaper: {img:?}");
+                eprintln!("orphan wallpaper: {}", img.display());
             }
             std::process::exit(1);
         }
@@ -102,7 +102,7 @@ impl WallpaperPipeline {
 
     pub fn add_image(&mut self, img: &PathBuf, force: bool) {
         let (width, height) = image::image_dimensions(img)
-            .unwrap_or_else(|_| panic!("could not get image dimensions for {img:?}"));
+            .unwrap_or_else(|_| panic!("could not get image dimensions for {}", img.display()));
 
         let out_path = self
             .format
@@ -148,7 +148,7 @@ impl WallpaperPipeline {
         let faces = faces.iter().map(|f: &Bbox| Bbox::to_face(f)).collect_vec();
 
         let (width, height) = image::image_dimensions(img)
-            .unwrap_or_else(|_| panic!("could not get image dimensions: {img:?}"));
+            .unwrap_or_else(|_| panic!("could not get image dimensions: {}", img.display()));
         let cropper = Cropper::new(&faces, width, height);
 
         // create WallInfo and save it
@@ -174,7 +174,7 @@ impl WallpaperPipeline {
         let scale = info
             .get_scale(self.config.min_width, self.config.min_height)
             .unwrap_or_else(|| {
-                eprintln!("{img:?} is too small to be upscaled!");
+                eprintln!("{} is too small to be upscaled!", img.display());
                 std::process::exit(1);
             });
 
@@ -220,7 +220,7 @@ impl WallpaperPipeline {
                 "webp" => optimize_webp(img, &out_img),
                 _ => panic!("unsupported image format: {ext:?}"),
             })
-            .unwrap_or_else(|_| panic!("could not optimize {img:?}"));
+            .unwrap_or_else(|_| panic!("could not optimize {}", img.display()));
         }
 
         // save the image
@@ -229,14 +229,14 @@ impl WallpaperPipeline {
             ..info.clone()
         })
         .save()
-        .unwrap_or_else(|_| panic!("could not save {out_img:?}"));
+        .unwrap_or_else(|_| panic!("could not save {}", out_img.display()));
 
         // copy final image with metadata to wallpapers dir
         std::fs::copy(
             &out_img,
             out_img.with_directory(&self.config.wallpapers_dir),
         )
-        .unwrap_or_else(|_| panic!("could not copy {out_img:?} to wallpapers dir"));
+        .unwrap_or_else(|_| panic!("could not copy {} to wallpapers dir", out_img.display()));
 
         // preview both multiple faces and no faces
         if info.faces.len() != 1 {

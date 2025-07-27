@@ -18,8 +18,9 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
                 .map(|p| {
                     // copy to /tmp so pipeline can work on the copy instead of the original
                     let target = p.with_directory("/tmp");
-                    std::fs::copy(&p, &target)
-                        .unwrap_or_else(|_| panic!("could not copy image to /tmp: {p:?}"));
+                    std::fs::copy(&p, &target).unwrap_or_else(|_| {
+                        panic!("could not copy image to /tmp: {}", p.display())
+                    });
 
                     target
                 });
@@ -43,14 +44,14 @@ pub fn main(args: &AddWallpaperArgs) {
         .iter()
         .filter(|img| {
             let (width, height) = image::image_dimensions(img)
-                .unwrap_or_else(|_| panic!("could not get image dimensions for {img:?}"));
+                .unwrap_or_else(|_| panic!("could not get image dimensions for {}", img.display()));
             width * 4 < cfg.min_width || height * 4 < cfg.min_height
         })
         .collect_vec();
 
     if !too_small.is_empty() {
         for img in too_small {
-            eprintln!("{img:?} is too small!");
+            eprintln!("{:?} is too small!", img.display());
         }
         std::process::exit(1);
     }
@@ -60,7 +61,8 @@ pub fn main(args: &AddWallpaperArgs) {
     for (idx, img) in all_files.iter().enumerate() {
         let start_time = std::time::Instant::now();
         print!(
-            "[{:0>width$}/{img_count}] Processing: {img:?}\t",
+            "[{:0>width$}/{img_count}] Processing: {}\t",
+            img.display(),
             idx + 1,
             width = img_count.to_string().len()
         );

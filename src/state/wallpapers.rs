@@ -77,7 +77,7 @@ impl Wallpapers {
         if all_files.is_empty() {
             // defaults to wallpaper directory
             if !wall_dir.exists() {
-                eprintln!("Wallpaper directory does not exist: {:?}", wall_dir);
+                eprintln!("Wallpaper directory does not exist: {}", wall_dir.display());
                 std::process::exit(1);
             }
 
@@ -119,9 +119,9 @@ impl Wallpapers {
         // sort by reverse chronological order
         all_files.sort_by_key(|f| {
             f.metadata()
-                .unwrap_or_else(|_| panic!("could not get file metadata: {:?}", f))
+                .unwrap_or_else(|_| panic!("could not get file metadata: {}", f.display()))
                 .modified()
-                .unwrap_or_else(|_| panic!("could not get file mtime: {:?}", f))
+                .unwrap_or_else(|_| panic!("could not get file mtime: {}", f.display()))
         });
         all_files.reverse();
 
@@ -139,7 +139,7 @@ impl Wallpapers {
         Wall::new(&info, path, &self.resolutions)
     }
 
-    pub fn prev_wall(&mut self) {
+    pub const fn prev_wall(&mut self) {
         // loop back to the last wallpaper
         self.index = if self.index == 0 {
             self.files.len() - 1
@@ -148,7 +148,7 @@ impl Wallpapers {
         };
     }
 
-    pub fn next_wall(&mut self) {
+    pub const fn next_wall(&mut self) {
         // loop back to the first wallpaper
         self.index = if self.index == self.files.len() - 1 {
             0

@@ -67,7 +67,7 @@ impl Wall {
     pub fn path(&self) -> &str {
         self.path
             .to_str()
-            .unwrap_or_else(|| panic!("could not convert {:?} to str", self.path))
+            .unwrap_or_else(|| panic!("could not convert {} to str", self.path.display()))
     }
 
     /// gets geometry for current aspect ratio

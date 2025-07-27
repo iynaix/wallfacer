@@ -138,19 +138,24 @@ impl Trimmer {
         let cropped = img.view(x, y, width, height).to_image();
         cropped
             .save(&tmp_file)
-            .unwrap_or_else(|_| panic!("could not save trimmed image for {wall:?}"));
+            .unwrap_or_else(|_| panic!("could not save trimmed image for {}", wall.display()));
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 
         // replace original file if it is not a jpeg
         let final_path = wall.with_file_name(&trimmed_fname);
-        std::fs::copy(&tmp_file, &final_path)
-            .unwrap_or_else(|_| panic!("could not copy {tmp_file:?} to {final_path:?}"));
+        std::fs::copy(&tmp_file, &final_path).unwrap_or_else(|_| {
+            panic!(
+                "could not copy {} to {}",
+                tmp_file.display(),
+                final_path.display()
+            )
+        });
 
         if filename(wall) != trimmed_fname {
             std::fs::remove_file(wall).unwrap_or_else(|e| {
                 eprintln!("{e}");
-                panic!("could not remove {wall:?}");
+                panic!("could not remove {}", wall.display());
             });
         }
     }
@@ -178,7 +183,7 @@ pub fn main(args: &TrimmerArgs) {
         horizontal: args.horizontal,
     };
     all_files.par_iter().for_each(|wall| {
-        println!("Processing: {wall:?}");
+        println!("Processing: {}", wall.display());
 
         if !args.dry_run {
             trimmer.trim(wall);
