@@ -240,8 +240,11 @@ impl WallpaperPipeline {
 
         // preview both multiple faces and no faces
         if info.faces.len() != 1 {
-            self.to_preview
-                .push(info.path.with_directory(&self.config.wallpapers_dir));
+            let mut preview_img = img.with_directory(&self.config.wallpapers_dir);
+            if let Some(ext) = &self.format {
+                preview_img = preview_img.with_extension(ext);
+            }
+            self.to_preview.push(preview_img);
         }
     }
 

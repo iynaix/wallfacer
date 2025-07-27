@@ -61,10 +61,10 @@ pub fn main(args: &AddWallpaperArgs) {
     for (idx, img) in all_files.iter().enumerate() {
         let start_time = std::time::Instant::now();
         print!(
-            "[{:0>width$}/{img_count}] Processing: {}\t",
-            img.display(),
+            "[{:0>width$}/{img_count}] Processing: {img}\t",
             idx + 1,
-            width = img_count.to_string().len()
+            width = img_count.to_string().len(),
+            img = img.display()
         );
         std::io::stdout().flush().expect("could not flush stdout");
         pipeline.add_image(img, args.force);

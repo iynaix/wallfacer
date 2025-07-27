@@ -112,7 +112,7 @@ impl Cropper {
         self.clamp(target, direction, target_width, target_height)
     }
 
-    /// trivial crops, either same aspect ratio (entire image), no facec or single face
+    /// trivial crops, either same aspect ratio (entire image), no faces or single face
     fn crop_trivial(
         &self,
         direction: Direction,
