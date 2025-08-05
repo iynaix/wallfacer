@@ -5,7 +5,7 @@ use crate::{
     state::Wall,
 };
 use dioxus::prelude::*;
-use dioxus_sdk::utils::window::{use_window_size, WindowSize};
+use dioxus_sdk::utils::window::{WindowSize, use_window_size};
 use wallfacer::{cropper::Direction, dragger::Dragger, wallpapers::WallInfo};
 
 #[component]
@@ -39,7 +39,7 @@ fn FacesOverlay(info: WallInfo, dragger: Signal<Dragger>) -> Element {
 }
 
 /// fit the image within the max preview area
-fn get_preview_size(min_y: f64, win_size: WindowSize, img: (f64, f64)) -> (f64, f64) {
+fn get_preview_size(min_y: f64, win_size: WindowSize, (img_w, img_h): (f64, f64)) -> (f64, f64) {
     let scale = dioxus::desktop::window().scale_factor();
     let margin: f64 = 16.0 * scale;
     let candidate_btns: f64 = 36.0 * scale;
@@ -49,22 +49,17 @@ fn get_preview_size(min_y: f64, win_size: WindowSize, img: (f64, f64)) -> (f64, 
     // handle extra space for candidate buttons
     let max_h = f64::from(win_size.height) - min_y - margin - (candidate_btns + margin);
 
-    let (img_w, img_h) = img;
-
-    let mut final_w = max_w;
-    let mut final_h = max_w / img_w * img_h;
-
-    if final_h > max_h {
-        final_h = max_h;
-        final_w = max_h / img_h * img_w;
+    // no scaling needed
+    if img_w <= max_w && img_h <= max_h {
+        return (img_w / scale, img_h / scale);
     }
 
-    // cannot be larger than the image
-    if final_w > img_w || final_h > img_h {
-        (img_w / scale, img_h / scale)
-    } else {
-        (final_w / scale, final_h / scale)
-    }
+    let w_ratio = max_w / img_w;
+    let h_ratio = max_h / img_h;
+    // use smaller ratio
+    let fit_scale = w_ratio.min(h_ratio) / scale;
+
+    (img_w * fit_scale, img_h * fit_scale)
 }
 
 #[component]
@@ -77,9 +72,9 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
     // calculate the preview size of the image
     // only needs to change when the window resizes
     let mut dragger = use_signal(|| {
-        let (image_w, image_h) = wall().current.dimensions_f64();
-        let wh = get_preview_size(preview_y(), window_size(), (image_w, image_h));
-        Dragger::new((image_w, image_h), wh)
+        let img_dimensions = wall().current.dimensions_f64();
+        let preview_wh = get_preview_size(preview_y(), window_size(), img_dimensions);
+        Dragger::new(img_dimensions, preview_wh)
     });
 
     // update dragger on resize
@@ -113,6 +108,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
             class: "m-auto transform-gpu {cursor_cls}",
             img {
                 class: "transform-gpu",
+                style: "width: {dragger().preview_w}px; height: {dragger().preview_h}px;",
                 src: wall().path(),
                 // store the final rendered width and height of the image
                 onmounted: move |evt| {
