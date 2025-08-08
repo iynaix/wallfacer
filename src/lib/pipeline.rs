@@ -1,6 +1,7 @@
 use std::{
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    time::{Duration, Instant},
 };
 
 use itertools::Itertools;
@@ -13,8 +14,20 @@ use super::{
 
 /// waits for the images to be written to disk
 fn wait_for_image(path: &Path) {
+    // wait for at most 5 minutes
+    const TIMEOUT: Duration = Duration::from_secs(5 * 60);
+
+    let start_time = Instant::now();
     while !path.exists() {
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        if start_time.elapsed() >= TIMEOUT {
+            eprintln!(
+                "Timed out waiting for {} after {}",
+                path.display(),
+                TIMEOUT.as_secs()
+            );
+            std::process::exit(1);
+        }
+        std::thread::sleep(Duration::from_millis(100));
     }
 }
 
@@ -171,12 +184,21 @@ impl WallpaperPipeline {
     }
 
     pub fn upscale(&mut self, img: &PathBuf, info: WallInfo) {
+        const WEBP_MAX_DIMENSION: u32 = 16383;
+
         let scale = info
             .get_scale(self.config.min_width, self.config.min_height)
             .unwrap_or_else(|| {
                 eprintln!("{} is too small to be upscaled!", img.display());
                 std::process::exit(1);
             });
+
+        // edge case, webp too large
+        assert!(
+            !(info.width * scale > WEBP_MAX_DIMENSION || info.height * scale > WEBP_MAX_DIMENSION),
+            "could not upscale {}, too large",
+            img.display()
+        );
 
         if scale == 1 {
             return self.optimize(img, &info);
