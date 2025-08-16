@@ -60,15 +60,20 @@ pub fn main(args: &AddWallpaperArgs) {
     let img_count = all_files.len();
     for (idx, img) in all_files.iter().enumerate() {
         let start_time = std::time::Instant::now();
-        print!(
-            "[{:0>width$}/{img_count}] Processing: {img}\t",
+        let status_line = format!(
+            "\r[{:0>width$}/{img_count}] Processing: {img}\t",
             idx + 1,
             width = img_count.to_string().len(),
             img = img.display()
         );
         std::io::stdout().flush().expect("could not flush stdout");
-        pipeline.add_image(img, args.force);
-        println!("({:.3}s)", start_time.elapsed().as_secs_f64());
+        pipeline.add_image(img, args.force, &status_line);
+        // need the tabs at the end to overwrite the previous line cleanly
+        println!(
+            "{status_line} ({:.3}s){}",
+            start_time.elapsed().as_secs_f64(),
+            " ".repeat(15),
+        );
     }
 
     pipeline.preview();

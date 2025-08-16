@@ -1,4 +1,5 @@
 use std::{
+    io::Write,
     path::{Path, PathBuf},
     process::{Command, Stdio},
     time::{Duration, Instant},
@@ -11,6 +12,8 @@ use crate::filter_images;
 use super::{
     Bbox, PathBufExt, config::Config, cropper::Cropper, run_wallfacer, wallpapers::WallInfo,
 };
+
+const WEBP_MAX_DIMENSION: u32 = 16383;
 
 /// waits for the images to be written to disk
 fn wait_for_image(path: &Path) {
@@ -113,7 +116,7 @@ impl WallpaperPipeline {
         }
     }
 
-    pub fn add_image(&mut self, img: &PathBuf, force: bool) {
+    pub fn add_image(&mut self, img: &PathBuf, force: bool, status_line: &str) {
         let (width, height) = image::image_dimensions(img)
             .unwrap_or_else(|_| panic!("could not get image dimensions for {}", img.display()));
 
@@ -130,7 +133,7 @@ impl WallpaperPipeline {
 
             // image has been edited (different aspect ratio), re-process the image
             if info.width / width != info.height / height {
-                self.detect(img);
+                self.detect(img, status_line);
                 return;
             }
 
@@ -139,11 +142,14 @@ impl WallpaperPipeline {
                 self.to_preview.push(out_path);
             }
         } else {
-            self.detect(img);
+            self.detect(img, status_line);
         }
     }
 
-    pub fn detect(&mut self, img: &PathBuf) {
+    pub fn detect(&mut self, img: &PathBuf, status_line: &str) {
+        print!("{status_line} Detecting faces...{}", " ".repeat(10));
+        std::io::stdout().flush().expect("could not flush stdout");
+
         // get output of anime face detector
         let child = Command::new("anime-face-detector")
             .arg(img)
@@ -180,12 +186,11 @@ impl WallpaperPipeline {
                     .collect(),
                 ..Default::default()
             },
+            status_line,
         );
     }
 
-    pub fn upscale(&mut self, img: &PathBuf, info: WallInfo) {
-        const WEBP_MAX_DIMENSION: u32 = 16383;
-
+    pub fn upscale(&mut self, img: &PathBuf, info: WallInfo, status_line: &str) {
         let scale = info
             .get_scale(self.config.min_width, self.config.min_height)
             .unwrap_or_else(|| {
@@ -201,8 +206,11 @@ impl WallpaperPipeline {
         );
 
         if scale == 1 {
-            return self.optimize(img, &info);
+            return self.optimize(img, &info, status_line);
         }
+
+        print!("{status_line} Upscaling image...{}", " ".repeat(10));
+        std::io::stdout().flush().expect("could not flush stdout");
 
         let mut dest = img.with_directory("/tmp");
 
@@ -223,11 +231,14 @@ impl WallpaperPipeline {
             .and_then(|mut c| c.wait())
             .expect("could not run realcugan-ncnn-vulkan");
 
-        self.optimize(&dest, &(info * scale));
+        self.optimize(&dest, &(info * scale), status_line);
     }
 
-    pub fn optimize(&mut self, img: &PathBuf, info: &WallInfo) {
+    pub fn optimize(&mut self, img: &PathBuf, info: &WallInfo, status_line: &str) {
         wait_for_image(img);
+
+        print!("{status_line} Optimizing image...{}", " ".repeat(10));
+        std::io::stdout().flush().expect("could not flush stdout");
 
         let out_img = self
             .format
