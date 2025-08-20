@@ -163,19 +163,19 @@ impl Trimmer {
 
 pub fn main(args: &TrimmerArgs) {
     let mut all_files = Vec::new();
-    std::fs::canonicalize(&args.path).map_or_else(
-        |_| {
-            eprintln!("Could not find input file /directory");
-            std::process::exit(1);
-        },
-        |p| {
-            if let Some(p) = is_image(&p) {
-                all_files.push(p);
+
+    if let Some(paths) = &args.paths {
+        paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
+            if p.is_file() {
+                if let Some(p) = is_image(&p) {
+                    all_files.push(p);
+                }
             } else {
                 all_files.extend(filter_images(&p));
             }
-        },
-    );
+        });
+    }
+
     all_files.numeric_sort();
 
     let trimmer = Trimmer {
