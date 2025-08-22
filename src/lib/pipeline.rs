@@ -146,6 +146,7 @@ impl WallpaperPipeline {
         }
     }
 
+    // detect is first step as detection in a smaller image is faster
     pub fn detect(&mut self, img: &PathBuf, status_line: &str) {
         print!("{status_line} Detecting faces...{}", " ".repeat(10));
         std::io::stdout().flush().expect("could not flush stdout");
@@ -178,6 +179,7 @@ impl WallpaperPipeline {
                 width,
                 height,
                 faces,
+                scale: Some(1),
                 geometries: self
                     .config
                     .sorted_resolutions()
@@ -192,7 +194,7 @@ impl WallpaperPipeline {
 
     pub fn upscale(&mut self, img: &PathBuf, info: WallInfo, status_line: &str) {
         let scale = info
-            .get_scale(self.config.min_width, self.config.min_height)
+            .get_target_scale(self.config.min_width, self.config.min_height)
             .unwrap_or_else(|| {
                 eprintln!("{} is too small to be upscaled!", img.display());
                 std::process::exit(1);
@@ -231,7 +233,13 @@ impl WallpaperPipeline {
             .and_then(|mut c| c.wait())
             .expect("could not run realcugan-ncnn-vulkan");
 
-        self.optimize(&dest, &(info * scale), status_line);
+        // update wallinfo with scale
+        let scaled_info = WallInfo {
+            scale: Some(scale),
+            ..info
+        } * scale;
+
+        self.optimize(&dest, &scaled_info, status_line);
     }
 
     pub fn optimize(&mut self, img: &PathBuf, info: &WallInfo, status_line: &str) {

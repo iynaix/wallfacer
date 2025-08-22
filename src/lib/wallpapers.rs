@@ -15,6 +15,7 @@ pub struct WallInfo {
     pub width: u32,
     pub height: u32,
     pub faces: Vec<Geometry>,
+    pub scale: Option<u32>,
     pub geometries: IndexMap<AspectRatio, Geometry>,
     pub wallust: String,
 }
@@ -30,46 +31,56 @@ impl WallInfo {
         let meta = Metadata::new_from_path(img.as_ref()).expect("could not init new metadata");
 
         let mut faces = Vec::new();
+        let mut scale = None;
         let mut crops = IndexMap::new();
         let mut wallust = String::new();
 
         for tag in meta.get_xmp_tags().expect("unable to read xmp tags") {
-            if tag == "Xmp.wallfacer.faces" {
-                let face_str = meta
-                    .get_tag_string("Xmp.wallfacer.faces")
-                    .expect("could not get Xmp.wallfacer.faces");
+            match tag.as_str() {
+                "Xmp.wallfacer.faces" => {
+                    let face_str = meta.get_tag_string(&tag).expect("could not get faces tag");
 
-                // empty faces are written as "[]" as rexiv2 seems to return the value of
-                // the next Xmp field, which is wrong
-                if face_str != "[]" {
-                    faces = face_str
-                        .split(',')
-                        .map(|face| {
-                            face.try_into().unwrap_or_else(|_| {
-                                panic!("could not convert face {face} into string")
+                    // empty faces are written as "[]" as rexiv2 seems to return the value of
+                    // the next Xmp field, which is wrong
+                    if face_str != "[]" {
+                        faces = face_str
+                            .split(',')
+                            .map(|face| {
+                                face.try_into().unwrap_or_else(|_| {
+                                    panic!("could not convert face {face} into string")
+                                })
                             })
-                        })
-                        .collect();
+                            .collect();
+                    }
                 }
-            } else if tag.starts_with("Xmp.wallfacer.crop.") {
-                let aspect = tag
-                    .strip_prefix("Xmp.wallfacer.crop.")
-                    .expect("could not strip cropdata prefix");
-                let aspect: AspectRatio = aspect
-                    .try_into()
-                    .unwrap_or_else(|_| panic!("could not parse aspect ratio {aspect}"));
+                "Xmp.wallfacer.wallust" => {
+                    wallust = meta
+                        .get_tag_string(&tag)
+                        .expect("could not get wallust tag");
+                }
+                "Xmp.wallfacer.scale" => {
+                    scale = meta
+                        .get_tag_string(&tag)
+                        .expect("could not get scale tag")
+                        .parse::<u32>()
+                        .ok();
+                }
+                tag if tag.starts_with("Xmp.wallfacer.crop.") => {
+                    let aspect = tag
+                        .strip_prefix("Xmp.wallfacer.crop.")
+                        .expect("could not strip cropdata prefix");
+                    let aspect: AspectRatio = aspect
+                        .try_into()
+                        .unwrap_or_else(|_| panic!("could not parse aspect ratio {aspect}"));
+                    let geom_str = meta.get_tag_string(tag).expect("could not get crop tag");
+                    let geoms: Geometry = geom_str
+                        .as_str()
+                        .try_into()
+                        .unwrap_or_else(|_| panic!("could not parse crop {geom_str}"));
 
-                let geom_str = meta.get_tag_string(&tag).expect("could not get crop tag");
-                let geoms: Geometry = geom_str
-                    .as_str()
-                    .try_into()
-                    .unwrap_or_else(|_| panic!("could not parse crop {geom_str}"));
-
-                crops.insert(aspect, geoms);
-            } else if tag == "Xmp.wallfacer.wallust" {
-                wallust = meta
-                    .get_tag_string(&tag)
-                    .expect("could not get wallust tag");
+                    crops.insert(aspect, geoms);
+                }
+                _ => {}
             }
         }
 
@@ -77,6 +88,7 @@ impl WallInfo {
             width,
             height,
             path: img.as_ref().to_path_buf(),
+            scale,
             faces,
             geometries: crops,
             wallust,
@@ -102,6 +114,10 @@ impl WallInfo {
 
         meta.set_tag_string("Xmp.wallfacer.faces", &face_strings)?;
 
+        if let Some(scale) = self.scale {
+            meta.set_tag_string("Xmp.wallfacer.scale", &scale.to_string())?;
+        }
+
         // set crop data
         for (aspect, geom) in &self.geometries {
             let crop_key = format!("Xmp.wallfacer.crop.{}", aspect);
@@ -126,7 +142,7 @@ impl WallInfo {
         Ok(())
     }
 
-    pub fn get_scale(&self, min_width: u32, min_height: u32) -> Option<u32> {
+    pub fn get_target_scale(&self, min_width: u32, min_height: u32) -> Option<u32> {
         (1..=4).find(|&scale| self.width * scale >= min_width && self.height * scale >= min_height)
     }
 

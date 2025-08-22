@@ -6,16 +6,14 @@ use image::{GenericImageView, ImageBuffer, ImageReader, Rgb};
 use rayon::prelude::*;
 use wallfacer::{PathBufNumericSort, cli::TrimmerArgs, filename, filter_images, is_image};
 
-#[allow(clippy::cast_lossless)]
 fn mean(data: &[i32]) -> f64 {
-    let sum = data.iter().sum::<i32>() as f64;
+    let sum = f64::from(data.iter().sum::<i32>());
     let count = data.len();
     assert!(count > 0, "data must have at least one element");
 
     sum / count as f64
 }
 
-#[allow(clippy::cast_lossless)]
 fn std_deviation(data: &[i32]) -> f64 {
     let count = data.len();
     assert!(count > 0, "data must have at least one element");
@@ -24,7 +22,7 @@ fn std_deviation(data: &[i32]) -> f64 {
     let variance = data
         .iter()
         .map(|value| {
-            let diff = data_mean - (*value as f64);
+            let diff = data_mean - f64::from(*value);
             diff * diff
         })
         .sum::<f64>()
