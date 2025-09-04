@@ -56,10 +56,31 @@ impl PathBufExt for PathBuf {
 }
 
 pub trait PathBufNumericSort {
+    fn filter_wallpapers(&self) -> Vec<PathBuf>;
+
     fn numeric_sort(&mut self);
 }
 
 impl PathBufNumericSort for Vec<PathBuf> {
+    fn filter_wallpapers(&self) -> Vec<PathBuf> {
+        let mut all_files = Self::new();
+
+        for p in self {
+            let p = std::fs::canonicalize(p).unwrap_or_else(|_| {
+                eprintln!("Invalid Path: {}", p.display());
+                std::process::exit(1);
+            });
+
+            if is_image(&p) {
+                all_files.push(p);
+            } else {
+                all_files.extend(filter_images(&p));
+            }
+        }
+
+        all_files
+    }
+
     fn numeric_sort(&mut self) {
         self.sort_by(|a, b| human_sort::compare(&filename(a), &filename(b)));
     }

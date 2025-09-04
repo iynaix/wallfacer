@@ -1,27 +1,13 @@
-use std::{io::Write, path::PathBuf};
+use std::io::Write;
 
 use itertools::Itertools;
 use wallfacer::{
-    PathBufNumericSort, cli::AddWallpaperArgs, config::Config, filter_images, is_image,
-    pipeline::WallpaperPipeline,
+    PathBufNumericSort, cli::AddWallpaperArgs, config::Config, pipeline::WallpaperPipeline,
 };
-
-pub fn wallpapers_from_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
-    let mut all_files = Vec::new();
-    for p in paths.iter().flat_map(std::fs::canonicalize) {
-        if is_image(&p) {
-            all_files.push(p);
-        } else {
-            all_files.extend(filter_images(&p));
-        }
-    }
-
-    all_files
-}
 
 pub fn main(args: &AddWallpaperArgs) {
     let cfg = Config::new().expect("failed to load config");
-    let mut all_files = wallpapers_from_paths(&args.inputs);
+    let mut all_files = args.inputs.filter_wallpapers();
     all_files.numeric_sort();
 
     // check that all the files meet the minimum size requirement

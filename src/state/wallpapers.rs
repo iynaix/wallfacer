@@ -3,10 +3,11 @@ use itertools::Itertools;
 use std::path::PathBuf;
 
 use wallfacer::{
+    PathBufNumericSort,
     aspect_ratio::AspectRatio,
     cli::{FacesFilter, GuiArgs},
     config::{Config, ConfigResolution},
-    filename, filter_images, is_image,
+    filename,
     wallpapers::WallInfo,
 };
 
@@ -58,19 +59,7 @@ impl Wallpapers {
 
         let unmodified_filters = Self::resolution_arg(args.unmodified.as_deref(), &resolutions);
 
-        let mut all_files: Vec<PathBuf> = Vec::new();
-        args.paths
-            .iter()
-            .flat_map(std::fs::canonicalize)
-            .for_each(|p| {
-                if p.is_file() {
-                    if is_image(&p) {
-                        all_files.push(p);
-                    }
-                } else {
-                    all_files.extend(filter_images(&p));
-                }
-            });
+        let mut all_files = args.paths.filter_wallpapers();
 
         // filter only wallpapers that still use the default crops if needed
         all_files.retain(|f| {

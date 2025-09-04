@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use image::{GenericImageView, ImageBuffer, ImageReader, Rgb};
 use rayon::prelude::*;
-use wallfacer::{PathBufNumericSort, cli::TrimmerArgs, filename, filter_images, is_image};
+use wallfacer::{PathBufNumericSort, cli::TrimmerArgs, filename};
 
 fn mean(data: &[i32]) -> f64 {
     let sum = f64::from(data.iter().sum::<i32>());
@@ -160,21 +160,7 @@ impl Trimmer {
 }
 
 pub fn main(args: &TrimmerArgs) {
-    let mut all_files = Vec::new();
-
-    args.paths
-        .iter()
-        .flat_map(std::fs::canonicalize)
-        .for_each(|p| {
-            if p.is_file() {
-                if is_image(&p) {
-                    all_files.push(p);
-                }
-            } else {
-                all_files.extend(filter_images(&p));
-            }
-        });
-
+    let mut all_files = args.paths.filter_wallpapers();
     all_files.numeric_sort();
 
     let trimmer = Trimmer {
