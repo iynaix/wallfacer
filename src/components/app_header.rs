@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
+use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::{
     md_image_icons::{MdFaceRetouchingNatural, MdPalette},
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
-use dioxus_free_icons::Icon;
 
 use crate::{
     components::{save_button::SaveButton, use_ui, wallpaper_button::WallpaperButton},
@@ -43,13 +43,8 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
     let mut ui = use_ui();
     let cfg = use_context::<Signal<Config>>();
 
-    let supports_wallust = use_signal(|| {
-        std::process::Command::new("rustc")
-            .stdout(std::process::Stdio::null())
-            .spawn()
-            .is_ok()
-            && cfg!(feature = "wallust")
-    });
+    let supports_wallust =
+        use_signal(|| cfg!(feature = "wallust") && which::which("wallust").is_ok());
 
     let supports_adding = cfg!(feature = "adding");
     let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-crust focus-visible:outline-offset-0 cursor-pointer";

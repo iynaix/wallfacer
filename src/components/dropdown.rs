@@ -4,21 +4,11 @@ use dioxus::prelude::*;
 #[derive(Debug, Clone, PartialEq)]
 pub struct DropdownOptions<T> {
     pub values: Vec<T>,
-    label_fn: fn(&T) -> String,
 }
 
-impl<T: std::fmt::Display + Copy + PartialEq> DropdownOptions<T> {
-    pub fn new(values: Vec<T>) -> Self {
-        Self {
-            values,
-            label_fn: std::string::ToString::to_string,
-        }
-    }
-
-    #[must_use]
-    #[allow(clippy::wrong_self_convention)]
-    pub fn to_label(self, label_fn: fn(&T) -> String) -> Self {
-        Self { label_fn, ..self }
+impl<T: Copy + PartialEq + ToString + std::fmt::Display> DropdownOptions<T> {
+    pub const fn new(values: Vec<T>) -> Self {
+        Self { values }
     }
 
     pub fn from_string(&self, value: &str) -> T {
@@ -38,7 +28,7 @@ impl<T: std::fmt::Display + Copy + PartialEq> DropdownOptions<T> {
 }
 
 #[component]
-pub fn Dropdown<T: Copy + PartialEq + std::fmt::Display + 'static>(
+pub fn Dropdown<T: Copy + PartialEq + ToString + std::fmt::Display + 'static>(
     name: String,
     class: Option<String>,
     options: DropdownOptions<T>,
@@ -67,7 +57,7 @@ pub fn Dropdown<T: Copy + PartialEq + std::fmt::Display + 'static>(
                     onclick: move |_| {
                         open.set(!open());
                     },
-                    span { class: "block truncate", {(options.label_fn)(&value)} }
+                    span { class: "block truncate", {value.to_string()} }
                     span { class: "pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2",
                         svg {
                             "aria-hidden": "true",
@@ -97,7 +87,7 @@ pub fn Dropdown<T: Copy + PartialEq + std::fmt::Display + 'static>(
                                     onchange.call(opt);
                                     open.set(false);
                                 },
-                                span { class: "font-normal block truncate", {(options.label_fn)(&opt)} }
+                                span { class: "font-normal block truncate", {opt.to_string()} }
                                 span { class: "text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4",
                                     class: if opt == value { "" } else { "hidden" },
                                     svg {

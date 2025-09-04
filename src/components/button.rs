@@ -28,25 +28,22 @@ pub fn Button(
             title,
             disabled: spin.unwrap_or_default(),
             onclick: move |evt| {
-                if !spin.unwrap_or_default() {
-                    if let Some(handler) = &onclick {
+                if !spin.unwrap_or_default()
+                    && let Some(handler) = &onclick {
                         handler.call(evt);
                     }
-                }
             },
             onmouseenter: move |evt| {
-                if !spin.unwrap_or_default() {
-                    if let Some(handler) = &onmouseenter {
+                if !spin.unwrap_or_default()
+                    && let Some(handler) = &onmouseenter {
                         handler.call(evt);
                     }
-                }
             },
             onmouseleave: move |evt| {
-                if !spin.unwrap_or_default() {
-                    if let Some(handler) = &onmouseleave {
+                if !spin.unwrap_or_default()
+                    && let Some(handler) = &onmouseleave {
                         handler.call(evt);
                     }
-                }
             },
             if spin.unwrap_or_default() {
                 svg {

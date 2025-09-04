@@ -159,8 +159,8 @@ pub fn Palette(wall: Signal<Wall>) -> Element {
         WallustPalette::HardDarkComp16,
         WallustPalette::SoftDark16,
         WallustPalette::SoftDarkComp16,
-    ])
-    .to_label(|v| v.to_string().replace("16", ""));
+    ]);
+    // .to_label(|v| v.to_string().replace("16", ""));
 
     rsx! {
         div {

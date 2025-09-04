@@ -70,12 +70,12 @@ where
     P: AsRef<Path>,
 {
     let p = path.as_ref();
-    if p.is_file() {
-        if let Some(ext) = p.extension() {
-            match ext.to_str() {
-                Some("jpg" | "jpeg" | "png" | "webp") => return Some(p.to_path_buf()),
-                _ => return None,
-            }
+    if p.is_file()
+        && let Some(ext) = p.extension()
+    {
+        match ext.to_str() {
+            Some("jpg" | "jpeg" | "png" | "webp") => return Some(p.to_path_buf()),
+            _ => return None,
         }
     }
 
