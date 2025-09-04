@@ -109,37 +109,45 @@ impl Bbox {
     }
 }
 
-#[cfg(debug_assertions)]
-pub fn run_wallfacer<I, S>(args: I)
+fn run_cargo_wallfacer<I, S>(release: bool, args: I)
 where
     I: IntoIterator<Item = S> + std::fmt::Debug + Clone,
     S: AsRef<std::ffi::OsStr>,
 {
-    Command::new("cargo")
-        .args(["run", "--bin", "wallfacer", "--"])
+    let mut cmd = Command::new("cargo");
+    cmd.arg("run");
+
+    if release {
+        cmd.arg("--release");
+    }
+
+    cmd.args(["--bin", "wallfacer", "gui", "--"])
         .args(args)
         .spawn()
         .and_then(|mut c| c.wait())
         .expect("could not run wallfacer");
 }
 
-#[cfg(not(debug_assertions))]
 pub fn run_wallfacer<I, S>(args: I)
 where
     I: IntoIterator<Item = S> + std::fmt::Debug + Clone,
     S: AsRef<std::ffi::OsStr>,
 {
-    Command::new("wallfacer")
-        .args(args.clone())
-        .spawn()
-        .unwrap_or_else(|_| {
-            // try running it via cargo instead
-            Command::new("cargo")
-                .args(["run", "--release", "--bin", "wallfacer", "--"])
-                .args(args)
-                .spawn()
-                .expect("could not spawn wallfacer")
-        })
-        .wait()
-        .expect("could not wait for wallfacer");
+    if cfg!(debug_assertions) {
+        run_cargo_wallfacer(false, args);
+    } else {
+        Command::new("wallfacer")
+            .arg("gui")
+            .args(args.clone())
+            .spawn()
+            .map_or_else(
+                |_| {
+                    // try running it via cargo instead
+                    run_cargo_wallfacer(true, args);
+                },
+                |mut c| {
+                    c.wait().expect("could not run wallfacer");
+                },
+            );
+    }
 }

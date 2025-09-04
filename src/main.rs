@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use clap::{CommandFactory, Parser};
-use clap_complete::{generate, Shell};
+use clap_complete::{Shell, generate};
 use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::prelude::*;
 use screens::app::App;
@@ -48,7 +48,7 @@ fn main() {
         Some(Commands::Add(args)) => add_wallpapers::main(&args),
         Some(Commands::AddResolution(args)) => add_resolution::main(&args),
         Some(Commands::Trim(args)) => trimmer::main(&args),
-        _ => {
+        Some(Commands::Gui(_)) => {
             // use a custom index.html to set the height of body to the full height of the window
             LaunchBuilder::desktop()
                 .with_cfg(
@@ -63,5 +63,6 @@ fn main() {
                 )
                 .launch(App);
         }
+        _ => {}
     }
 }

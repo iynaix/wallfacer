@@ -2,11 +2,9 @@ use clap::Parser;
 use itertools::Itertools;
 use std::path::PathBuf;
 
-use crate::WallfacerArgs;
-
 use wallfacer::{
     aspect_ratio::AspectRatio,
-    cli::FacesFilter,
+    cli::{FacesFilter, GuiArgs},
     config::{Config, ConfigResolution},
     filename, filter_images, is_image,
     wallpapers::WallInfo,
@@ -42,7 +40,7 @@ impl Wallpapers {
     }
 
     pub fn from_args(cfg: &Config) -> Self {
-        let args = WallfacerArgs::parse();
+        let args = GuiArgs::parse();
         let resolutions = cfg
             .resolutions
             .iter()

@@ -46,11 +46,7 @@ pub struct AddResolutionArgs {
 }
 
 #[derive(Parser)]
-#[command(
-    name = "trimmer",
-    about = "Automatic trimming of images",
-    version = env!("CARGO_PKG_VERSION")
-)]
+#[command(name = "trimmer", about = "Automatic trimming of images")]
 pub struct TrimmerArgs {
     #[arg(long, action, help = "Perform a trial run with no changes made")]
     pub dry_run: bool,
@@ -70,54 +66,12 @@ pub struct TrimmerArgs {
     pub paths: Vec<PathBuf>,
 }
 
-#[derive(ValueEnum, Debug, Clone)]
-pub enum FacesFilter {
-    Zero,
-    None,
-    One,
-    Single,
-    Many,
-    Multiple,
-    All,
-}
-
-#[derive(Subcommand)]
-pub enum Commands {
-    #[command(
-        name = "add",
-        about = "Adds wallpapers with upscaling and face detection"
-    )]
-    Add(AddWallpaperArgs),
-
-    #[command(name = "resolution", about = "Adds a new resolution for cropping")]
-    AddResolution(AddResolutionArgs),
-
-    #[cfg(feature = "trimmer")]
-    #[command(name = "trim", visible_alias = "crop", about = "Trims images")]
-    Trim(TrimmerArgs),
-}
-
-#[allow(clippy::struct_excessive_bools)]
 #[derive(Parser)]
 #[command(
-    name = "wallfacer",
-    infer_subcommands = true,
-    about = "A GUI for selecting wallpaper cropping regions for multiple monitor resolutions, based on anime face detection.",
-    version = env!("CARGO_PKG_VERSION")
+    name = "gui",
+    about = "A GUI for selecting wallpaper cropping regions for multiple monitor resolutions, based on anime face detection."
 )]
-pub struct WallfacerArgs {
-    #[arg(
-        long,
-        value_enum,
-        help = "Type of shell completion to generate",
-        hide = true,
-        exclusive = true
-    )]
-    pub generate: Option<ShellCompletion>,
-
-    #[command(subcommand)]
-    pub command: Option<Commands>,
-
+pub struct GuiArgs {
     #[arg(
         long,
         default_value = None,
@@ -150,6 +104,58 @@ pub struct WallfacerArgs {
     #[arg(long, help = "Filters wallpapers by filename (case-insensitive)")]
     pub filter: Option<String>,
 
-    #[arg(help = "Directories or images to be displayed", value_name = "PATHS")]
+    #[arg(help = "Directories or images to be displayed", num_args = 1.., value_name = "PATHS", required = true)]
     pub paths: Vec<PathBuf>,
+}
+
+#[derive(ValueEnum, Debug, Clone)]
+pub enum FacesFilter {
+    Zero,
+    None,
+    One,
+    Single,
+    Many,
+    Multiple,
+    All,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    #[command(
+        name = "add",
+        about = "Adds wallpapers with upscaling and face detection"
+    )]
+    Add(AddWallpaperArgs),
+
+    #[command(name = "resolution", about = "Adds a new resolution for cropping")]
+    AddResolution(AddResolutionArgs),
+
+    #[command(name = "gui", about = "Launches the wallfacer GUI")]
+    Gui(GuiArgs),
+
+    #[cfg(feature = "trimmer")]
+    #[command(name = "trim", visible_alias = "crop", about = "Trims images")]
+    Trim(TrimmerArgs),
+}
+
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Parser)]
+#[command(
+    name = "wallfacer",
+    infer_subcommands = true,
+    about = "A GUI for selecting wallpaper cropping regions for multiple monitor resolutions, based on anime face detection.",
+    version = env!("CARGO_PKG_VERSION")
+)]
+pub struct WallfacerArgs {
+    #[arg(
+        long,
+        value_enum,
+        help = "Type of shell completion to generate",
+        hide = true,
+        exclusive = true
+    )]
+    pub generate: Option<ShellCompletion>,
+
+    #[command(subcommand)]
+    pub command: Option<Commands>,
 }
