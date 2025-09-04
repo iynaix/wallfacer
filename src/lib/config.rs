@@ -1,6 +1,5 @@
-use super::{aspect_ratio::AspectRatio, full_path};
+use super::aspect_ratio::AspectRatio;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use thiserror::Error;
 use toml;
 
@@ -24,7 +23,6 @@ pub struct ConfigResolution {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    pub wallpapers_dir: PathBuf,
     pub min_width: u32,
     pub min_height: u32,
     pub show_faces: bool,
@@ -35,7 +33,6 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            wallpapers_dir: full_path("~/Pictures/Wallpapers"),
             min_width: 1920,
             min_height: 1080,
             show_faces: false,

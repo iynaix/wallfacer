@@ -2,30 +2,15 @@ use std::{io::Write, path::PathBuf};
 
 use itertools::Itertools;
 use wallfacer::{
-    PathBufExt, PathBufNumericSort, cli::AddWallpaperArgs, config::Config, filter_images, is_image,
-    pipeline::WallpaperPipeline, wallpapers::WallInfo,
+    PathBufNumericSort, cli::AddWallpaperArgs, config::Config, filter_images, is_image,
+    pipeline::WallpaperPipeline,
 };
 
-pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
+pub fn wallpapers_from_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
     let mut all_files = Vec::new();
     for p in paths.iter().flat_map(std::fs::canonicalize) {
-        if let Some(p) = is_image(&p) {
+        if is_image(&p) {
             all_files.push(p);
-        } else if p == cfg.wallpapers_dir {
-            // add images from wallpapers_dir if they aren't processed yet
-            let new_files = filter_images(&p)
-                .filter(|p| !WallInfo::has_metadata(p))
-                .map(|p| {
-                    // copy to /tmp so pipeline can work on the copy instead of the original
-                    let target = p.with_directory("/tmp");
-                    std::fs::copy(&p, &target).unwrap_or_else(|_| {
-                        panic!("could not copy image to /tmp: {}", p.display())
-                    });
-
-                    target
-                });
-
-            all_files.extend(new_files);
         } else {
             all_files.extend(filter_images(&p));
         }
@@ -36,7 +21,7 @@ pub fn wallpapers_from_paths(paths: &[PathBuf], cfg: &Config) -> Vec<PathBuf> {
 
 pub fn main(args: &AddWallpaperArgs) {
     let cfg = Config::new().expect("failed to load config");
-    let mut all_files = wallpapers_from_paths(&args.paths, &cfg);
+    let mut all_files = wallpapers_from_paths(&args.inputs);
     all_files.numeric_sort();
 
     // check that all the files meet the minimum size requirement
@@ -56,7 +41,7 @@ pub fn main(args: &AddWallpaperArgs) {
         std::process::exit(1);
     }
 
-    let mut pipeline = WallpaperPipeline::new(&cfg, args.format.clone());
+    let mut pipeline = WallpaperPipeline::new(&cfg, args.format.clone(), args.output.clone());
     let img_count = all_files.len();
     for (idx, img) in all_files.iter().enumerate() {
         let start_time = std::time::Instant::now();

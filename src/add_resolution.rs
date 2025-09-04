@@ -81,7 +81,7 @@ pub fn main(args: &AddResolutionArgs) {
 
     let mut to_process: Vec<PathBuf> = Vec::new();
 
-    let mut all_files = filter_images(&cfg.wallpapers_dir).collect_vec();
+    let mut all_files = filter_images(&args.output).collect_vec();
     all_files.numeric_sort();
 
     for path in all_files {

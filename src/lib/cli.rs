@@ -23,9 +23,14 @@ pub struct AddWallpaperArgs {
     #[arg(long, action, help = "Reprocess the image even if it already exists")]
     pub force: bool,
 
-    // required positional argument for input directory
-    /// directories or images to add
-    pub paths: Vec<PathBuf>,
+    // required positional args for input paths and output directory
+    /// input directories or images to add
+    #[arg(required = true, num_args = 1.., value_name = "SRC")]
+    pub inputs: Vec<PathBuf>,
+
+    /// output directory
+    #[arg(required = true, value_name = "DEST")]
+    pub output: PathBuf,
 }
 
 #[derive(Args, Debug)]
@@ -35,6 +40,9 @@ pub struct AddResolutionArgs {
 
     /// the new resolution, in the format <width>x<height>
     pub resolution: String,
+
+    /// output directory
+    pub output: PathBuf,
 }
 
 #[derive(Parser)]
@@ -59,7 +67,7 @@ pub struct TrimmerArgs {
     pub threshold: f64,
 
     #[arg(help = "Directories or images to be trimmed", value_name = "PATHS")]
-    pub paths: Option<Vec<PathBuf>>,
+    pub paths: Vec<PathBuf>,
 }
 
 #[derive(ValueEnum, Debug, Clone)]
@@ -143,5 +151,5 @@ pub struct WallfacerArgs {
     pub filter: Option<String>,
 
     #[arg(help = "Directories or images to be displayed", value_name = "PATHS")]
-    pub paths: Option<Vec<PathBuf>>,
+    pub paths: Vec<PathBuf>,
 }

@@ -162,17 +162,18 @@ impl Trimmer {
 pub fn main(args: &TrimmerArgs) {
     let mut all_files = Vec::new();
 
-    if let Some(paths) = &args.paths {
-        paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
+    args.paths
+        .iter()
+        .flat_map(std::fs::canonicalize)
+        .for_each(|p| {
             if p.is_file() {
-                if let Some(p) = is_image(&p) {
+                if is_image(&p) {
                     all_files.push(p);
                 }
             } else {
                 all_files.extend(filter_images(&p));
             }
         });
-    }
 
     all_files.numeric_sort();
 

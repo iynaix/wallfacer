@@ -43,7 +43,6 @@ impl Wallpapers {
 
     pub fn from_args(cfg: &Config) -> Self {
         let args = WallfacerArgs::parse();
-        let wall_dir = &cfg.wallpapers_dir;
         let resolutions = cfg
             .resolutions
             .iter()
@@ -62,27 +61,18 @@ impl Wallpapers {
         let unmodified_filters = Self::resolution_arg(args.unmodified.as_deref(), &resolutions);
 
         let mut all_files: Vec<PathBuf> = Vec::new();
-        if let Some(paths) = args.paths {
-            paths.iter().flat_map(std::fs::canonicalize).for_each(|p| {
+        args.paths
+            .iter()
+            .flat_map(std::fs::canonicalize)
+            .for_each(|p| {
                 if p.is_file() {
-                    if let Some(p) = is_image(&p) {
+                    if is_image(&p) {
                         all_files.push(p);
                     }
                 } else {
                     all_files.extend(filter_images(&p));
                 }
             });
-        }
-
-        if all_files.is_empty() {
-            // defaults to wallpaper directory
-            if !wall_dir.exists() {
-                eprintln!("Wallpaper directory does not exist: {}", wall_dir.display());
-                std::process::exit(1);
-            }
-
-            all_files.extend(filter_images(&wall_dir));
-        }
 
         // filter only wallpapers that still use the default crops if needed
         all_files.retain(|f| {

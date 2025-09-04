@@ -91,14 +91,13 @@ pub struct WallpaperPipeline {
     config: Config,
     format: Option<String>,
     to_preview: Vec<PathBuf>,
+    output: PathBuf,
 }
 
 impl WallpaperPipeline {
-    pub fn new(cfg: &Config, format: Option<String>) -> Self {
-        let wall_dir = &cfg.wallpapers_dir;
-
+    pub fn new(cfg: &Config, format: Option<String>, output: PathBuf) -> Self {
         // check that images from wallpapers dir all have metadata
-        let orphan_wallpapers = filter_images(&wall_dir)
+        let orphan_wallpapers = filter_images(&output)
             .filter(|img| !WallInfo::has_metadata(img))
             .collect_vec();
 
@@ -113,6 +112,7 @@ impl WallpaperPipeline {
             format,
             config: cfg.clone(),
             to_preview: Vec::new(),
+            output,
         }
     }
 
@@ -124,7 +124,7 @@ impl WallpaperPipeline {
             .format
             .as_ref()
             .map_or_else(|| img.clone(), |ext| img.with_extension(ext.as_str()))
-            .with_directory(&self.config.wallpapers_dir);
+            .with_directory(&self.output);
 
         // detect -> upscale -> optimize -> save
         if out_path.exists() && !force {
@@ -273,15 +273,12 @@ impl WallpaperPipeline {
         .unwrap_or_else(|_| panic!("could not save {}", out_img.display()));
 
         // copy final image with metadata to wallpapers dir
-        std::fs::copy(
-            &out_img,
-            out_img.with_directory(&self.config.wallpapers_dir),
-        )
-        .unwrap_or_else(|_| panic!("could not copy {} to wallpapers dir", out_img.display()));
+        std::fs::copy(&out_img, out_img.with_directory(&self.output))
+            .unwrap_or_else(|_| panic!("could not copy {} to wallpapers dir", out_img.display()));
 
         // preview both multiple faces and no faces
         if info.faces.len() != 1 {
-            let mut preview_img = img.with_directory(&self.config.wallpapers_dir);
+            let mut preview_img = img.with_directory(&self.output);
             if let Some(ext) = &self.format {
                 preview_img = preview_img.with_extension(ext);
             }

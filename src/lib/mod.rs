@@ -65,7 +65,7 @@ impl PathBufNumericSort for Vec<PathBuf> {
     }
 }
 
-pub fn is_image<P>(path: P) -> Option<PathBuf>
+pub fn is_image<P>(path: P) -> bool
 where
     P: AsRef<Path>,
 {
@@ -73,13 +73,10 @@ where
     if p.is_file()
         && let Some(ext) = p.extension()
     {
-        match ext.to_str() {
-            Some("jpg" | "jpeg" | "png" | "webp") => return Some(p.to_path_buf()),
-            _ => return None,
-        }
+        return matches!(ext.to_str(), Some("jpg" | "jpeg" | "png" | "webp"));
     }
 
-    None
+    false
 }
 
 pub fn filter_images<P>(dir: P) -> impl Iterator<Item = PathBuf>
@@ -90,7 +87,7 @@ where
         .read_dir()
         .unwrap_or_else(|_| panic!("could not read {:?}", &dir))
         .flatten()
-        .filter_map(|entry| is_image(entry.path()))
+        .filter_map(|entry| is_image(entry.path()).then_some(entry.path()))
 }
 
 #[derive(Debug, Deserialize)]
