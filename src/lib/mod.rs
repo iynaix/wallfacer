@@ -55,13 +55,13 @@ impl PathBufExt for PathBuf {
     }
 }
 
-pub trait PathBufNumericSort {
+pub trait PathBufVecExt {
     fn filter_wallpapers(&self) -> Vec<PathBuf>;
 
     fn numeric_sort(&mut self);
 }
 
-impl PathBufNumericSort for Vec<PathBuf> {
+impl PathBufVecExt for Vec<PathBuf> {
     fn filter_wallpapers(&self) -> Vec<PathBuf> {
         let mut all_files = Self::new();
 

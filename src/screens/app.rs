@@ -1,7 +1,11 @@
 #![allow(non_snake_case)]
+use clap::Parser;
 use dioxus::prelude::*;
 
-use wallfacer::config::Config;
+use wallfacer::{
+    cli::{Commands, WallfacerArgs},
+    config::Config,
+};
 
 use crate::{
     components::{app_header::AppHeader, save_button::save_image},
@@ -65,9 +69,14 @@ fn handle_shortcuts(
 }
 
 pub fn App() -> Element {
+    let Some(Commands::Gui(gui_args)) = WallfacerArgs::parse().command else {
+        eprintln!("Unable to parse gui args");
+        std::process::exit(1);
+    };
+
     let config =
         use_context_provider(|| Signal::new(Config::new().expect("failed to load config")));
-    let wallpapers = use_signal(|| Wallpapers::from_args(&config()));
+    let wallpapers = use_signal(|| Wallpapers::from_args(&gui_args, &config()));
 
     if wallpapers().files.is_empty() {
         rsx! {

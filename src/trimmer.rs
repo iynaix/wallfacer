@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use image::{GenericImageView, ImageBuffer, ImageReader, Rgb};
 use rayon::prelude::*;
-use wallfacer::{PathBufNumericSort, cli::TrimmerArgs, filename};
+use wallfacer::{PathBufVecExt, cli::TrimmerArgs, filename};
 
 fn mean(data: &[i32]) -> f64 {
     let sum = f64::from(data.iter().sum::<i32>());

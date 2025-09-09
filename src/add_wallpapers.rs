@@ -2,7 +2,7 @@ use std::io::Write;
 
 use itertools::Itertools;
 use wallfacer::{
-    PathBufNumericSort, cli::AddWallpaperArgs, config::Config, pipeline::WallpaperPipeline,
+    PathBufVecExt, cli::AddWallpaperArgs, config::Config, pipeline::WallpaperPipeline,
 };
 
 pub fn main(args: &AddWallpaperArgs) {

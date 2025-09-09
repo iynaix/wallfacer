@@ -1,9 +1,8 @@
-use clap::Parser;
 use itertools::Itertools;
 use std::path::PathBuf;
 
 use wallfacer::{
-    PathBufNumericSort,
+    PathBufVecExt,
     aspect_ratio::AspectRatio,
     cli::{FacesFilter, GuiArgs},
     config::{Config, ConfigResolution},
@@ -40,8 +39,7 @@ impl Wallpapers {
         }
     }
 
-    pub fn from_args(cfg: &Config) -> Self {
-        let args = GuiArgs::parse();
+    pub fn from_args(args: &GuiArgs, cfg: &Config) -> Self {
         let resolutions = cfg
             .resolutions
             .iter()

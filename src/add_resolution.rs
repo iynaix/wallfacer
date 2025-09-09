@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use itertools::Itertools;
 use wallfacer::{
-    PathBufNumericSort,
+    PathBufVecExt,
     aspect_ratio::AspectRatio,
     cli::AddResolutionArgs,
     config::{Config, ConfigResolution},
