@@ -7,11 +7,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1757487941,
-        "narHash": "sha256-jFRNa2XnSbEaCJxioRiGWZgTYHJExg8CiOIYvu30lPA=",
+        "lastModified": 1757525339,
+        "narHash": "sha256-TeyUupg44fka+8tk55/Mh5EqztjcACU3+QS74uymaas=",
         "owner": "iynaix",
         "repo": "yolov8-animeface-cli",
-        "rev": "904066625ada4aeea7f4c088ddd97249ab0ad152",
+        "rev": "bf462c397c2ebbf8ed340b89e5e75eb049d19b51",
         "type": "github"
       },
       "original": {

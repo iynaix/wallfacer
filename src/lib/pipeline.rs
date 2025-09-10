@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     io::Write,
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -164,8 +165,16 @@ impl WallpaperPipeline {
             .unwrap_or_default()
             .to_string();
 
-        let faces: Vec<Bbox> = serde_json::from_str(&line).expect("could not deserialize faces");
-        let faces = faces.iter().map(|f: &Bbox| Bbox::to_face(f)).collect_vec();
+        let detections: HashMap<PathBuf, Vec<Bbox>> =
+            serde_json::from_str(&line).expect("could not deserialize faces");
+        // discard the path and use the first value since only a single file is passed at a time
+        let faces = detections
+            .values()
+            .next()
+            .expect("error parsing detected faces")
+            .iter()
+            .map(|f: &Bbox| Bbox::to_face(f))
+            .collect_vec();
 
         let (width, height) = image::image_dimensions(img)
             .unwrap_or_else(|_| panic!("could not get image dimensions: {}", img.display()));
