@@ -2,7 +2,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    anime-face-detector.url = "github:iynaix/anime-face-detector";
+    anime-face-detector.url = "github:iynaix/yolov8-animeface-cli";
   };
 
   outputs =
@@ -57,19 +57,18 @@
                 (writeShellScriptBin "rsx" ''dx translate --raw "$@"'')
               ];
 
-            env =
-              {
-                # Required by rust-analyzer
-                RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
-              }
-              // {
-                XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}";
-                GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
-                # FIXME: fix lag on wayland?
-                # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
-                # WEBKIT_DISABLE_COMPOSITING_MODE = 1;
+            env = {
+              # Required by rust-analyzer
+              RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+            }
+            // {
+              XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}";
+              GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
+              # FIXME: fix lag on wayland?
+              # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
+              # WEBKIT_DISABLE_COMPOSITING_MODE = 1;
 
-              };
+            };
 
             nativeBuildInputs = with pkgs; [
               cargo
@@ -117,11 +116,6 @@
                 inherit (pkgs) realcugan-ncnn-vulkan;
               };
               wallfacer = default;
-              with-cuda = pkgs.callPackage ./nix/wallfacer {
-                inherit tailwindcss version;
-                inherit (pkgs) realcugan-ncnn-vulkan;
-                anime-face-detector = inputs.anime-face-detector.packages.${system}.with-cuda;
-              };
             };
         };
     };
