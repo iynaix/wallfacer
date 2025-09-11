@@ -87,6 +87,13 @@ impl Geometry {
         self.w * self.h
     }
 
+    pub const fn intersects(&self, other: &Self) -> bool {
+        !(self.x > other.xmax()
+            || self.xmax() < other.x
+            || self.y > other.ymax()
+            || self.ymax() < other.y)
+    }
+
     pub const fn direction_bounds(&self, direction: Direction) -> (u32, u32) {
         match direction {
             Direction::X => (self.x, self.xmax()),
@@ -133,6 +140,42 @@ impl Geometry {
                 x: 0,
                 y: img_height - self.h,
                 ..self.clone()
+            }
+        }
+    }
+
+    pub fn draw_bbox(&self, img: &mut image::RgbImage, color: image::Rgb<u8>) {
+        let thickness = 5;
+        let xmin = self.x;
+        let xmax = self.xmax().min(img.width());
+        let ymin = self.y;
+        let ymax = self.ymax().min(img.height());
+
+        // top border
+        for y in ymin..ymin + thickness {
+            for x in xmin..xmax {
+                img.put_pixel(x, y, color);
+            }
+        }
+
+        // bottom border
+        for y in ymax - thickness..ymax {
+            for x in xmin..xmax {
+                img.put_pixel(x, y, color);
+            }
+        }
+
+        //left border
+        for x in xmin..xmin + thickness {
+            for y in ymin..ymax {
+                img.put_pixel(x, y, color);
+            }
+        }
+
+        //right border
+        for x in xmax - thickness..xmax {
+            for y in ymin..ymax {
+                img.put_pixel(x, y, color);
             }
         }
     }
