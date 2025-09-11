@@ -8,7 +8,6 @@ use crate::{
     components::{
         align_buttons::AlignButtons,
         app_header::{next_image, prev_image},
-        candidates::{Candidates, next_candidate, prev_candidate},
         preview::Previewer,
         ratio_buttons::{RatioButtons, change_ratio},
     },
@@ -102,14 +101,6 @@ pub fn handle_editor_shortcuts(
                     set_geom(geom.align_center(current.width, current.height));
                 }
 
-                "p" => {
-                    prev_candidate(wall);
-                }
-
-                "n" => {
-                    next_candidate(wall);
-                }
-
                 "$" => {
                     set_geom(geom.align_end(current.width, current.height));
                 }
@@ -160,8 +151,6 @@ pub fn Editor(wall: Signal<Wall>) -> Element {
             }
 
             Previewer { wall }
-
-            Candidates { wall }
         }
     }
 }

@@ -1,7 +1,6 @@
 pub mod align_buttons;
 pub mod app_header;
 pub mod button;
-pub mod candidates;
 pub mod drag_overlay;
 pub mod dropdown;
 pub mod preview;

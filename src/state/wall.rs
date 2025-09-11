@@ -80,16 +80,6 @@ impl Wall {
         self.current.set_geometry(&self.ratio, geom);
     }
 
-    /// unique crop candidates, suitable for candidate buttons
-    pub fn candidate_geometries(&self) -> Vec<Geometry> {
-        self.current
-            .cropper()
-            .crop_candidates(&self.ratio)
-            .into_iter()
-            .unique()
-            .collect()
-    }
-
     /// moves the crop area of the current wallpaper based on its direction
     pub fn move_geometry_by(&self, delta: f64) -> Geometry {
         let current_geom = self.get_geometry();

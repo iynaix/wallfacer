@@ -1,6 +1,3 @@
-use itertools::Itertools;
-use std::collections::HashMap;
-
 use super::{aspect_ratio::AspectRatio, geometry::Geometry};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -260,68 +257,5 @@ impl Cropper {
             target_width,
             target_height,
         )
-    }
-
-    /// shows cropping candidate rectangles for multiple faces
-    pub fn crop_candidates(&self, aspect_ratio: &AspectRatio) -> Vec<Geometry> {
-        let (target_width, target_height, direction) = self.crop_rect(aspect_ratio);
-        let target = match direction {
-            Direction::X => target_width,
-            Direction::Y => target_height,
-        };
-
-        if let Some(cropped_geom) = self.crop_trivial(direction, target_width, target_height) {
-            return vec![cropped_geom];
-        }
-
-        // handle multiple faces
-        let faces = sort_faces_by_direction(self.faces.clone(), direction);
-        let mut face_areas: Vec<FaceArea> = vec![];
-
-        // slides a window of target geometry across the image, counting faces and intersections
-        for (rect_start, rect_end) in self.sliding_window_range(&faces, direction, target) {
-            // check number of faces in decimal within enclosed within larger rectangle
-            for face in &faces {
-                let (min_, max_) = face.direction_bounds(direction);
-
-                // no intersection, we overshot the final box
-                if min_ > rect_end {
-                    break;
-                }
-                // no intersection
-                else if max_ < rect_start {
-                }
-                // full intersection
-                else if min_ >= rect_start && max_ <= rect_end {
-                    face_areas.push(FaceArea {
-                        area: face.area(),
-                        start: rect_start,
-                    });
-                }
-            }
-        }
-
-        face_areas.sort_by_key(|face_info| (face_info.area, face_info.start));
-
-        // group faces by area
-        let faces_by_area: HashMap<_, Vec<_>> =
-            face_areas
-                .iter()
-                .fold(HashMap::new(), |mut acc, face_info| {
-                    acc.entry(face_info.area).or_default().push(face_info.start);
-                    acc
-                });
-
-        faces_by_area
-            .values()
-            .map(|faces| {
-                let mid = faces[faces.len() / 2];
-                self.clamp(f64::from(mid), direction, target_width, target_height)
-            })
-            .sorted_by_key(|geom| match direction {
-                Direction::X => geom.x,
-                Direction::Y => geom.y,
-            })
-            .collect()
     }
 }

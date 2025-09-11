@@ -42,12 +42,10 @@ fn FacesOverlay(info: WallInfo, dragger: Signal<Dragger>) -> Element {
 fn get_preview_size(min_y: f64, win_size: WindowSize, (img_w, img_h): (f64, f64)) -> (f64, f64) {
     let scale = dioxus::desktop::window().scale_factor();
     let margin: f64 = 16.0 * scale;
-    let candidate_btns: f64 = 36.0 * scale;
     let min_y = min_y * scale;
 
     let max_w = margin.mul_add(-2.0, f64::from(win_size.width));
-    // handle extra space for candidate buttons
-    let max_h = f64::from(win_size.height) - min_y - margin - (candidate_btns + margin);
+    let max_h = margin.mul_add(-2.0, f64::from(win_size.height) - min_y);
 
     // no scaling needed
     if img_w <= max_w && img_h <= max_h {
