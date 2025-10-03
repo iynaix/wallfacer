@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use super::aspect_ratio::AspectRatio;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -47,10 +49,12 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn new() -> Result<Self> {
-        let cfg_file = dirs::config_dir()
-            .expect("could not get xdg config directory")
-            .join("wallfacer/wallfacer.toml");
+    pub fn new(config_path: Option<PathBuf>) -> Result<Self> {
+        let cfg_file = config_path.unwrap_or_else(|| {
+            dirs::config_dir()
+                .expect("could not get xdg config directory")
+                .join("wallfacer/wallfacer.toml")
+        });
 
         let contents = std::fs::read_to_string(cfg_file).map_err(|_| ConfigError::NotFound)?;
         let mut cfg: Self = toml::from_str(&contents).map_err(|_| ConfigError::InvalidConfig)?;

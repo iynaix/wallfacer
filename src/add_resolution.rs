@@ -39,12 +39,12 @@ fn center_new_crop(closest_crop: &Geometry, new_crop: &Geometry, info: &WallInfo
 }
 
 // needed for parity with add_wallpapers in a match {}
-pub fn main(args: &AddResolutionArgs) {
+pub fn main(config_path: Option<PathBuf>, args: &AddResolutionArgs) {
     // the following checks shouldn't ever trigger as clap shouldn't allow it
     let new_res = std::convert::TryInto::<AspectRatio>::try_into(args.resolution.as_str())
         .unwrap_or_else(|_| panic!("invalid aspect ratio: {} into string", args.resolution));
 
-    let mut cfg = Config::new().expect("failed to load config");
+    let mut cfg = Config::new(config_path).expect("failed to load config");
     // finds the closest resolution to an existing one
     let closest_res = cfg
         .resolutions

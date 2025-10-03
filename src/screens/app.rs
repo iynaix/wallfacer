@@ -69,13 +69,15 @@ fn handle_shortcuts(
 }
 
 pub fn App() -> Element {
-    let Some(Commands::Gui(gui_args)) = WallfacerArgs::parse().command else {
+    let all_args = WallfacerArgs::parse();
+    let Some(Commands::Gui(gui_args)) = all_args.command else {
         eprintln!("Unable to parse gui args");
         std::process::exit(1);
     };
 
-    let config =
-        use_context_provider(|| Signal::new(Config::new().expect("failed to load config")));
+    let config = use_context_provider(|| {
+        Signal::new(Config::new(all_args.config).expect("failed to load config"))
+    });
     let wallpapers = use_signal(|| Wallpapers::from_args(&gui_args, &config()));
 
     if wallpapers().files.is_empty() {

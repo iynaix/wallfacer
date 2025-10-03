@@ -14,12 +14,12 @@ pub mod state;
 pub mod trimmer;
 
 fn main() {
-    let args = WallfacerArgs::parse();
+    let all_args = WallfacerArgs::parse();
 
     rexiv2::register_xmp_namespace("http://example.com/wallfacer", "wallfacer")
         .expect("could not register wallfacer namespace");
 
-    if let Some(comp) = args.generate {
+    if let Some(comp) = all_args.generate {
         match comp {
             ShellCompletion::Bash => generate(
                 Shell::Bash,
@@ -44,9 +44,9 @@ fn main() {
         return;
     }
 
-    match args.command {
-        Some(Commands::Add(args)) => add_wallpapers::main(&args),
-        Some(Commands::AddResolution(args)) => add_resolution::main(&args),
+    match all_args.command {
+        Some(Commands::Add(args)) => add_wallpapers::main(all_args.config, &args),
+        Some(Commands::AddResolution(args)) => add_resolution::main(all_args.config, &args),
         Some(Commands::Trim(args)) => trimmer::main(&args),
         Some(Commands::Gui(_)) => {
             // use a custom index.html to set the height of body to the full height of the window

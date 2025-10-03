@@ -1,12 +1,12 @@
-use std::io::Write;
+use std::{io::Write, path::PathBuf};
 
 use itertools::Itertools;
 use wallfacer::{
     PathBufVecExt, cli::AddWallpaperArgs, config::Config, pipeline::WallpaperPipeline,
 };
 
-pub fn main(args: &AddWallpaperArgs) {
-    let cfg = Config::new().expect("failed to load config");
+pub fn main(config_path: Option<PathBuf>, args: &AddWallpaperArgs) {
+    let cfg = Config::new(config_path).expect("failed to load config");
     let mut all_files = args.inputs.filter_wallpapers();
     all_files.numeric_sort();
 

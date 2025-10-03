@@ -156,6 +156,9 @@ pub struct WallfacerArgs {
     )]
     pub generate: Option<ShellCompletion>,
 
+    #[arg(long, help = "Path to a config file", value_name = "PATH")]
+    pub config: Option<PathBuf>,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
