@@ -56,6 +56,10 @@ impl Config {
                 .join("wallfacer/wallfacer.toml")
         });
 
+        if !cfg_file.exists() {
+            return Ok(Self::default());
+        }
+
         let contents = std::fs::read_to_string(cfg_file).map_err(|_| ConfigError::NotFound)?;
         let mut cfg: Self = toml::from_str(&contents).map_err(|_| ConfigError::InvalidConfig)?;
         cfg.resolutions.sort_by_key(|res| res.resolution.clone());

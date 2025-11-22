@@ -48,7 +48,7 @@
                 jpegoptim
                 libwebp
                 realcugan-ncnn-vulkan
-                anime-face-detector
+                (anime-face-detector.override { rocmSupport = true; })
                 tailwindcss-with-catppuccin
                 dioxus-cli
                 # helper shell scripts
@@ -64,10 +64,6 @@
             // {
               XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}";
               GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
-              # FIXME: fix lag on wayland?
-              # https://github.com/tauri-apps/tauri/issues/7354#issuecomment-1620910100
-              # WEBKIT_DISABLE_COMPOSITING_MODE = 1;
-
             };
 
             nativeBuildInputs = with pkgs; [
@@ -116,6 +112,8 @@
                 inherit (pkgs) realcugan-ncnn-vulkan;
               };
               wallfacer = default;
+              wallfacer-cuda = default.override { cudaSupport = true; };
+              wallfacer-rocm = default.override { rocmSupport = true; };
             };
         };
     };

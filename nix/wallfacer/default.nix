@@ -26,7 +26,11 @@
   libwebp,
   installShellFiles,
   makeWrapper,
+
+  cudaSupport ? false,
+  rocmSupport ? false,
 }:
+assert !(cudaSupport && rocmSupport);
 rustPlatform.buildRustPackage {
   pname = "wallfacer";
   inherit version;
@@ -65,27 +69,26 @@ rustPlatform.buildRustPackage {
     makeWrapper
   ];
 
-  buildInputs =
-    [
-      atk
-      cairo
-      gdk-pixbuf
-      glib
-      gtk3
-      libiconv
-      libsoup_3
-      openssl
-      pango
-      webkitgtk_4_1
-      xdotool
-      gexiv2 # for reading metadata
-    ]
-    ++ lib.optionals stdenv.isDarwin [
-      darwin.apple_sdk.frameworks.AppKit
-      darwin.apple_sdk.frameworks.CoreGraphics
-      darwin.apple_sdk.frameworks.Foundation
-      darwin.apple_sdk.frameworks.Security
-    ];
+  buildInputs = [
+    atk
+    cairo
+    gdk-pixbuf
+    glib
+    gtk3
+    libiconv
+    libsoup_3
+    openssl
+    pango
+    webkitgtk_4_1
+    xdotool
+    gexiv2 # for reading metadata
+  ]
+  ++ lib.optionals stdenv.isDarwin [
+    darwin.apple_sdk.frameworks.AppKit
+    darwin.apple_sdk.frameworks.CoreGraphics
+    darwin.apple_sdk.frameworks.Foundation
+    darwin.apple_sdk.frameworks.Security
+  ];
 
   postFixup = ''
     installShellCompletion --cmd wallfacer \
@@ -101,7 +104,7 @@ rustPlatform.buildRustPackage {
       --prefix PATH : "${
         lib.makeBinPath [
           realcugan-ncnn-vulkan
-          anime-face-detector
+          (anime-face-detector.override { inherit cudaSupport rocmSupport; })
           libwebp
           oxipng
           jpegoptim
