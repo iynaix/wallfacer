@@ -13,7 +13,6 @@ use crate::{
         adding::Adding,
         editor::{Editor, handle_arrow_keys_keyup, handle_editor_shortcuts},
         filelist::FileList,
-        palette::Palette,
     },
     state::{UiMode, UiState, Wall, Wallpapers},
 };
@@ -47,12 +46,6 @@ fn handle_shortcuts(
                     }
                 }
 
-                // palette
-                // "p" => {
-                //     if evt.modifiers().ctrl() && !wallpapers().files.is_empty() {
-                //         ui.with_mut(app_state::UiState::toggle_palette);
-                //     }
-                // }
                 _ => {
                     if ui().mode == UiMode::Editor {
                         handle_editor_shortcuts(evt, wall, wallpapers, ui);
@@ -152,8 +145,6 @@ fn Main(config: Signal<Config>, wallpapers: Signal<Wallpapers>) -> Element {
 
                 if ui().mode == UiMode::FileList {
                     FileList { wallpapers }
-                } else if ui().mode == UiMode::Palette {
-                    Palette { wall }
                 } else if ui().mode == UiMode::Editor {
                     Editor { wall }
                 } else if let UiMode::Adding(images) = ui().mode {

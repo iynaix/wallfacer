@@ -97,7 +97,7 @@ pub struct GuiArgs {
         default_value = "all",
         default_missing_value = "all",
         value_parser = clap::value_parser!(FacesFilter),
-        help = "Only show wallpapers that have a palette"
+        help = "Only show wallpapers that have faces"
     )]
     pub faces: FacesFilter,
 

@@ -17,7 +17,6 @@ pub struct WallInfo {
     pub faces: Vec<Geometry>,
     pub scale: Option<u32>,
     pub geometries: IndexMap<AspectRatio, Geometry>,
-    pub wallust: String,
 }
 
 impl WallInfo {
@@ -33,7 +32,6 @@ impl WallInfo {
         let mut faces = Vec::new();
         let mut scale = None;
         let mut crops = IndexMap::new();
-        let mut wallust = String::new();
 
         for tag in meta.get_xmp_tags().expect("unable to read xmp tags") {
             match tag.as_str() {
@@ -52,11 +50,6 @@ impl WallInfo {
                             })
                             .collect();
                     }
-                }
-                "Xmp.wallfacer.wallust" => {
-                    wallust = meta
-                        .get_tag_string(&tag)
-                        .expect("could not get wallust tag");
                 }
                 "Xmp.wallfacer.scale" => {
                     scale = meta
@@ -91,7 +84,6 @@ impl WallInfo {
             scale,
             faces,
             geometries: crops,
-            wallust,
         }
     }
 
@@ -122,10 +114,6 @@ impl WallInfo {
         for (aspect, geom) in &self.geometries {
             let crop_key = format!("Xmp.wallfacer.crop.{}", aspect);
             meta.set_tag_string(&crop_key, &geom.to_string())?;
-        }
-
-        if !self.wallust.is_empty() {
-            meta.set_tag_string("Xmp.wallfacer.wallust", &self.wallust)?;
         }
 
         meta.save_to_file(&self.path)?;

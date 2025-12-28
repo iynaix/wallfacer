@@ -11,7 +11,6 @@ pub use wallpapers::Wallpapers;
 pub enum UiMode {
     Editor,
     FileList,
-    Palette,
     Adding(Vec<PathBuf>),
 }
 
@@ -35,13 +34,6 @@ impl UiState {
         self.mode = match self.mode {
             UiMode::FileList => UiMode::Editor,
             _ => UiMode::FileList,
-        };
-    }
-
-    pub fn toggle_palette(&mut self) {
-        self.mode = match self.mode {
-            UiMode::Palette => UiMode::Editor,
-            _ => UiMode::Palette,
         };
     }
 }

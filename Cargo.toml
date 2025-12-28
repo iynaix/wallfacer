@@ -33,7 +33,6 @@ serde = "1.0.219"
 serde_json = "1.0.143"
 thiserror = "2.0.16"
 tokio = { version = "1.47.1", features = ["process"] }
-wallust = "3.4.0"
 rayon = "1.11.0"
 toml = "0.9.5"
 human-sort = "0.2.2"
@@ -46,7 +45,6 @@ clap_mangen = "0.2.29"
 
 [features]
 default = ["trimmer"]
-wallust = []
 adding = []
 trimmer = []
 

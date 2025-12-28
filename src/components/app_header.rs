@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::{
-    md_image_icons::{MdFaceRetouchingNatural, MdPalette},
+    md_image_icons::MdFaceRetouchingNatural,
     md_navigation_icons::{MdChevronLeft, MdChevronRight},
 };
 
@@ -42,9 +42,6 @@ pub fn next_image(wallpapers: &mut Signal<Wallpapers>) {
 pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element {
     let mut ui = use_ui();
     let cfg = use_context::<Signal<Config>>();
-
-    let supports_wallust =
-        use_signal(|| cfg!(feature = "wallust") && which::which("wallust").is_ok());
 
     let supports_adding = cfg!(feature = "adding");
     let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-crust focus-visible:outline-offset-0 cursor-pointer";
@@ -122,23 +119,6 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
                 div { class: "gap-x-6 flex flex-1 justify-end",
                     if let Some(wallpaper_cmd) =  cfg().wallpaper_command {
                         WallpaperButton { wall, wallpaper_cmd }
-                    }
-
-                    if supports_wallust() {
-                        a {
-                            class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
-                            class: if ui().mode == UiMode::Palette {
-                                "bg-indigo-600 hover:bg-indigo-500"
-                            } else {
-                                "bg-surface1 hover:bg-crust"
-                            },
-                            onclick: move |_| {
-                                ui.with_mut(|ui| {
-                                    ui.toggle_palette();
-                                });
-                            },
-                            Icon { fill: "white", icon:  MdPalette }
-                        }
                     }
 
                     a {
