@@ -48,7 +48,7 @@
                 jpegoptim
                 libwebp
                 realcugan-ncnn-vulkan
-                (anime-face-detector.override { rocmSupport = true; })
+                anime-face-detector
                 tailwindcss-with-catppuccin
                 dioxus-cli
                 # helper shell scripts

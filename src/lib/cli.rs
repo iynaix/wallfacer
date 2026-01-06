@@ -62,7 +62,7 @@ pub struct TrimmerArgs {
     #[arg(long, action, default_value = "5.0", help = "Threshold for trimming")]
     pub threshold: f64,
 
-    #[arg(help = "Directories or images to be trimmed", value_name = "PATHS")]
+    #[arg(help = "Directories or images to be trimmed", value_name = "PATHS", required = true, num_args = 1..)]
     pub paths: Vec<PathBuf>,
 }
 

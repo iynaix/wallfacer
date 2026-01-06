@@ -195,7 +195,6 @@ impl WallpaperPipeline {
                     .iter()
                     .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
                     .collect(),
-                ..Default::default()
             },
             status_line,
         );

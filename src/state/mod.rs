@@ -7,17 +7,12 @@ mod wallpapers;
 pub use wall::Wall;
 pub use wallpapers::Wallpapers;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum UiMode {
+    #[default]
     Editor,
     FileList,
     Adding(Vec<PathBuf>),
-}
-
-impl Default for UiMode {
-    fn default() -> Self {
-        Self::Editor
-    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]

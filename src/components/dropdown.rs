@@ -44,7 +44,7 @@ pub fn Dropdown<T: Copy + PartialEq + ToString + std::fmt::Display + 'static>(
             class: class.unwrap_or_default(),
             label {
                 class: "block text-base font-bold leading-6 text-text",
-                id: label_id.to_string(),
+                id: label_id.clone(),
                 {name}
             }
             div { class: "relative mt-2",
@@ -77,7 +77,7 @@ pub fn Dropdown<T: Copy + PartialEq + ToString + std::fmt::Display + 'static>(
                         role: "listbox",
                         "aria-activedescendant": "listbox-option-{selected_index}",
                         tabindex: "-1",
-                        "aria-labelledby": label_id.to_string(),
+                        "aria-labelledby": label_id.clone(),
                         class: "absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm",
                         for opt in options.values {
                             li {

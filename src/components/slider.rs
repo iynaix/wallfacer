@@ -15,7 +15,7 @@ pub fn Slider(
         div {
             class: class.unwrap_or_default(),
             label {
-                r#for: label_id.to_string(),
+                r#for: label_id.clone(),
                 class: "block text-base font-bold leading-6 text-text",
                 {label}
             }
