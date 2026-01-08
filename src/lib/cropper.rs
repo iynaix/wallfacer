@@ -94,11 +94,11 @@ impl Cropper {
 
     fn crop_single_face(
         &self,
+        face: &Geometry,
         direction: Direction,
         target_width: u32,
         target_height: u32,
     ) -> Geometry {
-        let face = &self.faces[0];
         let target = match direction {
             Direction::X => (f64::from(face.x + face.xmax()) - f64::from(target_width)) / 2.0,
             Direction::Y => {
@@ -141,7 +141,12 @@ impl Cropper {
         }
 
         if self.faces.len() == 1 {
-            return Some(self.crop_single_face(direction, target_width, target_height));
+            return Some(self.crop_single_face(
+                &self.faces[0],
+                direction,
+                target_width,
+                target_height,
+            ));
         }
 
         // multiple faces, more processing is needed
@@ -249,13 +254,27 @@ impl Cropper {
         face_areas.sort_by_key(|face_info| (face_info.area, face_info.start));
         // use the match with the maximum area of face coverage
         let max_face_area = face_areas.last().expect("face_areas is empty!").area;
-        face_areas.retain(|face_info| face_info.area == max_face_area);
 
-        self.clamp(
-            f64::from(face_areas[face_areas.len() / 2].start),
-            direction,
-            target_width,
-            target_height,
-        )
+        // find the largest face
+        let largest_face = self
+            .faces
+            .iter()
+            .max_by_key(|face| face.area())
+            .expect("faces is empty!");
+
+        // use the single largest face if it is larger than multiple faces
+        if largest_face.area() >= max_face_area {
+            self.crop_single_face(largest_face, direction, target_width, target_height)
+        } else {
+            // there might be multiple rectangles containing the same face area
+            face_areas.retain(|face_info| face_info.area == max_face_area);
+
+            self.clamp(
+                f64::from(face_areas[face_areas.len() / 2].start),
+                direction,
+                target_width,
+                target_height,
+            )
+        }
     }
 }
