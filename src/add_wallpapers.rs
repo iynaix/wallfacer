@@ -11,19 +11,27 @@ pub fn main(config_path: Option<PathBuf>, args: &AddWallpaperArgs) {
     all_files.numeric_sort();
 
     // check that all the files meet the minimum size requirement
-    let too_small = all_files
+    let invalid = all_files
         .iter()
-        .filter(|img| {
+        .filter_map(|img| {
             let (width, height) = image::image_dimensions(img)
                 .unwrap_or_else(|_| panic!("could not get image dimensions for {}", img.display()));
-            width * 4 < cfg.min_width || height * 4 < cfg.min_height
+
+            if height > width {
+                return Some(format!("{:?} is not landscape!", img.display()));
+            }
+
+            if width * 4 < cfg.min_width || height * 4 < cfg.min_height {
+                return Some(format!("{:?} is too small!", img.display()));
+            }
+            None
         })
         .collect_vec();
 
-    if !too_small.is_empty() {
-        for img in too_small {
-            eprintln!("{:?} is too small!", img.display());
-        }
+    for msg in &invalid {
+        eprintln!("{msg}");
+    }
+    if !invalid.is_empty() {
         std::process::exit(1);
     }
 
