@@ -10,7 +10,7 @@ path = "src/lib/mod.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus-free-icons = { version = "0.9.0", features = [
+dioxus-free-icons = { version = "0.10.0", features = [
     "lucide",
     "material-design-icons-action",
     "material-design-icons-device",
@@ -18,30 +18,32 @@ dioxus-free-icons = { version = "0.9.0", features = [
     "material-design-icons-image",
     "material-design-icons-navigation",
 ] }
-clap = { version = "4.5.47", features = ["derive", "string"] }
-clap_complete = "4.5.57"
-clap_mangen = "0.2.29"
-dioxus = { version = "0.6.3", features = ["desktop"] }
-dioxus-sdk = { version = "0.6.0", features = ["window_size"] }
+clap = { version = "4.5.54", features = ["derive", "string"] }
+clap_complete = "4.5.65"
+clap_mangen = "0.2.31"
+dioxus = { version = "0.7.2", features = ["desktop"] }
+dioxus-sdk = { git = "https://github.com/iynaix/dioxus-sdk", rev = "28fc22642f726b98ac89c92dd3813a8d51e3a33c", features = [
+    "window",
+] }
 # manganis = "0.2.1"
 dirs = "6.0.0"
-image = "0.25.6"
-indexmap = "2.11.0"
+image = "0.25.9"
+indexmap = "2.13.0"
 itertools = "0.14.0"
 rexiv2 = "0.10.0"
-serde = "1.0.219"
-serde_json = "1.0.143"
-thiserror = "2.0.16"
-tokio = { version = "1.47.1", features = ["process"] }
+serde = "1.0.228"
+serde_json = "1.0.149"
+thiserror = "2.0.17"
+tokio = { version = "1.49.0", features = ["process"] }
 rayon = "1.11.0"
-toml = "0.9.5"
+toml = "0.9.11"
 human-sort = "0.2.2"
 which = "8.0.0"
 
 [build-dependencies]
-clap = { version = "4.5.47", features = ["derive", "string"] }
-clap_complete = "4.5.57"
-clap_mangen = "0.2.29"
+clap = { version = "4.5.54", features = ["derive", "string"] }
+clap_complete = "4.5.65"
+clap_mangen = "0.2.31"
 
 [features]
 default = ["trimmer"]

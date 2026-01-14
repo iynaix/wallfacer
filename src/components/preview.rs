@@ -5,7 +5,7 @@ use crate::{
     state::Wall,
 };
 use dioxus::prelude::*;
-use dioxus_sdk::utils::window::{WindowSize, use_window_size};
+use dioxus_sdk::window::size::{WindowSize, WindowSizeError, use_window_size};
 use wallfacer::{cropper::Direction, dragger::Dragger, wallpapers::WallInfo};
 
 #[component]
@@ -67,11 +67,19 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
     // store y coordinate of the previewer
     let mut preview_y = use_signal(|| 0.0);
     let window_size = use_window_size();
+
+    // first run is set to Unsupported to prevent hydration from failing, so ignore the err
+    let window_size = match window_size() {
+        Err(WindowSizeError::Unsupported) => return rsx! {},
+        Ok(size) => size,
+        Err(err) => panic!("unable to get window size: {err}"),
+    };
+
     // calculate the preview size of the image
     // only needs to change when the window resizes
     let mut dragger = use_signal(|| {
         let img_dimensions = wall().current.dimensions_f64();
-        let preview_wh = get_preview_size(preview_y(), window_size(), img_dimensions);
+        let preview_wh = get_preview_size(preview_y(), window_size, img_dimensions);
         Dragger::new(img_dimensions, preview_wh)
     });
 
@@ -79,7 +87,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
     use_effect(move || {
         // use wall() to initiate a refresh
         let (image_w, image_h) = wall().current.dimensions_f64();
-        let (w, h) = get_preview_size(preview_y(), window_size(), wall().current.dimensions_f64());
+        let (w, h) = get_preview_size(preview_y(), window_size, wall().current.dimensions_f64());
 
         dragger.with_mut(|dragger| {
             dragger.image_w = image_w;
