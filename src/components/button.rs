@@ -18,13 +18,13 @@ pub fn Button(
     let active_cls = if active.unwrap_or_default() {
         "bg-active"
     } else {
-        "bg-surface0"
+        "bg-ctp-surface0"
     };
 
     rsx! {
         button {
             r#type: "button",
-            class: format!("relative inline-flex items-center px-3 py-2 font-semibold text-text ring-1 ring-inset ring-surface1 hover:bg-crust focus:z-10 {active_cls} {}", class.unwrap_or_default()),
+            class: format!("relative inline-flex items-center px-3 py-2 font-semibold text-ctp-text ring-1 ring-inset ring-ctp-surface1 hover:bg-ctp-crust focus:z-10 {active_cls} {}", class.unwrap_or_default()),
             title,
             disabled: spin.unwrap_or_default(),
             onclick: move |evt| {

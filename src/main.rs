@@ -57,8 +57,7 @@ fn main() {
                         .with_menu(None)
                         // title bars suck
                         .with_window(WindowBuilder::new().with_decorations(false))
-                        // disable on release builds
-                        .with_disable_context_menu(!cfg!(debug_assertions))
+                        .with_disable_context_menu(true)
                         .with_custom_head("<style> #main { height: 100vh; } </style>".to_string()),
                 )
                 .launch(App);

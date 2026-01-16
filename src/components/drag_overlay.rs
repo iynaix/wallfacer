@@ -16,7 +16,7 @@ pub fn DragOverlay(wall: Signal<Wall>, geom: Geometry, dragger: Signal<Dragger>)
     };
 
     let overlay_cls =
-        "absolute bg-black bg-opacity-60 inset-0 transform-gpu isolate transition will-change-transform";
+        "absolute bg-black/60 inset-0 transform-gpu isolate transition will-change-transform";
 
     rsx! {
         div {

@@ -27,12 +27,6 @@
         let
           # custom packages here
           anime-face-detector = inputs.anime-face-detector.packages.${system}.default;
-          catppuccin-tailwindcss =
-            (pkgs.callPackage ./nix/catppuccin-tailwindcss { })."@catppuccin/tailwindcss";
-          # custom tailwind with prebaked catppuccin
-          tailwindcss-with-catppuccin = pkgs.nodePackages.tailwindcss.overrideAttrs (o: {
-            plugins = [ catppuccin-tailwindcss ];
-          });
         in
         {
           # Per-system attributes can be defined here. The self' and inputs'
@@ -49,8 +43,8 @@
                 libwebp
                 realcugan-ncnn-vulkan
                 anime-face-detector
-                tailwindcss-with-catppuccin
                 dioxus-cli
+                nodejs
                 # helper shell scripts
                 (writeShellScriptBin "tailwind" "tailwindcss -i ./input.css -o ./public/tailwind.css --watch")
                 (writeShellScriptBin "dev" "dx serve --platform desktop --hot-reload")
@@ -65,6 +59,10 @@
               XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}";
               GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
             };
+
+            shellHook = ''
+              export PATH="$PWD/node_modules/.bin:$PATH"
+            '';
 
             nativeBuildInputs = with pkgs; [
               cargo
@@ -91,30 +89,23 @@
                 pango
                 webkitgtk_4_1
                 xdotool
-              ]
-              ++ [
                 gexiv2 # for reading metadata
               ];
           };
 
-          packages =
-            let
-              tailwindcss = tailwindcss-with-catppuccin;
+          packages = rec {
+            default = pkgs.callPackage ./package.nix {
+              inherit anime-face-detector;
               version =
                 if self ? "shortRev" then
                   self.shortRev
                 else
                   nixpkgs.lib.replaceStrings [ "-dirty" ] [ "" ] self.dirtyShortRev;
-            in
-            rec {
-              default = pkgs.callPackage ./nix/wallfacer {
-                inherit anime-face-detector tailwindcss version;
-                inherit (pkgs) realcugan-ncnn-vulkan;
-              };
-              wallfacer = default;
-              wallfacer-cuda = default.override { cudaSupport = true; };
-              wallfacer-rocm = default.override { rocmSupport = true; };
             };
+            wallfacer = default;
+            wallfacer-cuda = default.override { cudaSupport = true; };
+            wallfacer-rocm = default.override { rocmSupport = true; };
+          };
         };
     };
 }

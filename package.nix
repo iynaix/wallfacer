@@ -3,7 +3,8 @@
   lib,
   rustPlatform,
   pkg-config,
-  wrapGAppsHook,
+  wrapGAppsHook3,
+  dioxus-cli,
   atk,
   cairo,
   gdk-pixbuf,
@@ -13,7 +14,6 @@
   libsoup_3,
   openssl,
   pango,
-  tailwindcss,
   webkitgtk_4_1,
   xdotool,
   gexiv2,
@@ -26,47 +26,81 @@
   libwebp,
   installShellFiles,
   makeWrapper,
+  # for tailwindcss
+  nodejs,
+  buildNpmPackage,
 
   cudaSupport ? false,
   rocmSupport ? false,
 }:
+let
+  tailwind_css = buildNpmPackage {
+    pname = "tailwind_css";
+    version = "0.1.0";
+
+    # NOTE: the rust files are needed for tailwind to extract css from
+    src = ./.;
+
+    npmDepsHash = "sha256-AyuTztrp8M7bmwbxrlWWn5Ga4UfLzkKeI4BkyhFQVfY=";
+
+    nativeBuildInputs = [ nodejs ];
+
+    buildPhase = ''
+      runHook preBuild
+
+      npx tailwindcss --minify --input ./input.css -o ./tailwind.css
+
+      runHook postBuild
+    '';
+
+    installPhase = ''
+      runHook preInstall
+
+      mkdir -p $out
+
+      cp -r tailwind.css $out/
+
+      runHook postInstall
+    '';
+  };
+in
 assert !(cudaSupport && rocmSupport);
 rustPlatform.buildRustPackage {
   pname = "wallfacer";
   inherit version;
 
-  src = ../../.;
+  src = ./.;
 
   cargoLock = {
-    lockFile = ../../Cargo.lock;
+    lockFile = ./Cargo.lock;
     outputHashes = {
-      "dioxus-sdk-0.5.0" = "sha256-ox/vWTfyrPYnfvHjEX+nc+OdKGA4Aa2yQsfMzFJ6e8s=";
+      "dioxus-sdk-0.7.0" = "sha256-7wIYZDpMdMbMDKXgn+++JzwvU0yrIUWjwSsZCN4zhVA=";
     };
   };
 
   env.NIX_RELEASE_VERSION = version;
 
-  postPatch = ''
-    substituteInPlace src/main.rs \
-      --replace "public/tailwind.css" "$out/public/tailwind.css"
+  # build the css, then build the app with dx so bundling still works
+  buildPhase = ''
+    mkdir -p public
+
+    cp ${tailwind_css}/tailwind.css public/tailwind.css
+
+    dx build --platform desktop --release
   '';
 
-  preBuild = ''
-    mkdir -p $out/public
-
-    tailwindcss \
-      --minify \
-      --input input.css \
-      --output $out/public/tailwind.css
+  installPhase = ''
+    mkdir -p $out/bin
+    cp -r target/dx/wallfacer/release/linux/app/* $out/bin
   '';
 
   nativeBuildInputs = [
-    tailwindcss
     pkg-config
-    wrapGAppsHook
+    wrapGAppsHook3
     xdotool
     installShellFiles
     makeWrapper
+    dioxus-cli
   ];
 
   buildInputs = [

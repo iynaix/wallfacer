@@ -44,10 +44,10 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
     let cfg = use_context::<Signal<Config>>();
 
     let supports_adding = cfg!(feature = "adding");
-    let pagination_cls = "relative inline-flex items-center rounded-md bg-surface1 py-1 px-2 text-sm font-semibold text-text ring-1 ring-inset ring-surface2 hover:bg-crust focus-visible:outline-offset-0 cursor-pointer";
+    let pagination_cls = "relative inline-flex items-center rounded-md bg-ctp-surface1 py-1 px-2 text-sm font-semibold text-ctp-text ring-1 ring-inset ring-ctp-surface2 hover:bg-ctp-crust focus-visible:outline-offset-0 cursor-pointer";
 
     rsx! {
-        header { class: "bg-surface0",
+        header { class: "bg-ctp-surface0",
             nav {
                 "aria-label": "Global",
                 class: "mx-auto flex max-w-full items-center py-6 px-4",
@@ -58,8 +58,8 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
 
                     /*
                     label {
-                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
-                        class: "bg-surface1 hover:bg-crust",
+                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
+                        class: "bg-ctp-surface1 hover:bg-ctp-crust",
                         class: if !supports_adding { "hidden" },
                         Icon { fill: "white", icon:  dioxus_free_icons::icons::ld_icons::LdImagePlus }
 
@@ -85,7 +85,7 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
                     */
 
                     a {
-                        class: "text-base font-semibold leading-6 text-white",
+                        class: "font-semibold leading-6 text-white",
                         class: if !supports_adding { "ml-2" },
                         "{wallpapers().index + 1} / {wallpapers().files.len()}"
                     }
@@ -99,7 +99,7 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
                         },
                         Icon { fill: "white", icon:  MdChevronLeft, width: 16, height: 16 }
                     }
-                    a { class: "text-sm font-semibold leading-6 text-white text-center w-72 cursor-pointer overflow-ellipsis overflow-hidden whitespace-nowrap",
+                    a { class: "text-sm font-semibold leading-6 text-white text-center w-72 cursor-pointer text-ellipsis overflow-hidden whitespace-nowrap",
                         onclick: move |_| {
                             ui.with_mut(|ui| {
                                 ui.toggle_filelist();
@@ -122,11 +122,11 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
                     }
 
                     a {
-                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
+                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
                         class: if ui().show_faces {
                             "bg-indigo-600 hover:bg-indigo-500"
                         } else {
-                            "bg-surface1 hover:bg-crust"
+                            "bg-ctp-surface1 hover:bg-ctp-crust"
                         },
                         onclick: move |_| {
                             ui.with_mut(|ui| {

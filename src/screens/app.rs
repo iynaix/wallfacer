@@ -53,6 +53,13 @@ fn handle_shortcuts(
                 }
             }
         }
+
+        // devtools, no-op for release builds
+        Key::F12 => {
+            let window = dioxus::desktop::use_window();
+            window.devtool();
+        }
+
         _ => {
             if ui().mode == UiMode::Editor {
                 handle_editor_shortcuts(evt, wall, wallpapers, ui);
@@ -80,9 +87,9 @@ pub fn App() -> Element {
             }
 
             main {
-                class: "dark flex items-center h-full justify-center bg-base overflow-hidden",
+                class: "dark flex items-center h-full justify-center bg-ctp-base overflow-hidden",
                 div {
-                    h1 { class: "mt-4 text-4xl font-bold tracking-tight text-text text-center h-full",
+                    h1 { class: "mt-4 text-4xl font-bold tracking-tight text-ctp-text text-center h-full",
                         "No more wallpapers to process! 🎉"
                     }
                 }
@@ -128,7 +135,7 @@ fn Main(config: Signal<Config>, wallpapers: Signal<Wallpapers>) -> Element {
 
     rsx! {
         main {
-            class: "dark flex flex-col h-full bg-base overflow-hidden",
+            class: "dark flex flex-col h-full bg-ctp-base overflow-hidden",
             tabindex: 0,
             autofocus: true,
             onkeydown: move |evt| {
