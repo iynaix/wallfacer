@@ -135,7 +135,8 @@ fn Main(config: Signal<Config>, wallpapers: Signal<Wallpapers>) -> Element {
 
     rsx! {
         main {
-            class: "dark flex flex-col h-full bg-ctp-base overflow-hidden",
+            class: "dark h-screen bg-ctp-base grid",
+            style: "grid-template-rows: auto auto 1fr;",
             tabindex: 0,
             autofocus: true,
             onkeydown: move |evt| {
@@ -147,16 +148,12 @@ fn Main(config: Signal<Config>, wallpapers: Signal<Wallpapers>) -> Element {
 
             AppHeader { wall, wallpapers }
 
-            div {
-                class: "flex p-4 gap-4",
-
-                if ui().mode == UiMode::FileList {
-                    FileList { wallpapers }
-                } else if ui().mode == UiMode::Editor {
-                    Editor { wall }
-                } else if let UiMode::Adding(images) = ui().mode {
-                    Adding { images }
-                }
+            if ui().mode == UiMode::FileList {
+                FileList { wallpapers }
+            } else if ui().mode == UiMode::Editor {
+                Editor { wall }
+            } else if let UiMode::Adding(images) = ui().mode {
+                Adding { images }
             }
         }
     }

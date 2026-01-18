@@ -47,97 +47,94 @@ pub fn AppHeader(wall: Signal<Wall>, wallpapers: Signal<Wallpapers>) -> Element 
     let pagination_cls = "relative inline-flex items-center rounded-md bg-ctp-surface1 py-1 px-2 text-sm font-semibold text-ctp-text ring-1 ring-inset ring-ctp-surface2 hover:bg-ctp-crust focus-visible:outline-offset-0 cursor-pointer";
 
     rsx! {
-        header { class: "bg-ctp-surface0",
-            nav {
-                "aria-label": "Global",
-                class: "mx-auto flex max-w-full items-center py-6 px-4",
+        header {
+            class: "bg-ctp-surface0 py-6 px-4 grid items-center",
+            style: "grid-template-columns: 1fr 1fr 1fr;",
 
-                // left
-                div {
-                    class: "flex flex-1 justify-start items-center gap-x-3",
+            // left
+            div {
+                /*
+                label {
+                    class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
+                    class: "bg-ctp-surface1 hover:bg-ctp-crust",
+                    class: if !supports_adding { "hidden" },
+                    Icon { fill: "white", icon:  dioxus_free_icons::icons::ld_icons::LdImagePlus }
 
-                    /*
-                    label {
-                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
-                        class: "bg-ctp-surface1 hover:bg-ctp-crust",
-                        class: if !supports_adding { "hidden" },
-                        Icon { fill: "white", icon:  dioxus_free_icons::icons::ld_icons::LdImagePlus }
+                    input {
+                        class: "hidden",
+                        r#type: "file",
+                        accept: ".jpg,.jpeg,.png,.webp",
+                        directory: true,
+                        // pick multiple files
+                        multiple: true,
+                        onchange: move |evt| {
+                            if let Some(file_engine) = &evt.files() {
+                                let selected_paths = file_engine.files().iter().map(std::path::PathBuf::from).collect_vec();
+                                let all_files = crate::add_wallpapers::wallpapers_from_paths(&selected_paths, &cfg());
 
-                        input {
-                            class: "hidden",
-                            r#type: "file",
-                            accept: ".jpg,.jpeg,.png,.webp",
-                            directory: true,
-                            // pick multiple files
-                            multiple: true,
-                            onchange: move |evt| {
-                                if let Some(file_engine) = &evt.files() {
-                                    let selected_paths = file_engine.files().iter().map(std::path::PathBuf::from).collect_vec();
-                                    let all_files = crate::add_wallpapers::wallpapers_from_paths(&selected_paths, &cfg());
-
-                                    ui.with_mut(|ui| {
-                                        ui.mode = UiMode::Adding(all_files);
-                                    });
-                                }
+                                ui.with_mut(|ui| {
+                                    ui.mode = UiMode::Adding(all_files);
+                                });
                             }
                         }
                     }
-                    */
+                }
+                */
 
-                    a {
-                        class: "font-semibold leading-6 text-white",
-                        class: if !supports_adding { "ml-2" },
-                        "{wallpapers().index + 1} / {wallpapers().files.len()}"
-                    }
+                a {
+                    class: "font-semibold leading-6 text-white",
+                    class: if !supports_adding { "ml-2" },
+                    "{wallpapers().index + 1} / {wallpapers().files.len()}"
+                }
+            }
+
+            // center
+            div { class: "flex flex-1 gap-x-3 justify-self-center",
+                a { class: pagination_cls,
+                    onclick: move |_| {
+                        prev_image(&mut wallpapers);
+                    },
+                    Icon { fill: "white", icon:  MdChevronLeft, width: 16, height: 16 }
+                }
+                a { class: "text-sm font-semibold leading-6 text-white text-center w-72 cursor-pointer text-ellipsis overflow-hidden whitespace-nowrap",
+                    onclick: move |_| {
+                        ui.with_mut(|ui| {
+                            ui.toggle_filelist();
+                        });
+                    },
+                    {filename(wallpapers().current().current.path)}
+                }
+                a { class: pagination_cls,
+                    onclick: move |_| {
+                        next_image(&mut wallpapers);
+                    },
+                    Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
+                }
+            }
+
+            // right
+            div {
+                class: "flex flex-1 gap-x-6 justify-end",
+                if let Some(wallpaper_cmd) =  cfg().wallpaper_command {
+                    WallpaperButton { wall, wallpaper_cmd }
                 }
 
-                // center
-                div { class: "flex flex-1 gap-x-3 items-center justify-center",
-                    a { class: pagination_cls,
-                        onclick: move |_| {
-                            prev_image(&mut wallpapers);
-                        },
-                        Icon { fill: "white", icon:  MdChevronLeft, width: 16, height: 16 }
-                    }
-                    a { class: "text-sm font-semibold leading-6 text-white text-center w-72 cursor-pointer text-ellipsis overflow-hidden whitespace-nowrap",
-                        onclick: move |_| {
-                            ui.with_mut(|ui| {
-                                ui.toggle_filelist();
-                            });
-                        },
-                        {filename(wallpapers().current().current.path)}
-                    }
-                    a { class: pagination_cls,
-                        onclick: move |_| {
-                            next_image(&mut wallpapers);
-                        },
-                        Icon { fill: "white", icon:  MdChevronRight, width: 16, height: 16 }
-                    }
+                a {
+                    class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
+                    class: if ui().show_faces {
+                        "bg-indigo-600 hover:bg-indigo-500"
+                    } else {
+                        "bg-ctp-surface1 hover:bg-ctp-crust"
+                    },
+                    onclick: move |_| {
+                        ui.with_mut(|ui| {
+                            ui.show_faces = !ui.show_faces;
+                        });
+                    },
+                    Icon { fill: "white", icon:  MdFaceRetouchingNatural }
                 }
 
-                // right
-                div { class: "gap-x-6 flex flex-1 justify-end",
-                    if let Some(wallpaper_cmd) =  cfg().wallpaper_command {
-                        WallpaperButton { wall, wallpaper_cmd }
-                    }
-
-                    a {
-                        class: "rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer",
-                        class: if ui().show_faces {
-                            "bg-indigo-600 hover:bg-indigo-500"
-                        } else {
-                            "bg-ctp-surface1 hover:bg-ctp-crust"
-                        },
-                        onclick: move |_| {
-                            ui.with_mut(|ui| {
-                                ui.show_faces = !ui.show_faces;
-                            });
-                        },
-                        Icon { fill: "white", icon:  MdFaceRetouchingNatural }
-                    }
-
-                    SaveButton { wall, wallpapers }
-                }
+                SaveButton { wall, wallpapers }
             }
         }
     }

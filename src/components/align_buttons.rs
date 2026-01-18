@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
+use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::md_editor_icons::{
     MdFormatAlignCenter, MdFormatAlignLeft, MdFormatAlignRight, MdVerticalAlignBottom,
     MdVerticalAlignCenter, MdVerticalAlignTop,
 };
-use dioxus_free_icons::Icon;
 
 use crate::components::button::PreviewableButton;
 use crate::state::Wall;
@@ -39,9 +39,8 @@ pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
     let dir = info.direction(&geom);
 
     rsx! {
-        div { class: "flex gap-x-6",
             span {
-                class: "isolate inline-flex rounded-md shadow-sm",
+                class: "isolate rounded-md shadow-sm",
                 AlignButton {
                     wall,
                     class: "text-sm rounded-l-md",
@@ -57,7 +56,7 @@ pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
             }
 
             span {
-                class: format!("isolate inline-flex rounded-md shadow-sm {}", class.unwrap_or_default()),
+                class: format!("isolate rounded-md shadow-sm {}", class.unwrap_or_default()),
                 AlignButton {
                     wall,
                     class: "text-sm rounded-l-md",
@@ -89,6 +88,5 @@ pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
                     }
                 }
             }
-        }
     }
 }
