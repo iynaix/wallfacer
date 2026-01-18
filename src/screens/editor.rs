@@ -138,19 +138,22 @@ pub fn handle_editor_shortcuts(
 pub fn Editor(wall: Signal<Wall>) -> Element {
     rsx! {
         div {
-            class: "flex flex-col gap-4 w-full h-full",
+            class: "grid grid-flow-col gap-4 items-center p-4 box-border",
+            style: "grid-template-columns: 1fr auto auto;",
 
-            div {
-                class:"flex flex-row justify-between",
-                RatioButtons { wall },
+            RatioButtons { wall },
 
-                div{
-                    class: "flex justify-end",
-                    AlignButtons { wall },
-                }
+            AlignButtons { wall },
+        }
+
+        // Previewer { wall }
+        div {
+            class: "min-h-0 min-w-0 px-4 pb-4",
+
+            img {
+                src: wall().path(),
+                class: "w-full h-full object-contain object-center block",
             }
-
-            Previewer { wall }
         }
     }
 }
