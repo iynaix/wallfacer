@@ -60,6 +60,7 @@
               GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
             };
 
+            # for tailwind binary
             shellHook = ''
               export PATH="$PWD/node_modules/.bin:$PATH"
             '';

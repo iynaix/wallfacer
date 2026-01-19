@@ -73,9 +73,6 @@ rustPlatform.buildRustPackage {
 
   cargoLock = {
     lockFile = ./Cargo.lock;
-    outputHashes = {
-      "dioxus-sdk-0.7.0" = "sha256-7wIYZDpMdMbMDKXgn+++JzwvU0yrIUWjwSsZCN4zhVA=";
-    };
   };
 
   env.NIX_RELEASE_VERSION = version;
@@ -132,9 +129,7 @@ rustPlatform.buildRustPackage {
 
     installManPage target/man/*
 
-    # FIXME: GDK_BACKEND=x11 is required for keyboard shortcuts to work?
     wrapProgram $out/bin/wallfacer \
-      --set WEBKIT_DISABLE_COMPOSITING_MODE 1 \
       --prefix PATH : "${
         lib.makeBinPath [
           realcugan-ncnn-vulkan

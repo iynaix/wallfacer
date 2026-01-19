@@ -1170,26 +1170,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dioxus-sdk"
-version = "0.7.0"
-source = "git+https://github.com/iynaix/dioxus-sdk?rev=28fc22642f726b98ac89c92dd3813a8d51e3a33c#28fc22642f726b98ac89c92dd3813a8d51e3a33c"
-dependencies = [
- "dioxus-sdk-window",
-]
-
-[[package]]
-name = "dioxus-sdk-window"
-version = "0.7.0"
-source = "git+https://github.com/iynaix/dioxus-sdk?rev=28fc22642f726b98ac89c92dd3813a8d51e3a33c#28fc22642f726b98ac89c92dd3813a8d51e3a33c"
-dependencies = [
- "dioxus",
- "dioxus-config-macro",
- "dioxus-desktop",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "dioxus-signals"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4954,7 +4934,6 @@ dependencies = [
  "clap_mangen",
  "dioxus",
  "dioxus-free-icons",
- "dioxus-sdk",
  "dirs",
  "human-sort",
  "image",

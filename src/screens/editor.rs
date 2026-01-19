@@ -146,14 +146,6 @@ pub fn Editor(wall: Signal<Wall>) -> Element {
             AlignButtons { wall },
         }
 
-        // Previewer { wall }
-        div {
-            class: "min-h-0 min-w-0 px-4 pb-4",
-
-            img {
-                src: wall().path(),
-                class: "w-full h-full object-contain object-center block",
-            }
-        }
+        Previewer { wall }
     }
 }

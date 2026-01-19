@@ -9,7 +9,6 @@ pub mod aspect_ratio;
 pub mod cli;
 pub mod config;
 pub mod cropper;
-pub mod dragger;
 pub mod geometry;
 pub mod pipeline;
 pub mod wallpapers;

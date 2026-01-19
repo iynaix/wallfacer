@@ -22,10 +22,6 @@ clap = { version = "4.5.54", features = ["derive", "string"] }
 clap_complete = "4.5.65"
 clap_mangen = "0.2.31"
 dioxus = { version = "0.7.2", features = ["desktop"] }
-dioxus-sdk = { git = "https://github.com/iynaix/dioxus-sdk", rev = "28fc22642f726b98ac89c92dd3813a8d51e3a33c", features = [
-    "window",
-] }
-# manganis = "0.2.1"
 dirs = "6.0.0"
 image = "0.25.9"
 indexmap = "2.13.0"

@@ -1,168 +1,184 @@
 #![allow(non_snake_case)]
 
-use crate::{
-    components::{drag_overlay::DragOverlay, use_ui},
-    state::Wall,
-};
+use crate::{components::use_ui, state::Wall};
 use dioxus::prelude::*;
-use dioxus_sdk::window::size::{WindowSize, WindowSizeError, use_window_size};
-use wallfacer::{cropper::Direction, dragger::Dragger, wallpapers::WallInfo};
+use wallfacer::{cropper::Direction, geometry::Geometry, wallpapers::WallInfo};
+
+fn get_overlay_styles(
+    img_w: f64,
+    img_h: f64,
+    direction: Direction,
+    geom: &Geometry,
+) -> (String, String) {
+    match direction {
+        Direction::X => (
+            format!(
+                "transform-origin: left; transform: scaleX({});",
+                f64::from(geom.x) / img_w
+            ),
+            format!(
+                "transform-origin: right; transform: scaleX({});",
+                (img_w - f64::from(geom.x + geom.w)) / img_w,
+            ),
+        ),
+        Direction::Y => (
+            format!(
+                "transform-origin: top; transform: scaleY({});",
+                f64::from(geom.y) / img_h,
+            ),
+            format!(
+                "transform-origin: bottom; transform: scaleY({});",
+                (img_h - f64::from(geom.y + geom.h)) / img_h,
+            ),
+        ),
+    }
+}
 
 #[component]
-fn FacesOverlay(info: WallInfo, dragger: Signal<Dragger>) -> Element {
+fn FacesOverlay(info: WallInfo) -> Element {
     if info.faces.is_empty() {
         return rsx! {};
     }
 
     let (img_w, img_h) = info.dimensions_f64();
-    let dragger = dragger();
-    let preview_w = dragger.preview_w;
-    let preview_h = dragger.preview_h;
-
     rsx! {
         {info.faces.iter().map(|face| {
-            let start_x = f64::from(face.x) / img_w * preview_w;
-            let start_y = f64::from(face.y) / img_h * preview_h;
+            let start_x = f64::from(face.x) / img_w * 100.0;
+            let start_y = f64::from(face.y) / img_h * 100.0;
 
-            let w = f64::from(face.w) / img_w * preview_w;
-            let h = f64::from(face.h) / img_h * preview_h;
+            let w = f64::from(face.w) / img_w * 100.0;
+            let h = f64::from(face.h) / img_h * 100.0;
 
             rsx! {
                 div {
                     // pointer-events: none to allow mouse events to pass through
                     class: "absolute border-2 bg-transparent border-red-500 inset-0 pointer-events-none transform-gpu origin-top-left",
-                    style: format!("width: {w}px; height: {h}px; transform: translate({start_x}px, {start_y}px);"),
+                    style: format!("width: {w}%; height: {h}%; top: {start_y}%; left: {start_x}%;"),
                 }
             }
         })}
     }
 }
 
-/// fit the image within the max preview area
-fn get_preview_size(min_y: f64, win_size: WindowSize, (img_w, img_h): (f64, f64)) -> (f64, f64) {
-    let scale = dioxus::desktop::window().scale_factor();
-    let margin: f64 = 16.0 * scale;
-    let min_y = min_y * scale;
-
-    let max_w = margin.mul_add(-2.0, f64::from(win_size.width));
-    let max_h = margin.mul_add(-2.0, f64::from(win_size.height) - min_y);
-
-    // no scaling needed
-    if img_w <= max_w && img_h <= max_h {
-        return (img_w / scale, img_h / scale);
-    }
-
-    let w_ratio = max_w / img_w;
-    let h_ratio = max_h / img_h;
-    // use smaller ratio
-    let fit_scale = w_ratio.min(h_ratio) / scale;
-
-    (img_w * fit_scale, img_h * fit_scale)
-}
-
 #[component]
 pub fn Previewer(wall: Signal<Wall>) -> Element {
+    let mut is_dragging = use_signal(|| false);
+    let mut dragger = use_signal::<(f64, f64)>(|| (0.0, 0.0));
+    let mut img_elem = use_signal(|| None);
+    let mut elem_wh = use_signal(|| (0.0, 0.0));
+
     let ui = use_ui();
-
-    // store y coordinate of the previewer
-    let mut preview_y = use_signal(|| 0.0);
-    let window_size = use_window_size();
-
-    // first run is set to Unsupported to prevent hydration from failing, so ignore the err
-    let window_size = match window_size() {
-        Err(WindowSizeError::Unsupported) => return rsx! {},
-        Ok(size) => size,
-        Err(err) => panic!("unable to get window size: {err}"),
-    };
-
-    // calculate the preview size of the image
-    // only needs to change when the window resizes
-    let mut dragger = use_signal(|| {
-        let img_dimensions = wall().current.dimensions_f64();
-        let preview_wh = get_preview_size(preview_y(), window_size, img_dimensions);
-        Dragger::new(img_dimensions, preview_wh)
-    });
-
-    // update dragger on resize
-    use_effect(move || {
-        // use wall() to initiate a refresh
-        let (image_w, image_h) = wall().current.dimensions_f64();
-        let (w, h) = get_preview_size(preview_y(), window_size, wall().current.dimensions_f64());
-
-        dragger.with_mut(|dragger| {
-            dragger.image_w = image_w;
-            dragger.image_h = image_h;
-            dragger.preview_w = w;
-            dragger.preview_h = h;
-        });
-    });
-
-    let ui = ui();
 
     // preview geometry takes precedence
     let geom = wall()
         .mouseover_geom
         .unwrap_or_else(|| wall().get_geometry());
 
-    let cursor_cls = match dragger().direction(&geom) {
+    let (img_w, img_h) = wall().current.dimensions_f64();
+
+    // get direction of the geometry
+    let direction = if (img_h - f64::from(geom.h)).abs() < f64::EPSILON {
+        Direction::X
+    } else {
+        Direction::Y
+    };
+
+    let cursor_cls = match direction {
         Direction::X => "cursor-ew-resize",
         Direction::Y => "cursor-ns-resize",
     };
 
+    let pointer_cls = if is_dragging() {
+        "pointer-events-none"
+    } else {
+        ""
+    };
+
+    let (start_overlay_style, end_overlay_style) =
+        get_overlay_styles(img_w, img_h, direction, &geom);
+
+    let overlay_cls =
+        "absolute bg-black/60 inset-0 transform-gpu isolate transition will-change-transform";
+
     rsx! {
         div {
-            class: "m-auto transform-gpu {cursor_cls}",
-            img {
-                class: "transform-gpu",
-                style: "width: {dragger().preview_w}px; height: {dragger().preview_h}px;",
-                src: wall().path(),
-                // store the final rendered width and height of the image
-                onmounted: move |evt| {
-                    async move {
-                        let coords = evt.get_client_rect().await.expect("could not get client rect");
-                        // store the y coordinate of the previewer, the rest can be calculated from there
-                        preview_y.set(coords.min_y());
-                    }
-                },
-                // clip-path produces a "hole", so detect click events on the image
-                onmousedown: move |evt| {
-                    let (x, y) = evt.element_coordinates().into();
-                    dragger.with_mut(|dragger| {
-                        dragger.is_dragging = true;
-                        dragger.x = x;
-                        dragger.y = y;
-                    });
-                },
-                onmousemove: move |evt| {
-                    if dragger().is_dragging && evt.held_buttons().contains(dioxus::html::input_data::MouseButton::Primary) {
-                        let (new_x, new_y) = evt.element_coordinates().into();
+            class: "flex items-center justify-center min-h-0 min-w-0 px-4 pb-4 {cursor_cls}",
 
-                        wall.with_mut(|wallpapers| {
-                            let new_geom = dragger().update((new_x, new_y), &geom);
-                            wallpapers.set_geometry(&new_geom);
-                        });
+            div {
+                class: "relative m-auto max-h-full max-w-full",
+                style: "aspect-ratio: {wall().current.width} / {wall().current.height};",
 
-                        dragger.with_mut(|dragger| {
-                            dragger.x = new_x;
-                            dragger.y = new_y;
-                        });
-                    }
-                },
-                onmouseup: move |_| {
-                    dragger.with_mut(|dragger| {
-                        dragger.is_dragging = true;
-                    });
-                },
-            }
+                img {
+                    src: wall().path(),
+                    class: "w-full h-full object-contain object-center block",
+                    onmounted: move |evt| {
+                        // coordinates are requested when clicked since it is initially zero size
+                        img_elem.set(Some(evt.data()));
+                    },
+                    // the overlays produce a "hole", so detect click events there
+                    onmousedown: move |evt| {
+                        async move {
+                            let (x, y) = evt.element_coordinates().into();
 
-            if ui.show_faces {
-                FacesOverlay { info: wall().current, dragger }
-            }
+                            is_dragging.set(true);
+                            dragger.set((x, y));
 
-            DragOverlay {
-                wall,
-                geom: geom.clone(),
-                dragger,
+                            if let Some(elem) = img_elem() {
+                                let rect = elem.get_client_rect().await.expect("could not get client rect");
+                                elem_wh.set((rect.width(), rect.height()));
+                            }
+                        }
+                    },
+                    onmouseup: move |_| {
+                        is_dragging.set(false);
+                    },
+                    onmousemove: move |evt| {
+                        if is_dragging() && evt.held_buttons().contains(dioxus::html::input_data::MouseButton::Primary) {
+                            let (new_x, new_y) = evt.element_coordinates().into();
+                            let (x, y) = dragger();
+                            let (elem_w, elem_h) = elem_wh();
+
+                            let new_geom = match direction {
+                                Direction::X => {
+                                    let dx = img_w / elem_w * (new_x - x);
+                                    Geometry {
+                                        x: (f64::from(geom.x) + dx).clamp(0.0, img_w - f64::from(geom.w)) as u32,
+                                        ..geom.clone()
+                                    }
+                                }
+                                Direction::Y => {
+                                    let dy = img_h / elem_h * (new_y - y);
+                                    Geometry {
+                                        y: (f64::from(geom.y) + dy).clamp(0.0, img_h - f64::from(geom.h)) as u32,
+                                        ..geom.clone()
+                                    }
+                                }
+                            };
+
+                            wall.with_mut(|wallpapers| {
+                                wallpapers.set_geometry(&new_geom);
+                            });
+
+                            dragger.set((new_x, new_y));
+                        }
+                    },
+                }
+
+                // start overlay
+                div {
+                    class: "{overlay_cls} {pointer_cls}",
+                    style: start_overlay_style,
+                }
+
+                // end overlay
+                div {
+                    class: "{overlay_cls} {pointer_cls}",
+                    style: end_overlay_style,
+                }
+
+                if ui().show_faces {
+                    FacesOverlay { info: wall().current }
+                }
             }
         }
     }
