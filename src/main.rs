@@ -48,6 +48,7 @@ fn main() {
         Some(Commands::Add(args)) => add_wallpapers::main(all_args.config, &args),
         Some(Commands::AddResolution(args)) => add_resolution::main(all_args.config, &args),
         Some(Commands::Trim(args)) => trimmer::main(&args),
+        // default to gui
         Some(Commands::Gui(_)) => {
             // use a custom index.html to set the height of body to the full height of the window
             LaunchBuilder::desktop()
@@ -62,6 +63,11 @@ fn main() {
                 )
                 .launch(App);
         }
-        _ => {}
+        _ => {
+            eprintln!(
+                "Unknown / invlaid subcommand, valid subcommands are: add, resolution, gui, trim"
+            );
+            std::process::exit(1);
+        }
     }
 }

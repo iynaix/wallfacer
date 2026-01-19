@@ -80,12 +80,12 @@ pub fn App() -> Element {
     });
     let wallpapers = use_signal(|| Wallpapers::from_args(&gui_args, &config()));
 
-    if wallpapers().files.is_empty() {
-        rsx! {
-            document::Stylesheet {
-                href: asset!("/public/tailwind.css")
-            }
+    rsx! {
+        document::Stylesheet {
+            href: asset!("/public/tailwind.css")
+        }
 
+        if wallpapers().files.is_empty() {
             main {
                 class: "dark flex items-center h-full justify-center bg-ctp-base overflow-hidden",
                 div {
@@ -94,13 +94,7 @@ pub fn App() -> Element {
                     }
                 }
             }
-        }
-    } else {
-        rsx! {
-            document::Stylesheet {
-                href: asset!("/public/tailwind.css")
-            }
-
+        } else {
             Main { config, wallpapers }
         }
     }
