@@ -1,8 +1,16 @@
 #![allow(non_snake_case)]
 
 use crate::{components::use_ui, state::Wall};
-use dioxus::prelude::*;
-use wallfacer::{cropper::Direction, geometry::Geometry, wallpapers::WallInfo};
+use dioxus::{
+    desktop::{
+        LogicalPosition,
+        muda::{self, ContextMenu},
+        tao::platform::unix::WindowExtUnix,
+        wry::dpi::Position,
+    },
+    prelude::*,
+};
+use wallfacer::{cropper::Direction, geometry::Geometry};
 
 fn get_overlay_styles(
     img_w: f64,
@@ -34,8 +42,47 @@ fn get_overlay_styles(
     }
 }
 
+fn show_context_menu(x: f64, y: f64, face: &Geometry) {
+    let menu = muda::Submenu::with_items(
+        "Face menu",
+        true,
+        &[&muda::MenuItem::with_id(
+            format!("center-face|{face}"),
+            "Center on Face",
+            true,
+            None,
+        )],
+    )
+    .expect("unable to create context menu");
+
+    let window = dioxus::desktop::window();
+    let gtk_window = window.window.gtk_window();
+
+    menu.show_context_menu_for_gtk_window(
+        gtk_window.as_ref(),
+        Some(Position::Logical(LogicalPosition { x, y })),
+    );
+}
+
 #[component]
-fn FacesOverlay(info: WallInfo) -> Element {
+fn FacesOverlay(wall: Signal<Wall>, direction: Direction) -> Element {
+    dioxus::desktop::use_muda_event_handler(move |evt| {
+        if let Some((id, face)) = evt.id().as_ref().split_once('|') {
+            match id {
+                "center-face" => {
+                    if let Some(face) = wall().current.faces.iter().find(|f| f.to_string() == face)
+                    {
+                        wall.with_mut(|wallpaper| {
+                            wallpaper.set_geometry(&wallpaper.center_on_face(face));
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
+    });
+
+    let info = wall().current;
     if info.faces.is_empty() {
         return rsx! {};
     }
@@ -64,7 +111,6 @@ fn FacesOverlay(info: WallInfo) -> Element {
 pub fn Previewer(wall: Signal<Wall>) -> Element {
     let mut is_dragging = use_signal(|| false);
     let mut dragger = use_signal::<(f64, f64)>(|| (0.0, 0.0));
-    let mut img_elem = use_signal(|| None);
     let mut elem_wh = use_signal(|| (0.0, 0.0));
 
     let ui = use_ui();
@@ -77,7 +123,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
     let (img_w, img_h) = wall().current.dimensions_f64();
 
     // get direction of the geometry
-    let direction = if (img_h - f64::from(geom.h)).abs() < f64::EPSILON {
+    let direction = if wall().current.height == geom.h {
         Direction::X
     } else {
         Direction::Y
@@ -111,9 +157,10 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
                 img {
                     src: wall().path(),
                     class: "w-full h-full object-contain object-center block",
-                    onmounted: move |evt| {
-                        // coordinates are requested when clicked since it is initially zero size
-                        img_elem.set(Some(evt.data()));
+                    onresize: move |evt| {
+                        if let Ok(size) = evt.data.get_content_box_size() {
+                            elem_wh.set((size.width, size.height));
+                        }
                     },
                     // the overlays produce a "hole", so detect click events there
                     onmousedown: move |evt| {
@@ -122,12 +169,23 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
 
                             is_dragging.set(true);
                             dragger.set((x, y));
-
-                            if let Some(elem) = img_elem() {
-                                let rect = elem.get_client_rect().await.expect("could not get client rect");
-                                elem_wh.set((rect.width(), rect.height()));
-                            }
                         }
+                    },
+                    oncontextmenu: move |evt| {
+                        let (x, y) = evt.element_coordinates().into();
+                        let (elem_w, elem_h) = elem_wh();
+
+                        // normalize to absolute image coordinates
+                        let img_x = x / elem_w * img_w;
+                        let img_y = y / elem_h * img_h;
+
+                        if let Some(face) = wall().current.faces.iter().find(|face|
+                            face.contains(img_x as u32, img_y as u32)
+                        ) {
+                            let (x, y) = evt.client_coordinates().into();
+                            show_context_menu(x, y, face);
+                        }
+
                     },
                     onmouseup: move |_| {
                         is_dragging.set(false);
@@ -155,8 +213,8 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
                                 }
                             };
 
-                            wall.with_mut(|wallpapers| {
-                                wallpapers.set_geometry(&new_geom);
+                            wall.with_mut(|wallpaper| {
+                                wallpaper.set_geometry(&new_geom);
                             });
 
                             dragger.set((new_x, new_y));
@@ -177,7 +235,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
                 }
 
                 if ui().show_faces {
-                    FacesOverlay { info: wall().current }
+                    FacesOverlay { wall, direction }
                 }
             }
         }

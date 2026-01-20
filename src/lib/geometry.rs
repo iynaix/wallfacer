@@ -87,6 +87,10 @@ impl Geometry {
         self.w * self.h
     }
 
+    pub const fn contains(&self, x: u32, y: u32) -> bool {
+        x >= self.x && x <= self.xmax() && y >= self.y && y <= self.ymax()
+    }
+
     pub const fn intersects(&self, other: &Self) -> bool {
         !(self.x > other.xmax()
             || self.xmax() < other.x

@@ -92,7 +92,7 @@ impl Cropper {
         }
     }
 
-    fn crop_single_face(
+    pub fn crop_single_face(
         &self,
         face: &Geometry,
         direction: Direction,

@@ -106,4 +106,18 @@ impl Wall {
             },
         }
     }
+
+    /// centers the geometry on a face
+    pub fn center_on_face(&self, face: &Geometry) -> Geometry {
+        let geom = self.get_geometry();
+        let direction = if self.current.height == geom.h {
+            Direction::X
+        } else {
+            Direction::Y
+        };
+
+        self.current
+            .cropper()
+            .crop_single_face(face, direction, geom.w, geom.h)
+    }
 }
