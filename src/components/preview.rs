@@ -10,7 +10,13 @@ use dioxus::{
     },
     prelude::*,
 };
-use wallfacer::{cropper::Direction, geometry::Geometry};
+use indexmap::IndexMap;
+use itertools::Itertools;
+use wallfacer::{
+    cropper::{Cropper, Direction},
+    geometry::Geometry,
+    wallpapers::WallInfo,
+};
 
 fn get_overlay_styles(
     img_w: f64,
@@ -46,12 +52,10 @@ fn show_context_menu(x: f64, y: f64, face: &Geometry) {
     let menu = muda::Submenu::with_items(
         "Face menu",
         true,
-        &[&muda::MenuItem::with_id(
-            format!("center-face|{face}"),
-            "Center on Face",
-            true,
-            None,
-        )],
+        &[
+            &muda::MenuItem::with_id(format!("center-face|{face}"), "Center on Face", true, None),
+            &muda::MenuItem::with_id(format!("remove-face|{face}"), "Remove Face", true, None),
+        ],
     )
     .expect("unable to create context menu");
 
@@ -76,6 +80,39 @@ fn FacesOverlay(wall: Signal<Wall>, direction: Direction) -> Element {
                             wallpaper.set_geometry(&wallpaper.center_on_face(face));
                         });
                     }
+                }
+                "remove-face" => {
+                    let current = wall().current;
+                    let cropper = current.cropper();
+                    let new_faces = wall()
+                        .current
+                        .faces
+                        .into_iter()
+                        .filter(|f| f.to_string() != face)
+                        .collect_vec();
+
+                    // remove the face and recrop
+                    let new_cropper = Cropper::new(&new_faces, current.width, current.height);
+                    let new_geometries: IndexMap<_, _> = current
+                        .geometries
+                        .into_iter()
+                        .map(|(ratio, geom)| {
+                            // using the default crop, use the new default with the face removed
+                            if geom == cropper.crop(&ratio) {
+                                (ratio.clone(), new_cropper.crop(&ratio))
+                            } else {
+                                (ratio, geom)
+                            }
+                        })
+                        .collect();
+
+                    wall.with_mut(|wallpaper| {
+                        wallpaper.current = WallInfo {
+                            faces: new_faces,
+                            geometries: new_geometries,
+                            ..wallpaper.current.clone()
+                        };
+                    });
                 }
                 _ => {}
             }
@@ -151,7 +188,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
             class: "flex items-center justify-center min-h-0 min-w-0 px-4 pb-4 {cursor_cls}",
 
             div {
-                class: "relative m-auto max-h-full max-w-full",
+                class: "relative grid isolate",
                 style: "aspect-ratio: {wall().current.width} / {wall().current.height};",
 
                 img {
