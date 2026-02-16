@@ -38,7 +38,7 @@ pub fn handle_arrows_keydown(arrow_key: &Key, wall: &mut Signal<Wall>, ui: &mut 
 
             let new_geom = wall().move_geometry_by(-delta);
             wall.with_mut(|wall| {
-                wall.set_geometry(&new_geom);
+                wall.set_current_geometry(&new_geom);
             });
         }
 
@@ -51,7 +51,7 @@ pub fn handle_arrows_keydown(arrow_key: &Key, wall: &mut Signal<Wall>, ui: &mut 
 
             let new_geom = wall().move_geometry_by(delta);
             wall.with_mut(|wall| {
-                wall.set_geometry(&new_geom);
+                wall.set_current_geometry(&new_geom);
             });
         }
 
@@ -71,8 +71,8 @@ pub fn handle_editor_shortcuts(
         ratio,
         ..
     } = wall();
-    let geom = wall().get_geometry();
-    let mut set_geom = |geom: Geometry| wall.with_mut(|wall| wall.set_geometry(&geom));
+    let geom = wall().get_current_geometry();
+    let mut set_geom = |geom: Geometry| wall.with_mut(|wall| wall.set_current_geometry(&geom));
 
     match evt.key() {
         Key::Character(shortcut) => {

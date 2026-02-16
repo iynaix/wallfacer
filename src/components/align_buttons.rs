@@ -5,14 +5,38 @@ use dioxus_free_icons::icons::md_editor_icons::{
     MdFormatAlignCenter, MdFormatAlignLeft, MdFormatAlignRight, MdVerticalAlignBottom,
     MdVerticalAlignCenter, MdVerticalAlignTop,
 };
+use wallfacer::cropper::{Cropper, Direction};
 
 use crate::components::button::PreviewableButton;
 use crate::state::Wall;
-use wallfacer::{cropper::Direction, geometry::Geometry};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum AlignType {
+    Source,
+    Default,
+    Start,
+    Center,
+    End,
+}
 
 #[component]
-fn AlignButton(wall: Signal<Wall>, class: String, geom: Geometry, children: Element) -> Element {
-    let current_geom = wall().get_geometry();
+fn AlignButton(
+    wall: Signal<Wall>,
+    class: String,
+    align_type: AlignType,
+    children: Element,
+) -> Element {
+    let current_geom = wall().get_current_geometry();
+
+    let w = wall().current.width;
+    let h = wall().current.height;
+    let geom = match align_type {
+        AlignType::Source => wall().get_current_geometry(),
+        AlignType::Default => wall().current.cropper().crop(&wall().ratio),
+        AlignType::Start => wall().get_current_geometry().align_start(w, h),
+        AlignType::Center => wall().get_current_geometry().align_center(w, h),
+        AlignType::End => wall().get_current_geometry().align_end(w, h),
+    };
 
     rsx! {
         PreviewableButton {
@@ -20,8 +44,29 @@ fn AlignButton(wall: Signal<Wall>, class: String, geom: Geometry, children: Elem
             geom: geom.clone(),
             class,
             active: current_geom == geom,
-            onclick: move |_| {
-                wall.with_mut(|wall| wall.set_geometry(&geom));
+            onclick: move |evt: MouseEvent| {
+                wall.with_mut(|wall| {
+                    // holding shift performs for align for all crops in the same direction
+                    if evt.modifiers().shift() {
+                        for (ratio, geom) in &mut wall.current.geometries {
+                            // same direction
+                            if geom.h == current_geom.h {
+                                *geom = match align_type {
+                                    AlignType::Source => wall.source.get_geometry(ratio),
+                                    AlignType::Default => {
+                                        let cropper = Cropper::new(&wall.current.faces, w, h);
+                                        cropper.crop(ratio)
+                                    },
+                                    AlignType::Start => geom.align_start(w, h),
+                                    AlignType::Center => geom.align_center(w, h),
+                                    AlignType::End => geom.align_end(w, h),
+                                }
+                            }
+                        }
+                    } else {
+                        wall.set_current_geometry(&geom);
+                    }
+                });
             },
             {children}
         }
@@ -30,12 +75,8 @@ fn AlignButton(wall: Signal<Wall>, class: String, geom: Geometry, children: Elem
 
 #[component]
 pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
-    let Wall {
-        current: info,
-        ratio,
-        ..
-    } = wall();
-    let geom = wall().get_geometry();
+    let Wall { current: info, .. } = wall();
+    let geom = wall().get_current_geometry();
     let dir = info.direction(&geom);
 
     rsx! {
@@ -44,13 +85,13 @@ pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
                 AlignButton {
                     wall,
                     class: "text-sm rounded-l-md",
-                    geom: wall().source.get_geometry(&ratio),
+                    align_type: AlignType::Source,
                     "Source"
                 }
                 AlignButton {
                     wall,
                     class: "text-sm rounded-r-md",
-                    geom: info.cropper().crop(&ratio),
+                    align_type: AlignType::Default,
                     "Default"
                 }
             }
@@ -60,7 +101,7 @@ pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
                 AlignButton {
                     wall,
                     class: "text-sm rounded-l-md",
-                    geom: geom.align_start(info.width, info.height),
+                    align_type: AlignType::Start,
                     if dir == Direction::X {
                         Icon { fill: "white", icon:  MdFormatAlignLeft }
                     } else {
@@ -70,7 +111,7 @@ pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
                 AlignButton {
                     wall,
                     class: "text-sm -ml-px",
-                    geom: geom.align_center(info.width, info.height),
+                    align_type: AlignType::Center,
                     if dir == Direction::X {
                         Icon { fill: "white", icon:  MdFormatAlignCenter }
                     } else {
@@ -80,7 +121,7 @@ pub fn AlignButtons(wall: Signal<Wall>, class: Option<String>) -> Element {
                 AlignButton {
                     wall,
                     class: "text-sm rounded-r-md",
-                    geom: geom.align_end(info.width, info.height),
+                    align_type: AlignType::End,
                     if dir == Direction::X {
                         Icon { fill: "white", icon:  MdFormatAlignRight }
                     } else {

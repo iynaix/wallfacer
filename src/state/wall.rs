@@ -71,18 +71,18 @@ impl Wall {
     }
 
     /// gets geometry for current aspect ratio
-    pub fn get_geometry(&self) -> Geometry {
+    pub fn get_current_geometry(&self) -> Geometry {
         self.current.get_geometry(&self.ratio)
     }
 
     /// sets the geometry for current aspect ratio
-    pub fn set_geometry(&mut self, geom: &Geometry) {
+    pub fn set_current_geometry(&mut self, geom: &Geometry) {
         self.current.set_geometry(&self.ratio, geom);
     }
 
     /// moves the crop area of the current wallpaper based on its direction
     pub fn move_geometry_by(&self, delta: f64) -> Geometry {
-        let current_geom = self.get_geometry();
+        let current_geom = self.get_current_geometry();
 
         let negative_delta = delta.is_sign_negative();
         let delta = (if negative_delta { -delta } else { delta }) as u32;
@@ -109,7 +109,7 @@ impl Wall {
 
     /// centers the geometry on a face
     pub fn center_on_face(&self, face: &Geometry) -> Geometry {
-        let geom = self.get_geometry();
+        let geom = self.get_current_geometry();
         let direction = if self.current.height == geom.h {
             Direction::X
         } else {

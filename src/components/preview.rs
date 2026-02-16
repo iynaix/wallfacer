@@ -77,7 +77,7 @@ fn FacesOverlay(wall: Signal<Wall>, direction: Direction) -> Element {
                     if let Some(face) = wall().current.faces.iter().find(|f| f.to_string() == face)
                     {
                         wall.with_mut(|wallpaper| {
-                            wallpaper.set_geometry(&wallpaper.center_on_face(face));
+                            wallpaper.set_current_geometry(&wallpaper.center_on_face(face));
                         });
                     }
                 }
@@ -155,7 +155,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
     // preview geometry takes precedence
     let geom = wall()
         .mouseover_geom
-        .unwrap_or_else(|| wall().get_geometry());
+        .unwrap_or_else(|| wall().get_current_geometry());
 
     let (img_w, img_h) = wall().current.dimensions_f64();
 
@@ -251,7 +251,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
                             };
 
                             wall.with_mut(|wallpaper| {
-                                wallpaper.set_geometry(&new_geom);
+                                wallpaper.set_current_geometry(&new_geom);
                             });
 
                             dragger.set((new_x, new_y));

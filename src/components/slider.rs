@@ -16,7 +16,7 @@ pub fn Slider(
             class: class.unwrap_or_default(),
             label {
                 r#for: label_id.clone(),
-                class: "block text-ctp-base font-bold leading-6 text-ctp-text",
+                class: "block font-bold leading-6 text-ctp-text",
                 {label}
             }
             input {
