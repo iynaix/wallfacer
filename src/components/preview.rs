@@ -188,7 +188,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
             class: "flex items-center justify-center min-h-0 min-w-0 px-4 pb-4 {cursor_cls}",
 
             div {
-                class: "relative grid isolate",
+                class: "relative m-auto max-h-full max-w-full",
                 style: "aspect-ratio: {wall().current.width} / {wall().current.height};",
 
                 img {

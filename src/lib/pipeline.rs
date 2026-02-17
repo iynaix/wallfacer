@@ -178,7 +178,6 @@ impl WallpaperPipeline {
 
         let (width, height) = image::image_dimensions(img)
             .unwrap_or_else(|_| panic!("could not get image dimensions: {}", img.display()));
-        let cropper = Cropper::new(&faces, width, height);
 
         // create WallInfo and save it
         self.upscale(
@@ -189,12 +188,7 @@ impl WallpaperPipeline {
                 height,
                 faces,
                 scale: Some(1),
-                geometries: self
-                    .config
-                    .sorted_resolutions()
-                    .iter()
-                    .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
-                    .collect(),
+                ..Default::default()
             },
             status_line,
         );
@@ -241,13 +235,28 @@ impl WallpaperPipeline {
             .and_then(|mut c| c.wait())
             .expect("could not run realcugan-ncnn-vulkan");
 
-        // update wallinfo with scale
-        let scaled_info = WallInfo {
-            scale: Some(scale),
-            ..info
-        } * scale;
+        // update wallinfo with scaled properties
+        let scaled_width = info.width * scale;
+        let scaled_height = info.height * scale;
+        let scaled_faces: Vec<_> = info.faces.into_iter().map(|face| face * scale).collect();
+        let cropper = Cropper::new(&scaled_faces, scaled_width, scaled_height);
 
-        self.optimize(&dest, &scaled_info, status_line);
+        let final_info = WallInfo {
+            width: scaled_width,
+            height: scaled_height,
+            faces: scaled_faces,
+            scale: Some(scale),
+            // crops are done here to prevent truncation errors before multiplying
+            geometries: self
+                .config
+                .sorted_resolutions()
+                .iter()
+                .map(|ratio| (ratio.clone(), cropper.crop(ratio)))
+                .collect(),
+            ..info
+        };
+
+        self.optimize(&dest, &final_info, status_line);
     }
 
     pub fn optimize(&mut self, img: &PathBuf, info: &WallInfo, status_line: &str) {

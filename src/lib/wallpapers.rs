@@ -181,21 +181,3 @@ impl WallInfo {
             .all(|ratio| self.get_geometry(ratio) == cropper.crop(ratio))
     }
 }
-
-impl std::ops::Mul<u32> for WallInfo {
-    type Output = Self;
-
-    fn mul(self, rhs: u32) -> Self::Output {
-        Self {
-            width: self.width * rhs,
-            height: self.height * rhs,
-            faces: self.faces.into_iter().map(|face| face * rhs).collect(),
-            geometries: self
-                .geometries
-                .into_iter()
-                .map(|(ratio, geom)| (ratio, geom * rhs))
-                .collect(),
-            ..self
-        }
-    }
-}
