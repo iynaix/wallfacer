@@ -21,27 +21,30 @@ use wallfacer::{
 fn get_overlay_styles(
     img_w: f64,
     img_h: f64,
+    elem_w: f64,
+    elem_h: f64,
     direction: Direction,
     geom: &Geometry,
 ) -> (String, String) {
+    let dimensions = format!("width: {elem_w}px; height: {elem_h}px");
     match direction {
         Direction::X => (
             format!(
-                "transform-origin: left; transform: scaleX({});",
-                f64::from(geom.x) / img_w
+                "transform-origin: left; transform: scaleX({}); {dimensions}",
+                f64::from(geom.x) / img_w,
             ),
             format!(
-                "transform-origin: right; transform: scaleX({});",
+                "transform-origin: right; transform: scaleX({}); {dimensions}",
                 (img_w - f64::from(geom.x + geom.w)) / img_w,
             ),
         ),
         Direction::Y => (
             format!(
-                "transform-origin: top; transform: scaleY({});",
+                "transform-origin: top; transform: scaleY({}); {dimensions}",
                 f64::from(geom.y) / img_h,
             ),
             format!(
-                "transform-origin: bottom; transform: scaleY({});",
+                "transform-origin: bottom; transform: scaleY({}); {dimensions}",
                 (img_h - f64::from(geom.y + geom.h)) / img_h,
             ),
         ),
@@ -178,7 +181,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
     };
 
     let (start_overlay_style, end_overlay_style) =
-        get_overlay_styles(img_w, img_h, direction, &geom);
+        get_overlay_styles(img_w, img_h, elem_wh().0, elem_wh().1, direction, &geom);
 
     let overlay_cls =
         "absolute bg-black/60 inset-0 transform-gpu isolate transition will-change-transform";
