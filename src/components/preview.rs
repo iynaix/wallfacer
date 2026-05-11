@@ -196,7 +196,7 @@ pub fn Previewer(wall: Signal<Wall>) -> Element {
 
                 img {
                     src: wall().path(),
-                    class: "w-full h-full object-contain object-center block",
+                    class: "object-contain object-center block",
                     onresize: move |evt| {
                         if let Ok(size) = evt.data.get_content_box_size() {
                             elem_wh.set((size.width, size.height));

@@ -209,31 +209,32 @@ impl WallpaperPipeline {
             img.display()
         );
 
-        if scale == 1 {
-            return self.optimize(img, &info, status_line);
-        }
-
         print!("{status_line} Upscaling image...{}", " ".repeat(10));
         std::io::stdout().flush().expect("could not flush stdout");
 
-        let mut dest = img.with_directory("/tmp");
+        let mut dest = img.clone();
 
-        if let Some(ext) = &self.format {
-            dest = dest.with_extension(ext);
+        // upscale needed
+        if scale != 1 {
+            dest = img.with_directory("/tmp");
+
+            if let Some(ext) = &self.format {
+                dest = dest.with_extension(ext);
+            }
+
+            Command::new("realcugan-ncnn-vulkan")
+                .arg("-i")
+                .arg(img)
+                .arg("-s")
+                .arg(scale.to_string())
+                .arg("-o")
+                .arg(&dest)
+                // silence output
+                .stderr(Stdio::null())
+                .spawn()
+                .and_then(|mut c| c.wait())
+                .expect("could not run realcugan-ncnn-vulkan");
         }
-
-        Command::new("realcugan-ncnn-vulkan")
-            .arg("-i")
-            .arg(img)
-            .arg("-s")
-            .arg(scale.to_string())
-            .arg("-o")
-            .arg(&dest)
-            // silence output
-            .stderr(Stdio::null())
-            .spawn()
-            .and_then(|mut c| c.wait())
-            .expect("could not run realcugan-ncnn-vulkan");
 
         // update wallinfo with scaled properties
         let scaled_width = info.width * scale;

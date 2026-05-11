@@ -2,7 +2,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    anime-face-detector.url = "github:iynaix/yolov8-animeface-cli";
+    anime-face-detector = {
+      url = "github:iynaix/yolov8-animeface-cli";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
