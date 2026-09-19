@@ -16,7 +16,7 @@
   pango,
   webkitgtk_4_1,
   xdotool,
-  gexiv2,
+  gexiv2_0_10,
   stdenv,
   darwin,
   realcugan-ncnn-vulkan,
@@ -112,7 +112,7 @@ rustPlatform.buildRustPackage {
     pango
     webkitgtk_4_1
     xdotool
-    gexiv2 # for reading metadata
+    gexiv2_0_10 # for reading metadata
   ]
   ++ lib.optionals stdenv.isDarwin [
     darwin.apple_sdk.frameworks.AppKit

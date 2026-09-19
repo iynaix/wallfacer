@@ -19,7 +19,7 @@ const WEBP_MAX_DIMENSION: u32 = 16383;
 /// waits for the images to be written to disk
 fn wait_for_image(path: &Path) {
     // wait for at most 5 minutes
-    const TIMEOUT: Duration = Duration::from_secs(5 * 60);
+    const TIMEOUT: Duration = Duration::from_mins(5);
 
     let start_time = Instant::now();
     while !path.exists() {

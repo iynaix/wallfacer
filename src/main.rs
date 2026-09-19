@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use clap::{CommandFactory, Parser};
-use clap_complete::{Shell, generate};
+use clap_complete::{generate, Shell};
 use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::prelude::*;
 use screens::app::App;
