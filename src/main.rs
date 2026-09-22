@@ -1,14 +1,15 @@
 #![allow(non_snake_case)]
 use clap::{CommandFactory, Parser};
-use clap_complete::{generate, Shell};
+use clap_complete::{Shell, generate};
 use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::prelude::*;
 use screens::app::App;
-use wallfacer::cli::{Commands, ShellCompletion, WallfacerArgs};
+use wallfacer::cli::{Commands, ResolutionCommands, ShellCompletion, WallfacerArgs};
 
 pub mod add_resolution;
 pub mod add_wallpapers;
 pub mod components;
+pub mod remove_resolution;
 pub mod screens;
 pub mod state;
 pub mod trimmer;
@@ -46,7 +47,14 @@ fn main() {
 
     match all_args.command {
         Some(Commands::Add(args)) => add_wallpapers::main(all_args.config, &args),
-        Some(Commands::AddResolution(args)) => add_resolution::main(all_args.config, &args),
+        Some(Commands::Resolution(resolution_args)) => {
+            match resolution_args {
+                ResolutionCommands::AddResolution(args) => {
+                    add_resolution::main(all_args.config, &args)
+                }
+                ResolutionCommands::RemoveResolution(args) => remove_resolution::main(&args),
+            };
+        }
         Some(Commands::Trim(args)) => trimmer::main(&args),
         // default to gui
         Some(Commands::Gui(_)) => {

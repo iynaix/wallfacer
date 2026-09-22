@@ -35,14 +35,28 @@ pub struct AddWallpaperArgs {
 
 #[derive(Args, Debug)]
 pub struct AddResolutionArgs {
-    /// name of the new resolution
-    pub name: String,
-
     /// the new resolution, in the format <width>x<height>
     pub resolution: String,
 
-    /// output directory
-    pub output: PathBuf,
+    /// input directory
+    pub input: PathBuf,
+
+    #[arg(
+        long,
+        action,
+        value_name = "FILENAME",
+        help = "Resume, starting from filename"
+    )]
+    pub resume_from: Option<String>,
+}
+
+#[derive(Args, Debug)]
+pub struct RemoveResolutionArgs {
+    /// the new resolution, in the format <width>x<height>
+    pub resolution: String,
+
+    /// input directory
+    pub input: PathBuf,
 }
 
 #[derive(Parser)]
@@ -120,6 +134,15 @@ pub enum FacesFilter {
 }
 
 #[derive(Subcommand)]
+pub enum ResolutionCommands {
+    #[command(name = "add", about = "Adds a new resolution for cropping")]
+    AddResolution(AddResolutionArgs),
+
+    #[command(name = "remove", about = "Removes an existing resolution from images")]
+    RemoveResolution(RemoveResolutionArgs),
+}
+
+#[derive(Subcommand)]
 pub enum Commands {
     #[command(
         name = "add",
@@ -127,15 +150,15 @@ pub enum Commands {
     )]
     Add(AddWallpaperArgs),
 
-    #[command(name = "resolution", about = "Adds a new resolution for cropping")]
-    AddResolution(AddResolutionArgs),
-
     #[command(name = "gui", about = "Launches the wallfacer GUI")]
     Gui(GuiArgs),
 
     #[cfg(feature = "trimmer")]
     #[command(name = "trim", visible_alias = "crop", about = "Trims images")]
     Trim(TrimmerArgs),
+
+    #[command(subcommand)]
+    Resolution(ResolutionCommands),
 }
 
 #[allow(clippy::struct_excessive_bools)]

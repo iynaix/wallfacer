@@ -9,6 +9,32 @@ use super::{
     geometry::Geometry,
 };
 
+pub fn save_preserving_modified<MetaFn>(path: &PathBuf, meta_fn: MetaFn) -> rexiv2::Result<()>
+where
+    MetaFn: Fn(&Metadata) -> rexiv2::Result<()>,
+{
+    let prev_modified = std::fs::metadata(&path)
+        .and_then(|metadata| metadata.modified())
+        .ok();
+
+    let meta = Metadata::new_from_path(&path)?;
+
+    meta_fn(&meta)?;
+
+    meta.save_to_file(&path)?;
+
+    // reset the modified time to maintain sort order
+    if let Some(prev_modified) = prev_modified {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .and_then(|f| f.set_modified(prev_modified))
+            .ok();
+    }
+
+    Ok(())
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct WallInfo {
     pub path: PathBuf,
@@ -88,46 +114,31 @@ impl WallInfo {
     }
 
     pub fn save(&self) -> rexiv2::Result<()> {
-        let prev_modified = std::fs::metadata(&self.path)
-            .and_then(|metadata| metadata.modified())
-            .ok();
+        save_preserving_modified(&self.path, |meta| {
+            // set face metadata
+            let face_strings = if self.faces.is_empty() {
+                "[]".to_string()
+            } else {
+                self.faces
+                    .iter()
+                    .map(std::string::ToString::to_string)
+                    .join(",")
+            };
 
-        let meta = Metadata::new_from_path(&self.path)?;
+            meta.set_tag_string("Xmp.wallfacer.faces", &face_strings)?;
 
-        // set face metadata
-        let face_strings = if self.faces.is_empty() {
-            "[]".to_string()
-        } else {
-            self.faces
-                .iter()
-                .map(std::string::ToString::to_string)
-                .join(",")
-        };
+            if let Some(scale) = self.scale {
+                meta.set_tag_string("Xmp.wallfacer.scale", &scale.to_string())?;
+            }
 
-        meta.set_tag_string("Xmp.wallfacer.faces", &face_strings)?;
+            // set crop data
+            for (aspect, geom) in &self.geometries {
+                let crop_key = format!("Xmp.wallfacer.crop.{}", aspect);
+                meta.set_tag_string(&crop_key, &geom.to_string())?;
+            }
 
-        if let Some(scale) = self.scale {
-            meta.set_tag_string("Xmp.wallfacer.scale", &scale.to_string())?;
-        }
-
-        // set crop data
-        for (aspect, geom) in &self.geometries {
-            let crop_key = format!("Xmp.wallfacer.crop.{}", aspect);
-            meta.set_tag_string(&crop_key, &geom.to_string())?;
-        }
-
-        meta.save_to_file(&self.path)?;
-
-        // reset the modified time to maintain sort order
-        if let Some(prev_modified) = prev_modified {
-            std::fs::OpenOptions::new()
-                .write(true)
-                .open(&self.path)
-                .and_then(|f| f.set_modified(prev_modified))
-                .ok();
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 
     pub fn get_target_scale(&self, min_width: u32, min_height: u32) -> Option<u32> {

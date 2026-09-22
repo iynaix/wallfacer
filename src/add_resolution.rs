@@ -5,60 +5,73 @@ use wallfacer::{
     PathBufVecExt,
     aspect_ratio::AspectRatio,
     cli::AddResolutionArgs,
-    config::{Config, ConfigResolution},
+    config::Config,
     cropper::Direction,
-    filter_images,
+    filename, filter_images,
     geometry::Geometry,
     run_wallfacer,
-    wallpapers::WallInfo,
+    wallpapers::{WallInfo, save_preserving_modified},
 };
 
 /// adds and saves the new crop geometry
 pub fn add_geometry(info: &mut WallInfo, aspect: &AspectRatio, geom: &Geometry) {
-    info.geometries.insert(aspect.clone(), geom.clone());
-    info.save()
-        .unwrap_or_else(|_| panic!("could not save {}", info.path.display()));
+    save_preserving_modified(&info.path, |meta| {
+        meta.set_tag_string(&format!("Xmp.wallfacer.crop.{}", aspect), &geom.to_string())?;
+        meta.save_to_file(&info.path)?;
+
+        Ok(())
+    })
+    .unwrap_or_else(|_| eprintln!("Error adding crop for {}", &info.path.display()));
 }
 
 /// centers the new crop based on the old crop
-fn center_new_crop(closest_crop: &Geometry, new_crop: &Geometry, info: &WallInfo) -> Geometry {
+fn center_new_crop(
+    closest_crop: &Geometry,
+    new_crop: &Geometry,
+    info: &WallInfo,
+) -> (Geometry, bool) {
     let direction = info.direction(closest_crop);
     let new_start = match direction {
         Direction::X => {
             f64::from(closest_crop.x) + f64::from(closest_crop.w) / 2.0
                 - f64::from(new_crop.w) / 2.0
         }
-        Direction::Y => {
-            f64::from(closest_crop.y) + f64::from(closest_crop.h) / 2.0
-                - f64::from(new_crop.h) / 2.0
-        }
+        // use the old crop's start, since that should be pretty close for vertical
+        Direction::Y => f64::from(closest_crop.y),
     };
 
-    info.cropper()
-        .clamp(new_start, direction, new_crop.w, new_crop.h)
+    let geom = info
+        .cropper()
+        .clamp(new_start, direction, new_crop.w, new_crop.h);
+
+    // don't need to preview if crop is clamped to an edge
+    let mut should_preview = true;
+
+    if direction == Direction::X && (geom.x == 0 || geom.x == info.width - geom.w) {
+        should_preview = false
+    }
+    if direction == Direction::Y && (geom.y == 0 || geom.y == info.height - geom.h) {
+        should_preview = false
+    }
+
+    (geom, should_preview)
 }
 
-// needed for parity with add_wallpapers in a match {}
 pub fn main(config_path: Option<PathBuf>, args: &AddResolutionArgs) {
     // the following checks shouldn't ever trigger as clap shouldn't allow it
     let new_res = std::convert::TryInto::<AspectRatio>::try_into(args.resolution.as_str())
         .unwrap_or_else(|_| panic!("invalid aspect ratio: {} into string", args.resolution));
 
-    let mut cfg = Config::new(config_path).expect("failed to load config");
+    let cfg = Config::new(config_path).expect("failed to load config");
     // finds the closest resolution to an existing one
     let closest_res = cfg
         .resolutions
         .iter()
+        // ignore the new resolution if already added to make the script idempotent
+        .filter(|res| res.resolution != new_res)
         .min_by(|res1, res2| {
             let diff1 = (f64::from(&res1.resolution) - f64::from(&new_res)).abs();
             let diff2 = (f64::from(&res2.resolution) - f64::from(&new_res)).abs();
-            println!(
-                "{} diff1: {} diff2: {}",
-                f64::from(&res2.resolution),
-                diff1,
-                diff2
-            );
-
             // ignore if aspect ratio already exists in config
             diff1
                 .partial_cmp(&diff2)
@@ -66,61 +79,54 @@ pub fn main(config_path: Option<PathBuf>, args: &AddResolutionArgs) {
         })
         .map(|res| res.resolution.clone());
 
-    // save the updated config
-    if !cfg.resolutions.iter().any(|res| res.resolution == new_res) {
-        cfg.resolutions.push(ConfigResolution {
-            name: args.name.clone(),
-            description: Some(args.name.clone()),
-            resolution: new_res.clone(),
-        });
-        cfg.save().unwrap_or_else(|_| {
-            eprintln!("Unable to add resolution to existing config, please do so manually.");
-            std::process::exit(1);
-        });
-    }
-
-    let mut to_process: Vec<PathBuf> = Vec::new();
-
-    let mut all_files = filter_images(&args.output).collect_vec();
-    all_files.numeric_sort();
-
-    for path in all_files {
-        println!("Processing {}", path.display());
-        let mut info = WallInfo::new_from_file(&path);
-
-        let cropper = info.cropper();
-        let new_default_crop = cropper.crop(&new_res);
-
-        match &closest_res {
-            None => add_geometry(&mut info, &new_res, &new_default_crop),
-            Some(closest) => {
-                let closest_default_crop = cropper.crop(closest);
-
-                // different direction
-                if info.direction(&new_default_crop) != info.direction(&closest_default_crop) {
-                    add_geometry(&mut info, &new_res, &new_default_crop);
-                    to_process.push(path);
-                    continue;
-                }
-
-                // the previous closest crop was not changed, just use the default
-                if info.get_geometry(closest) == closest_default_crop {
-                    add_geometry(&mut info, &new_res, &new_default_crop);
-                    continue;
-                }
-
-                // center new crop based on previous default crop
-                let new_geom = center_new_crop(&closest_default_crop, &new_default_crop, &info);
-                // geometry was altered, skip
-                if info.geometries.get(&new_res) != Some(&new_geom) {
-                    continue;
-                }
-
-                to_process.push(path);
-                add_geometry(&mut info, &new_res, &new_geom);
+    let all_files = filter_images(&args.input)
+        .filter(|path| {
+            if let Some(ref resume_from) = args.resume_from {
+                return filename(path) >= *resume_from;
             }
-        }
-    }
+
+            true
+        })
+        .collect_vec();
+
+    let mut to_process: Vec<_> = all_files
+        .into_iter()
+        .filter(|path| {
+            println!("Processing {}", path.display());
+            let mut info = WallInfo::new_from_file(&path);
+
+            let cropper = info.cropper();
+            let new_default_crop = cropper.crop(&new_res);
+
+            match &closest_res {
+                None => {
+                    add_geometry(&mut info, &new_res, &new_default_crop);
+                    return false;
+                }
+                Some(closest) => {
+                    let closest_crop = info.get_geometry(closest);
+
+                    // different direction
+                    if info.direction(&new_default_crop) != info.direction(&closest_crop) {
+                        add_geometry(&mut info, &new_res, &new_default_crop);
+                        return true;
+                    }
+
+                    // the previous closest crop was not changed, just use the default
+                    if closest_crop == cropper.crop(closest) {
+                        add_geometry(&mut info, &new_res, &new_default_crop);
+                        return false;
+                    }
+
+                    // center new crop based on previous default crop
+                    let (new_geom, should_preview) =
+                        center_new_crop(&closest_crop, &new_default_crop, &info);
+                    add_geometry(&mut info, &new_res, &new_geom);
+                    return should_preview;
+                }
+            }
+        })
+        .collect();
 
     // open in wallfacer
     to_process.numeric_sort();

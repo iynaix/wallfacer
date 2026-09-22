@@ -21,7 +21,18 @@ pub struct Wall {
 
 impl Wall {
     pub fn new(info: &WallInfo, path: PathBuf, resolutions: &[ConfigResolution]) -> Self {
-        let ratios = resolutions
+        let missing_ratios = info.geometries.keys().filter_map(|wall_res| {
+            resolutions
+                .iter()
+                .all(|cfg_res| cfg_res.resolution != *wall_res)
+                .then(|| ConfigResolution {
+                    name: wall_res.to_string(),
+                    resolution: wall_res.clone(),
+                    description: None,
+                })
+        });
+
+        let filtered_ratios = resolutions
             .iter()
             .filter(|res| {
                 const THRESHOLD: f64 = 1.0 / 100.0;
@@ -46,8 +57,9 @@ impl Wall {
 
                 true
             })
-            .cloned()
-            .collect_vec();
+            .cloned();
+
+        let ratios = filtered_ratios.chain(missing_ratios).collect_vec();
 
         Self {
             source: info.clone(),
