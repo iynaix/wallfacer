@@ -15,11 +15,16 @@ use wallfacer::{
 
 /// adds and saves the new crop geometry
 pub fn add_geometry(info: &mut WallInfo, aspect: &AspectRatio, geom: &Geometry) {
-    save_preserving_modified(&info.path, |meta| {
-        meta.set_tag_string(&format!("Xmp.wallfacer.crop.{}", aspect), &geom.to_string())?;
-        meta.save_to_file(&info.path)?;
+    save_preserving_modified(&info.path, |wallpaper_ns, meta| {
+        meta.set_struct_field(
+            wallpaper_ns,
+            "crop",
+            &aspect.to_string(),
+            xmpkit::XmpValue::String(geom.to_string()),
+        )
+        .expect("Unable to add new crop");
 
-        Ok(())
+        Ok(meta.clone())
     })
     .unwrap_or_else(|_| eprintln!("Error adding crop for {}", &info.path.display()));
 }

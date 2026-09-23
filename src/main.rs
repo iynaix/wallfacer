@@ -17,9 +17,6 @@ pub mod trimmer;
 fn main() {
     let all_args = WallfacerArgs::parse();
 
-    rexiv2::register_xmp_namespace("http://example.com/wallfacer", "wallfacer")
-        .expect("could not register wallfacer namespace");
-
     if let Some(comp) = all_args.generate {
         match comp {
             ShellCompletion::Bash => generate(

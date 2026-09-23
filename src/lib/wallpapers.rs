@@ -1,7 +1,6 @@
 use indexmap::IndexMap;
-use itertools::Itertools;
-use rexiv2::Metadata;
 use std::path::{Path, PathBuf};
+use xmpkit::{XmpFile, XmpMeta, XmpResult, XmpValue, register_namespace};
 
 use super::{
     aspect_ratio::AspectRatio,
@@ -9,19 +8,28 @@ use super::{
     geometry::Geometry,
 };
 
-pub fn save_preserving_modified<MetaFn>(path: &PathBuf, meta_fn: MetaFn) -> rexiv2::Result<()>
+static WALLFACER_NS: &str = "http://example.com/wallfacer/";
+
+pub fn save_preserving_modified<MetaFn>(path: &PathBuf, meta_fn: MetaFn) -> XmpResult<()>
 where
-    MetaFn: Fn(&Metadata) -> rexiv2::Result<()>,
+    MetaFn: Fn(&str, &mut XmpMeta) -> XmpResult<XmpMeta>,
 {
     let prev_modified = std::fs::metadata(&path)
         .and_then(|metadata| metadata.modified())
         .ok();
 
-    let meta = Metadata::new_from_path(&path)?;
+    let mut fp = XmpFile::new();
+    fp.open_with(path, xmpkit::XmpOptions::default().for_update())
+        .expect("failed to open image");
 
-    meta_fn(&meta)?;
+    register_namespace(WALLFACER_NS, "wallfacer")?;
 
-    meta.save_to_file(&path)?;
+    let mut new_meta = XmpMeta::new();
+    let meta = fp.get_xmp_mut().unwrap_or(&mut new_meta);
+    let meta = meta_fn(WALLFACER_NS, meta)?;
+
+    fp.put_xmp(meta);
+    fp.save(path)?;
 
     // reset the modified time to maintain sort order
     if let Some(prev_modified) = prev_modified {
@@ -53,91 +61,89 @@ impl WallInfo {
         let (width, height) =
             image::image_dimensions(&img).expect("could not get image dimensions");
 
-        let meta = Metadata::new_from_path(img.as_ref()).expect("could not init new metadata");
+        let mut fp = XmpFile::new();
+        fp.open(&img).expect("failed to open image");
 
-        let mut faces = Vec::new();
-        let mut scale = None;
-        let mut crops = IndexMap::new();
+        register_namespace(WALLFACER_NS, "wallfacer").expect("could not register namespace");
 
-        for tag in meta.get_xmp_tags().expect("unable to read xmp tags") {
-            match tag.as_str() {
-                "Xmp.wallfacer.faces" => {
-                    let face_str = meta.get_tag_string(&tag).expect("could not get faces tag");
-
-                    // empty faces are written as "[]" as rexiv2 seems to return the value of
-                    // the next Xmp field, which is wrong
-                    if face_str != "[]" {
-                        faces = face_str
-                            .split(',')
-                            .map(|face| {
-                                face.try_into().unwrap_or_else(|_| {
-                                    panic!("could not convert face {face} into string")
-                                })
-                            })
-                            .collect();
-                    }
-                }
-                "Xmp.wallfacer.scale" => {
-                    scale = meta
-                        .get_tag_string(&tag)
-                        .expect("could not get scale tag")
-                        .parse::<u32>()
-                        .ok();
-                }
-                tag if tag.starts_with("Xmp.wallfacer.crop.") => {
-                    let aspect = tag
-                        .strip_prefix("Xmp.wallfacer.crop.")
-                        .expect("could not strip cropdata prefix");
-                    let aspect: AspectRatio = aspect
-                        .try_into()
-                        .unwrap_or_else(|_| panic!("could not parse aspect ratio {aspect}"));
-                    let geom_str = meta.get_tag_string(tag).expect("could not get crop tag");
-                    let geoms: Geometry = geom_str
-                        .as_str()
-                        .try_into()
-                        .unwrap_or_else(|_| panic!("could not parse crop {geom_str}"));
-
-                    crops.insert(aspect, geoms);
-                }
-                _ => {}
-            }
-        }
-
-        Self {
+        let mut ret = Self {
             width,
             height,
             path: img.as_ref().to_path_buf(),
-            scale,
-            faces,
-            geometries: crops,
+            ..Default::default()
+        };
+
+        if let Some(xmp) = fp.get_xmp() {
+            if let Some(XmpValue::String(scale)) = xmp.get_property(WALLFACER_NS, "scale") {
+                ret.scale = scale.parse().ok();
+            }
+
+            if let Some(XmpValue::Array(faces)) = xmp.get_property(WALLFACER_NS, "faces") {
+                ret.faces = faces
+                    .iter()
+                    .map(|face| {
+                        face.as_str()
+                            .expect("could not convert face to str")
+                            .try_into()
+                            .unwrap_or_else(|_| panic!("could not convert face {face} into string"))
+                    })
+                    .collect();
+            }
+
+            if let Some(XmpValue::Structure(crops)) = xmp.get_property("wallfacer", "crops") {
+                ret.geometries = crops
+                    .iter()
+                    .map(|(aspect, geom)| {
+                        let aspect: AspectRatio = aspect
+                            .as_str()
+                            .strip_prefix(&format!("{WALLFACER_NS}:"))
+                            .expect("cannot strip prefix")
+                            .try_into()
+                            .unwrap_or_else(|_| panic!("could not parse aspect ratio {aspect}"));
+
+                        let geom: Geometry = geom
+                            .as_str()
+                            .expect("could not convert crop to str")
+                            .try_into()
+                            .unwrap_or_else(|_| {
+                                panic!("could not convert crop {geom} into string")
+                            });
+
+                        (aspect, geom)
+                    })
+                    .collect();
+            }
+        } else {
+            panic!("unable to read xmp metadata for {img:?}");
         }
+
+        ret
     }
 
-    pub fn save(&self) -> rexiv2::Result<()> {
-        save_preserving_modified(&self.path, |meta| {
-            // set face metadata
-            let face_strings = if self.faces.is_empty() {
-                "[]".to_string()
-            } else {
-                self.faces
-                    .iter()
-                    .map(std::string::ToString::to_string)
-                    .join(",")
-            };
-
-            meta.set_tag_string("Xmp.wallfacer.faces", &face_strings)?;
+    pub fn save(&self) -> XmpResult<()> {
+        save_preserving_modified(&self.path, |ns, _| {
+            let mut meta = XmpMeta::new();
 
             if let Some(scale) = self.scale {
-                meta.set_tag_string("Xmp.wallfacer.scale", &scale.to_string())?;
+                meta.set_property(ns, "scale", XmpValue::Integer(scale.into()))?;
+            };
+
+            // set faces data
+            for face in &self.faces {
+                meta.append_array_item(WALLFACER_NS, "faces", XmpValue::String(face.to_string()))?;
             }
 
             // set crop data
             for (aspect, geom) in &self.geometries {
-                let crop_key = format!("Xmp.wallfacer.crop.{}", aspect);
-                meta.set_tag_string(&crop_key, &geom.to_string())?;
+                meta.set_struct_field(
+                    WALLFACER_NS,
+                    "crops",
+                    &aspect.to_string(),
+                    XmpValue::String(geom.to_string()),
+                )?;
             }
 
-            Ok(())
+            Ok(meta)
         })
     }
 
@@ -153,9 +159,18 @@ impl WallInfo {
     where
         P: AsRef<Path>,
     {
-        Metadata::new_from_path(img.as_ref())
-            .and_then(|meta| meta.get_tag_string("Xmp.wallfacer.faces"))
-            .is_ok()
+        let mut fp = XmpFile::new();
+        fp.open(&img).expect("failed to open image");
+
+        if let Some(xmp) = fp.get_xmp() {
+            for prop in xmp.all_properties() {
+                if prop.namespace_uri.contains("wallfacer") {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     pub fn ratio(&self) -> f64 {
